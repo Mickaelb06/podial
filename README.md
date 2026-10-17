@@ -1,6 +1,20 @@
 # Podial
 
+**English** · [Français](README.fr.md)
+
 Podcasts and live radio in one app. Free, no account, no tracking.
+
+<p align="center">
+  <img src="docs/screenshots/top-bar-player.png" width="780" alt="Podial with the animated player in the GNOME top bar">
+</p>
+
+| Radios by country and city | Podcast page | Sleep timer |
+|---|---|---|
+| <img src="docs/screenshots/radios.png" width="260"> | <img src="docs/screenshots/podcast-detail.png" width="260"> | <img src="docs/screenshots/sleep-timer.png" width="260"> |
+
+Cross-platform desktop version (Windows, macOS, Linux):
+
+<img src="docs/screenshots/desktop-windows-mac.png" width="520" alt="Podial for Windows, macOS and Linux">
 
 - **Desktop (Linux / GNOME):** a GTK4 + libadwaita app, plus a GNOME Shell extension that puts an animated player in the top bar (spinning vinyl, spectrum, progress and volume).
 - **Windows / macOS / Linux (Compose Desktop):** a cross-platform app sharing its network and data code with Android. Audio uses JavaFX Media, so nothing else to install.
