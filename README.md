@@ -69,6 +69,14 @@ Release signing uses a keystore outside the repository: `~/.podial-signing/keyst
 
 Early version. The Android app has not yet been tested on a real device or in a car, and the Windows/macOS desktop builds have not been tested on those systems.
 
+## Roadmap (planned, not built yet)
+
+- Record live radio, with scheduling.
+- Local transcription and search inside episodes (runs on your machine).
+- Listen to a podcast in another language, for example an English episode in French, through translated subtitles or voice.
+- Sync between devices without an account.
+- World map to discover radios by clicking a country.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

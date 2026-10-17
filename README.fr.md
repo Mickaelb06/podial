@@ -69,6 +69,14 @@ La signature de la version finale utilise un keystore hors du dépôt : `~/.podi
 
 Version précoce. L'application Android n'a pas encore été testée sur un vrai appareil ni dans une voiture, et les versions de bureau Windows et macOS n'ont pas été testées sur ces systèmes.
 
+## Feuille de route (prévu, pas encore développé)
+
+- Enregistrer les radios en direct, avec programmation.
+- Transcription locale et recherche dans les épisodes (tout se passe sur ton ordinateur).
+- Écouter un podcast dans une autre langue, par exemple un épisode anglais en français, grâce à des sous-titres ou une voix traduits.
+- Synchronisation entre appareils sans compte.
+- Carte du monde pour découvrir les radios en cliquant sur un pays.
+
 ## Licence
 
 MIT, voir [LICENSE](LICENSE).
