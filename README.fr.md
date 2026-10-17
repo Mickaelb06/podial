@@ -4,7 +4,9 @@
 
 Podcasts et radios en direct dans une seule application. Gratuit, sans compte, sans pistage.
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/mickaelb06)
+<p align="center">
+  <a href="https://buymeacoffee.com/mickaelb06"><img src="https://img.shields.io/badge/Offre-moi%20un%20café-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" height="48"></a>
+</p>
 
 <p align="center">
   <img src="docs/screenshots/top-bar-player.png" width="780" alt="Podial avec le lecteur animé dans la barre du haut de GNOME">
