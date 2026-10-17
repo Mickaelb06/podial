@@ -1,0 +1,36 @@
+<resources>
+    <string name="tab_library">Bibliothèque</string>
+    <string name="tab_downloads">Téléchargements</string>
+    <string name="search_podcasts">Rechercher un podcast…</string>
+    <string name="search_radios">Rechercher une radio…</string>
+    <string name="all">Tous</string>
+    <string name="top10">Top 10</string>
+    <string name="more">Plus</string>
+    <string name="live">DIRECT</string>
+    <string name="subscribe">S\'abonner</string>
+    <string name="subscribed">Abonné</string>
+    <string name="add_favorite">Ajouter aux favoris</string>
+    <string name="remove_favorite">Retirer des favoris</string>
+    <string name="no_results">Aucun résultat</string>
+    <string name="load_failed">Chargement impossible. Vérifie ta connexion.</string>
+    <string name="library_empty">Ta bibliothèque est vide. Abonne-toi à un podcast ou ajoute une radio aux favoris.</string>
+    <string name="followed_podcasts">Podcasts suivis</string>
+    <string name="favorite_radios">Radios favorites</string>
+    <string name="no_downloads">Aucun épisode téléchargé. Appuie sur le bouton de téléchargement à côté d\'un épisode pour l\'écouter hors ligne.</string>
+    <string name="download">Télécharger</string>
+    <string name="cancel_download">Annuler le téléchargement</string>
+    <string name="remove_download">Supprimer le téléchargement</string>
+    <string name="downloaded">Téléchargé</string>
+    <string name="sleep_timer">Minuteur de sommeil</string>
+    <string name="minutes_fmt">%d minutes</string>
+    <string name="one_hour">1 heure</string>
+    <string name="two_hours">2 heures</string>
+    <string name="end_of_episode">Fin de l\'épisode</string>
+    <string name="cancel_timer">Annuler le minuteur</string>
+    <string name="play">Lecture</string>
+    <string name="pause">Pause</string>
+    <string name="back">Retour</string>
+    <string name="speed">Vitesse de lecture</string>
+    <string name="nothing_playing">Rien en lecture</string>
+    <string name="episodes_fmt">%d épisodes</string>
+</resources>

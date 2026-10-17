@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.mo
+locale/
+# Android
+android/build/
+android/app/build/
+android/.gradle/
+android/.kotlin/
+android/local.properties
+.idea/
+# Never commit signing material
+*.jks
+*.keystore
+keystore.properties

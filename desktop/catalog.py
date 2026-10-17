@@ -1,0 +1,664 @@
+"""Podial — données : catalogue de podcasts (API iTunes Search publique), annuaire de radios
+(radio-browser.info), flux RSS, réglages et bibliothèque. Aucune dépendance externe, aucun code d'interface."""
+import gettext
+import html
+import json
+import locale
+import os
+import random
+import re
+import shutil
+import subprocess
+import threading
+import time
+import unicodedata
+import urllib.parse
+import urllib.request
+import zlib
+import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
+
+from i18n import _
+
+UA = "Podial/0.4 (+https://github.com/podial/podial)"
+ITUNES_NS = "{http://www.itunes.com/dtds/podcast-1.0.dtd}"
+MAX_EPISODES = 200
+
+DATA_DIR = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "podial")
+LEGACY_DIR = os.path.join(os.path.dirname(DATA_DIR), "podcasts-linux")  # nom du prototype
+LIB_FILES = {"podcast": os.path.join(DATA_DIR, "library.json"), "radio": os.path.join(DATA_DIR, "radios.json"),
+             "youtube": os.path.join(DATA_DIR, "youtube.json")}
+YT_CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "podial", "youtube")
+SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
+DL_DIR = os.path.join(DATA_DIR, "downloads")
+DL_INDEX = os.path.join(DATA_DIR, "downloads.json")
+COVER_DIR = os.path.join(DATA_DIR, "covers")   # pochettes conservées pour l'écoute hors ligne
+AUTO_SEEN = os.path.join(DATA_DIR, "auto_seen.json")
+
+# Repli si le paquet « iso-codes » est absent : pays principaux, nom écrit dans la langue du pays.
+_FALLBACK_COUNTRIES = [
+    ("FR", "France"), ("BE", "Belgique / België"), ("CH", "Suisse / Schweiz"), ("LU", "Luxembourg"),
+    ("CA", "Canada"), ("US", "United States"), ("GB", "United Kingdom"), ("IE", "Ireland"),
+    ("AU", "Australia"), ("NZ", "New Zealand"), ("ZA", "South Africa"), ("IN", "India"),
+    ("DE", "Deutschland"), ("AT", "Österreich"), ("NL", "Nederland"), ("IT", "Italia"),
+    ("ES", "España"), ("PT", "Portugal"), ("BR", "Brasil"), ("MX", "México"), ("AR", "Argentina"),
+    ("CL", "Chile"), ("CO", "Colombia"), ("PE", "Perú"), ("SE", "Sverige"), ("NO", "Norge"),
+    ("DK", "Danmark"), ("FI", "Suomi"), ("PL", "Polska"), ("CZ", "Česko"), ("RO", "România"),
+    ("GR", "Ελλάδα"), ("TR", "Türkiye"), ("MA", "Maroc"), ("DZ", "Algérie"), ("TN", "Tunisie"),
+    ("SN", "Sénégal"), ("CI", "Côte d'Ivoire"), ("JP", "日本"), ("KR", "한국"),
+]
+_ISO_JSON = "/usr/share/iso-codes/json/iso_3166-1.json"
+
+
+def _load_countries():
+    """Tous les pays (norme ISO 3166-1), avec leur nom dans la langue du système si « iso-codes » le fournit."""
+    try:
+        with open(_ISO_JSON, encoding="utf-8") as f:
+            entries = json.load(f)["3166-1"]
+        try:
+            tr = gettext.translation("iso_3166-1", "/usr/share/locale")
+        except OSError:
+            tr = gettext.NullTranslations()
+        found = [(e["alpha_2"], tr.gettext(e.get("common_name") or e["name"])) for e in entries]
+    except (OSError, ValueError, KeyError):
+        found = list(_FALLBACK_COUNTRIES)
+    for category in (locale.LC_COLLATE, locale.LC_TIME):  # tri des pays et format des dates selon la langue
+        try:
+            locale.setlocale(category, "")
+        except locale.Error:
+            pass
+    return sorted(found, key=lambda c: locale.strxfrm(c[1].lower()))
+
+
+COUNTRIES = _load_countries()
+COUNTRY_NAMES = dict(COUNTRIES)
+COUNTRY_CODES = set(COUNTRY_NAMES)
+
+
+def flag(code):
+    return "".join(chr(0x1F1E6 + ord(ch) - 65) for ch in code.upper())
+
+
+def country_label(code):
+    return f"{flag(code)}  {COUNTRY_NAMES.get(code, code)}"
+
+
+def detect_country():
+    """Pays déduit de la langue du système (fr_FR → FR, pt_BR → BR, en → US)."""
+    candidates = [locale.getlocale()[0], os.environ.get("LC_ALL"), os.environ.get("LANG")]
+    for cand in candidates:
+        if cand and "_" in cand:
+            code = cand.split("_", 1)[1][:2].upper()
+            if code in COUNTRY_CODES:
+                return code
+    return "US"
+
+
+# ---------- réglages et bibliothèque ----------
+def _migrate_legacy():
+    """Reprend la bibliothèque du prototype « podcasts-linux » s'il y en a une."""
+    if not os.path.isdir(LEGACY_DIR):
+        return
+    os.makedirs(DATA_DIR, exist_ok=True)
+    for path in LIB_FILES.values():
+        old = os.path.join(LEGACY_DIR, os.path.basename(path))
+        if os.path.exists(old) and not os.path.exists(path):
+            shutil.copy2(old, path)
+
+
+def _load_settings():
+    try:
+        with open(SETTINGS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        data = {}
+    if data.get("country") not in COUNTRY_CODES:
+        data["country"] = detect_country()
+    return data
+
+
+_migrate_legacy()
+settings = _load_settings()
+
+
+def get_country():
+    return settings["country"]
+
+
+def set_country(code):
+    if code in COUNTRY_CODES:
+        settings["country"] = code
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(settings, f, ensure_ascii=False, indent=1)
+
+
+def load_list(kind):
+    try:
+        with open(LIB_FILES[kind], encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return []
+
+
+def save_list(kind, items):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(LIB_FILES[kind], "w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False, indent=1)
+
+
+def get_setting(key, default=None):
+    return settings.get(key, default)
+
+
+def set_setting(key, value):
+    settings[key] = value
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings, f, ensure_ascii=False, indent=1)
+
+
+def item_key(item):
+    if item["kind"] == "radio":
+        return item["stream"]
+    return item["video"] if item["kind"] == "video" else item["feed"]
+
+
+# ---------- réseau ----------
+def http_get(url, timeout=20):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def podcast_item(r):
+    return {
+        "kind": "podcast", "id": r.get("collectionId"), "name": r.get("collectionName", ""),
+        "artist": r.get("artistName", ""), "feed": r["feedUrl"],
+        "art": r.get("artworkUrl600") or r.get("artworkUrl100", ""),
+    }
+
+
+def search_podcasts(term):
+    q = urllib.parse.urlencode({"term": term, "media": "podcast", "limit": 36, "country": get_country()})
+    data = json.loads(http_get("https://itunes.apple.com/search?" + q))
+    return [podcast_item(r) for r in data.get("results", []) if r.get("feedUrl")]
+
+
+# Genres du classement Apple Podcasts (identifiants vérifiés ; les noms sont traduits à l'affichage)
+APPLE_GENRES = [(1301, "Arts"), (1321, "Business"), (1303, "Comedy"), (1304, "Education"), (1483, "Fiction"),
+                (1511, "Government"), (1487, "History"), (1512, "Health & Fitness"), (1305, "Kids & Family"),
+                (1502, "Leisure"), (1310, "Music"), (1489, "News"), (1314, "Religion & Spirituality"),
+                (1533, "Science"), (1324, "Society & Culture"), (1545, "Sports"), (1318, "Technology"),
+                (1488, "True Crime"), (1309, "TV & Film")]
+
+
+def top_podcasts(limit=40, genre=None):
+    """Classement des podcasts du pays choisi, général ou par genre (puis États-Unis si le pays n'a pas de classement)."""
+    country = get_country()
+    ids = None
+    for cc in (country, "US"):
+        try:
+            if genre is None:
+                top = json.loads(http_get(f"https://rss.marketingtools.apple.com/api/v2/{cc.lower()}/podcasts/top/{limit}/podcasts.json"))
+                ids = [r["id"] for r in top["feed"]["results"]]
+            else:
+                top = json.loads(http_get(f"https://itunes.apple.com/{cc.lower()}/rss/toppodcasts/limit={limit}/genre={int(genre)}/json"))
+                entries = top["feed"].get("entry", [])
+                entries = entries if isinstance(entries, list) else [entries]
+                ids = [e["id"]["attributes"]["im:id"] for e in entries]
+            break
+        except (OSError, ValueError, KeyError):
+            continue
+    if ids is None:
+        raise OSError("Podcast charts unavailable")
+    data = json.loads(http_get(f"https://itunes.apple.com/lookup?entity=podcast&country={country}&id=" + ",".join(ids)))
+    by_id = {str(r.get("collectionId")): r for r in data.get("results", []) if r.get("feedUrl")}
+    return [podcast_item(by_id[i]) for i in ids if i in by_id]
+
+
+# annuaire de radios : on découvre les serveurs disponibles au lieu d'en figer un seul
+_FALLBACK_SERVERS = ["de1.api.radio-browser.info", "de2.api.radio-browser.info", "fi1.api.radio-browser.info",
+                     "at1.api.radio-browser.info"]
+_servers = None
+_servers_lock = threading.Lock()
+
+
+def radio_servers():
+    global _servers
+    with _servers_lock:
+        if _servers is None:
+            try:
+                data = json.loads(http_get("https://all.api.radio-browser.info/json/servers", timeout=8))
+                _servers = sorted({d["name"] for d in data if d.get("name")}) or list(_FALLBACK_SERVERS)
+            except (OSError, ValueError):
+                _servers = list(_FALLBACK_SERVERS)
+        return list(_servers)
+
+
+_QUALITY_WORDS = re.compile(r"\b(hd|hq|hifi|hi-fi|aac\+?|mp3|ogg|opus|flac|\d{2,3}\s?k(bps|bit)?|live|stream|direct|web ?radio)\b")
+
+
+def station_key(name):
+    """Clé de comparaison de deux noms de radio : « FIP (HD) », « Fip  » et « FIP 128k » donnent la même clé."""
+    s = re.sub(r"[\(\[].*?[\)\]]", " ", name.casefold())
+    s = "".join(ch for ch in unicodedata.normalize("NFKD", s) if not unicodedata.combining(ch))
+    s = _QUALITY_WORDS.sub(" ", s)
+    return re.sub(r"[^a-z0-9]+", "", s) or name.casefold()
+
+
+def radio_item(s):
+    codec = s.get("codec") or ""
+    bitrate = s.get("bitrate") or 0
+    quality = f"{codec} {bitrate} kbit/s" if bitrate else codec
+    place = s.get("state") or s.get("country") or ""
+    return {
+        "kind": "radio", "id": s.get("stationuuid"), "name": s.get("name", "").strip(),
+        "artist": " · ".join(x for x in (place, quality) if x),
+        "stream": s.get("url_resolved") or s.get("url"), "tags": s.get("tags", ""),
+        "art": s.get("favicon", ""),
+    }
+
+
+def radio_get(path):
+    """GET sur l'annuaire de radios, en essayant jusqu'à trois serveurs (un serveur en panne n'empêche pas d'écouter)."""
+    servers, last_error = radio_servers(), None
+    random.shuffle(servers)
+    for attempt in range(4):  # quatre essais, en changeant de serveur quand il y en a plusieurs
+        host = servers[attempt % len(servers)]
+        try:
+            return json.loads(http_get(f"https://{host}/json/{path}", timeout=15))
+        except (OSError, ValueError) as exc:
+            last_error = exc
+            time.sleep(0.5 * (attempt + 1))
+    raise OSError(last_error or "No radio server available")
+
+
+def radio_query(**params):
+    base = {"hidebroken": "true", "order": "clickcount", "reverse": "true", "limit": 48}
+    base.update(params)
+    data = radio_get("stations/search?" + urllib.parse.urlencode(base))
+    seen, out = set(), []
+    for s in data:  # l'annuaire contient beaucoup de doublons
+        key = station_key(s.get("name", ""))
+        if key in seen or not (s.get("url_resolved") or s.get("url")):
+            continue
+        seen.add(key)
+        out.append(radio_item(s))
+    return out
+
+
+def search_radios(term):
+    return radio_query(name=term, countrycode=get_country())
+
+
+def top_radios():
+    return radio_query(countrycode=get_country())
+
+
+# ---------- flux RSS ----------
+def parse_duration(text):
+    if not text:
+        return ""
+    text = text.strip()
+    try:
+        if ":" in text:
+            secs = 0
+            for p in (int(p) for p in text.split(":")):
+                secs = secs * 60 + p
+        else:
+            secs = int(float(text))
+    except ValueError:
+        return text
+    if secs < 60:
+        return ""
+    h, rem = divmod(secs, 3600)
+    m, _s = divmod(rem, 60)
+    return _("{h} h {m:02d}").format(h=h, m=m) if h else _("{m} min").format(m=m)
+
+
+def clean_text(raw):
+    return html.unescape(re.sub(r"<[^>]+>", " ", raw or "")).replace("\xa0", " ").strip()
+
+
+def fetch_feed(feed_url, untitled="Untitled"):
+    root = ET.fromstring(http_get(feed_url, timeout=30))
+    channel = root.find("channel")
+    desc = re.sub(r"\s+", " ", clean_text(channel.findtext("description")))
+    eps = []
+    for item in channel.findall("item")[:MAX_EPISODES]:
+        enc = item.find("enclosure")
+        if enc is None or not enc.get("url"):
+            continue
+        date = ""
+        pub = item.findtext("pubDate")
+        if pub:
+            try:
+                date = parsedate_to_datetime(pub).strftime("%x")  # format de date de la langue du système
+            except (TypeError, ValueError):
+                date = pub[:16]
+        eps.append({
+            "title": (item.findtext("title") or untitled).strip(),
+            "url": enc.get("url"), "date": date,
+            "duration": parse_duration(item.findtext(ITUNES_NS + "duration")),
+        })
+    return {"description": desc, "episodes": eps}
+
+
+# ---------- YouTube (optionnel : nécessite yt-dlp, installé par l'utilisateur) ----------
+def ytdlp_path():
+    return shutil.which("yt-dlp") or next(
+        (p for p in (os.path.expanduser("~/.local/bin/yt-dlp"), "/usr/local/bin/yt-dlp") if os.access(p, os.X_OK)), None)
+
+
+def youtube_enabled():
+    return bool(get_setting("youtube", False)) and ytdlp_path() is not None
+
+
+def _fmt_secs(secs):
+    secs = int(secs or 0)
+    h, rem = divmod(secs, 3600)
+    return (_("{h} h {m:02d}").format(h=h, m=rem // 60) if h else _("{m} min").format(m=rem // 60)) if secs >= 60 else ""
+
+
+def youtube_channel_item(channel_id, name, art=""):
+    return {"kind": "youtube", "id": channel_id, "name": name, "artist": "YouTube", "art": art,
+            "feed": f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"}
+
+
+def youtube_search(term):
+    """Recherche de vidéos (liste « à plat » : rapide, sans téléchargement)."""
+    out = subprocess.run([ytdlp_path(), "--flat-playlist", "-J", "--no-warnings", "--no-update",
+                          f"ytsearch24:{term}"], capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        raise OSError((out.stderr.strip().splitlines() or ["yt-dlp failed"])[-1])
+    items = []
+    for e in json.loads(out.stdout).get("entries", []):
+        if not e.get("id"):
+            continue
+        channel = e.get("channel") or e.get("uploader") or ""
+        items.append({
+            "kind": "video", "id": e["id"], "name": e.get("title", ""), "channel": channel,
+            "channel_id": e.get("channel_id") or "", "video": f"https://www.youtube.com/watch?v={e['id']}",
+            "artist": " · ".join(x for x in (channel, _fmt_secs(e.get("duration"))) if x),
+            "art": f"https://i.ytimg.com/vi/{e['id']}/mqdefault.jpg",
+        })
+    return items
+
+
+def fetch_youtube_feed(feed_url):
+    """Dernières vidéos d'une chaîne, depuis son flux Atom public (15 vidéos)."""
+    ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015",
+          "m": "http://search.yahoo.com/mrss/"}
+    root = ET.fromstring(http_get(feed_url, timeout=20))
+    eps = []
+    for e in root.findall("a:entry", ns):
+        vid = e.findtext("yt:videoId", namespaces=ns)
+        if not vid:
+            continue
+        date = e.findtext("a:published", namespaces=ns) or ""
+        try:
+            date = parsedate_to_datetime(date).strftime("%x") if "," in date else \
+                __import__("datetime").datetime.fromisoformat(date).strftime("%x")
+        except (TypeError, ValueError):
+            date = date[:10]
+        thumb = e.find("m:group/m:thumbnail", ns)
+        eps.append({"title": (e.findtext("a:title", namespaces=ns) or "").strip(), "id": vid, "yt": True,
+                    "url": f"https://www.youtube.com/watch?v={vid}", "date": date, "duration": "",
+                    "art": thumb.get("url").replace("hqdefault", "mqdefault") if thumb is not None else ""})
+    return {"description": "", "episodes": eps}
+
+
+class Cancelled(Exception):
+    pass
+
+
+def youtube_audio_file(video_id, folder=None, cancel=None):
+    """Télécharge l'audio d'une vidéo (dans le cache par défaut : YouTube refuse la lecture directe en flux) et renvoie le fichier."""
+    if not re.fullmatch(r"[\w-]{6,20}", video_id):
+        raise ValueError("invalid video id")
+    keep = folder is None  # le cache est purgé ; le dossier des téléchargements ne l'est jamais
+    folder = folder or YT_CACHE
+    os.makedirs(folder, exist_ok=True)
+    for name in os.listdir(folder):
+        if name.startswith(video_id + ".") and not name.endswith((".part", ".ytdl")):
+            os.utime(os.path.join(folder, name))
+            return os.path.join(folder, name)
+    proc = subprocess.Popen([ytdlp_path(), "-f", "bestaudio[ext=m4a]/bestaudio", "--no-playlist", "--no-warnings",
+                             "--no-update", "--no-progress", "-o", os.path.join(folder, "%(id)s.%(ext)s"),
+                             "--print", "after_move:filepath", f"https://www.youtube.com/watch?v={video_id}"],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    waited = 0
+    while True:
+        try:
+            stdout, stderr = proc.communicate(timeout=0.5)
+            break
+        except subprocess.TimeoutExpired:
+            waited += 0.5
+            if (cancel and cancel.is_set()) or waited > 600:
+                proc.kill()
+                proc.communicate()
+                for n in os.listdir(folder):
+                    if n.startswith(video_id + ".") and n.endswith((".part", ".ytdl")):
+                        os.remove(os.path.join(folder, n))
+                if cancel and cancel.is_set():
+                    raise Cancelled()
+                raise OSError("yt-dlp timeout")
+    out = subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
+    path = out.stdout.strip().splitlines()[-1] if out.stdout.strip() else ""
+    if out.returncode != 0 or not os.path.exists(path):
+        raise OSError((out.stderr.strip().splitlines() or ["yt-dlp failed"])[-1])
+    if keep:
+        files = sorted((os.path.join(YT_CACHE, n) for n in os.listdir(YT_CACHE)), key=os.path.getmtime, reverse=True)
+        for old in files[15:]:  # on garde les 15 derniers fichiers
+            try:
+                os.remove(old)
+            except OSError:
+                pass
+    return path
+
+
+# ---------- pochettes conservées (visibles hors ligne) ----------
+def _cover_file(url):
+    return os.path.join(COVER_DIR, f"{zlib.crc32(url.encode()):08x}.img")
+
+
+def save_cover(url):
+    if not url or os.path.exists(_cover_file(url)):
+        return
+    data = http_get(url, timeout=15)
+    os.makedirs(COVER_DIR, exist_ok=True)
+    with open(_cover_file(url), "wb") as f:
+        f.write(data)
+
+
+def art_bytes(url):
+    """Pochette : copie locale si elle a été conservée, sinon téléchargement."""
+    try:
+        with open(_cover_file(url), "rb") as f:
+            return f.read()
+    except OSError:
+        return http_get(url, timeout=10)
+
+
+# ---------- téléchargements (écoute hors ligne) ----------
+def load_downloads():
+    """{clé de l'épisode (son adresse) : {file, title, item, date, duration, size}} ; oublie les fichiers disparus."""
+    try:
+        with open(DL_INDEX, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return {k: v for k, v in data.items() if isinstance(v, dict) and os.path.exists(v.get("file", ""))}
+
+
+def _save_downloads(data):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    tmp = DL_INDEX + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, DL_INDEX)
+
+
+def download_episode(item, ep, progress=None, cancel=None):
+    """Télécharge un épisode (podcast : fichier audio ; YouTube : audio via yt-dlp) et l'enregistre. progress(0..1)."""
+    os.makedirs(DL_DIR, exist_ok=True)
+    key = ep["url"]
+    if ep.get("yt"):
+        path = youtube_audio_file(ep["id"], DL_DIR, cancel)
+    else:
+        ext = os.path.splitext(urllib.parse.urlparse(key).path)[1].lower()
+        if not re.fullmatch(r"\.[a-z0-9]{2,4}", ext):
+            ext = ".mp3"
+        name = f"{zlib.crc32(key.encode()):08x}-{re.sub(r'[^A-Za-z0-9]+', '-', ep['title'])[:40].strip('-')}{ext}"
+        path, part = os.path.join(DL_DIR, name), os.path.join(DL_DIR, name + ".part")
+        req = urllib.request.Request(key, headers={"User-Agent": UA})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r, open(part, "wb") as out:
+                total = int(r.headers.get("Content-Length") or 0)
+                done = 0
+                while chunk := r.read(256 * 1024):
+                    if cancel and cancel.is_set():
+                        raise Cancelled()
+                    out.write(chunk)
+                    done += len(chunk)
+                    if progress and total:
+                        progress(min(done / total, 1.0))
+            os.replace(part, path)
+        finally:
+            if os.path.exists(part):
+                os.remove(part)
+    for art in (item.get("art"), ep.get("art")):
+        try:
+            save_cover(art)
+        except OSError:
+            pass
+    data = load_downloads()
+    data[key] = {"file": path, "title": ep["title"], "date": ep.get("date", ""), "duration": ep.get("duration", ""),
+                 "yt": bool(ep.get("yt")), "id": ep.get("id"), "item": item, "size": os.path.getsize(path)}
+    _save_downloads(data)
+    return path
+
+
+def delete_download(key):
+    data = load_downloads()
+    entry = data.pop(key, None)
+    if entry:
+        try:
+            os.remove(entry["file"])
+        except OSError:
+            pass
+        _save_downloads(data)
+
+
+# ---------- radios : navigation par pays, région et ville ----------
+RADIO_ORDERS = {"clickcount": True, "votes": True, "name": False, "lastchangetime": True}  # tri -> ordre décroissant ?
+_radio_country_names = None
+_geocode_cache = {}
+
+
+def radio_country_name(code):
+    """Nom du pays tel que l'annuaire de radios le connaît (en anglais)."""
+    global _radio_country_names
+    if _radio_country_names is None:
+        _radio_country_names = {c["iso_3166_1"]: c["name"] for c in radio_get("countries") if c.get("iso_3166_1")}
+    return _radio_country_names.get(code, "")
+
+
+def radio_states(code):
+    """Régions / états d'un pays, nettoyés (doublons fusionnés), avec le nombre de radios : [(nom, nombre)]."""
+    name = radio_country_name(code)
+    if not name:
+        return []
+    raw = radio_get(f"states/{urllib.parse.quote(name)}/?hidebroken=true&order=stationcount&reverse=true")
+    merged = {}
+    for r in raw:
+        label = re.sub(r"\s*\(\s*[^)]*\)\s*$", "", r.get("name", ""))   # « Ain (France) » -> « Ain »
+        label = re.sub(r"^\s*\d+\s*[-–]\s*", "", label).strip(" —-")       # « 74 - Haute-Savoie » -> « Haute-Savoie »
+        if len(label) < 2 or len(label) > 40 or label.lower() in ("aucun", "none", "unknown", "n/a"):
+            continue
+        key = "".join(ch for ch in unicodedata.normalize("NFKD", label.casefold()) if not unicodedata.combining(ch))
+        shown, count = merged.get(key, (label, 0))
+        merged[key] = (shown, count + int(r.get("stationcount") or 0))
+    return sorted(merged.values(), key=lambda x: (-x[1], x[0].casefold()))[:300]
+
+
+def geocode_city(city, code):
+    """Coordonnées d'une ville (OpenStreetMap Nominatim, usage léger : une requête par recherche)."""
+    key = (city.casefold(), code)
+    if key not in _geocode_cache:
+        q = urllib.parse.urlencode({"q": city, "format": "json", "limit": 1, "countrycodes": code.lower()})
+        try:
+            hits = json.loads(http_get("https://nominatim.openstreetmap.org/search?" + q, timeout=10))
+        except (OSError, ValueError):
+            hits = []
+        _geocode_cache[key] = (float(hits[0]["lat"]), float(hits[0]["lon"])) if hits else None
+    return _geocode_cache[key]
+
+
+def radio_browse(code=None, state=None, city=None, name=None, order="clickcount", limit=96):
+    """Radios filtrées par pays, région, ville et nom. Une ville regroupe : région contenant la ville, nom de la
+    radio contenant la ville, et radios situées à moins de 30 km (position fournie par l'annuaire)."""
+    code = code or get_country()
+    common = {"order": order, "reverse": "true" if RADIO_ORDERS.get(order, True) else "false", "limit": limit}
+    if city:
+        queries = [dict(common, countrycode=code, state=city), dict(common, countrycode=code, name=city)]
+        pos = geocode_city(city, code)
+        if pos:
+            queries.append(dict(common, geo_lat=pos[0], geo_long=pos[1], geo_distance=30000))
+        merged, seen, failures = [], set(), 0
+        for q in queries:
+            try:
+                found = radio_query(**q)
+            except OSError:  # une des trois requêtes peut échouer sans condamner les autres
+                failures += 1
+                continue
+            for item in found:
+                key = station_key(item["name"])
+                if item["id"] not in seen and key not in seen:
+                    seen.update((item["id"], key))
+                    merged.append(item)
+        if failures == len(queries):
+            raise OSError("No radio server available")
+        if name:
+            merged = [i for i in merged if name.casefold() in i["name"].casefold()]
+        return merged[:limit]
+    params = dict(common, countrycode=code)
+    if state:
+        params["state"] = state
+    if name:
+        params["name"] = name
+    return radio_query(**params)
+
+
+def auto_download(items, per_feed=3, progress=None, cancel=None):
+    """Télécharge les derniers épisodes (non encore traités) des podcasts suivis. Renvoie le nombre d'épisodes récupérés."""
+    try:
+        with open(AUTO_SEEN, encoding="utf-8") as f:
+            seen = set(json.load(f))
+    except (OSError, ValueError):
+        seen = set()
+    count = 0
+    for item in items:
+        if cancel and cancel.is_set():
+            break
+        try:
+            save_cover(item.get("art"))
+            eps = fetch_feed(item["feed"])["episodes"][:per_feed]
+        except Exception:
+            continue
+        for ep in eps:
+            if ep["url"] in seen or ep["url"] in load_downloads():
+                continue
+            try:
+                download_episode(item, ep, None, cancel)
+                count += 1
+            except Cancelled:
+                return count
+            except Exception:
+                continue
+            seen.add(ep["url"])
+            os.makedirs(DATA_DIR, exist_ok=True)
+            with open(AUTO_SEEN, "w", encoding="utf-8") as f:
+                json.dump(sorted(seen), f)
+    return count

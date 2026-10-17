@@ -1,0 +1,410 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Podial\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ar\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+
+msgid "Radios"
+msgstr "الإذاعات"
+
+msgid "Library"
+msgstr "المكتبة"
+
+msgid "Listen"
+msgstr "استماع"
+
+msgid "Search podcasts…"
+msgstr "ابحث عن بودكاست…"
+
+msgid "Search radio stations…"
+msgstr "ابحث عن محطات إذاعية…"
+
+msgid "Popular in {country}"
+msgstr "الأكثر شعبية في {country}"
+
+msgid "My subscriptions"
+msgstr "اشتراكاتي"
+
+msgid "My favorites"
+msgstr "مفضلاتي"
+
+msgid "Followed podcasts"
+msgstr "البودكاست المتابَع"
+
+msgid "Favorite radio stations"
+msgstr "المحطات الإذاعية المفضلة"
+
+msgid "No results"
+msgstr "لا توجد نتائج"
+
+msgid "Nothing found for “{term}”."
+msgstr "لم يتم العثور على شيء لـ “{term}”."
+
+msgid "Results for “{term}”"
+msgstr "نتائج “{term}”"
+
+msgid "Your library is empty"
+msgstr "مكتبتك فارغة"
+
+msgid "Open a podcast or station and press “Subscribe” or “Add to favorites”."
+msgstr "افتح بودكاست أو محطة ثم اضغط «اشتراك» أو «إضافة إلى المفضلة»."
+
+msgid "Connection failed"
+msgstr "فشل الاتصال"
+
+msgid "Check your internet connection. ({error})"
+msgstr "تحقق من اتصالك بالإنترنت. ({error})"
+
+msgid "LIVE"
+msgstr "مباشر"
+
+msgid "● LIVE"
+msgstr "● مباشر"
+
+msgid "Listen live"
+msgstr "استماع مباشر"
+
+msgid "Play the latest episode"
+msgstr "تشغيل آخر حلقة"
+
+msgid "Subscribe"
+msgstr "اشتراك"
+
+msgid "Subscribed"
+msgstr "مشترك"
+
+msgid "Add to favorites"
+msgstr "إضافة إلى المفضلة"
+
+msgid "Remove from favorites"
+msgstr "إزالة من المفضلة"
+
+msgid "Unreadable feed"
+msgstr "تعذّرت قراءة الخلاصة"
+
+msgid "Couldn't load the episodes. ({error})"
+msgstr "تعذّر تحميل الحلقات. ({error})"
+
+msgid "No episodes"
+msgstr "لا توجد حلقات"
+
+msgid "Untitled"
+msgstr "بدون عنوان"
+
+msgid "Rewind 15 s"
+msgstr "رجوع 15 ثانية"
+
+msgid "Forward 30 s"
+msgstr "تقدّم 30 ثانية"
+
+msgid "Playback speed"
+msgstr "سرعة التشغيل"
+
+msgid "Equalizer"
+msgstr "المعادِل"
+
+msgid "Flat"
+msgstr "مسطّح"
+
+msgid "Voice (clear speech)"
+msgstr "صوت (كلام واضح)"
+
+msgid "Bass boost"
+msgstr "تعزيز الجهير"
+
+msgid "Treble boost"
+msgstr "تعزيز الحاد"
+
+msgid "Smooth volume"
+msgstr "مستوى صوت متوازن"
+
+msgid "Reduces the gap between loud and quiet parts"
+msgstr "يقلّل الفارق بين المقاطع العالية والهادئة"
+
+msgid "Sound"
+msgstr "الصوت"
+
+msgid "Equalizer and volume"
+msgstr "المعادِل ومستوى الصوت"
+
+msgid "Live · {text}"
+msgstr "مباشر · {text}"
+
+msgid "Playback error: {message}"
+msgstr "خطأ في التشغيل: {message}"
+
+msgid "Live radio"
+msgstr "إذاعة مباشرة"
+
+msgid "Nothing playing"
+msgstr "لا شيء قيد التشغيل"
+
+msgid "Play"
+msgstr "تشغيل"
+
+msgid "Pause"
+msgstr "إيقاف مؤقت"
+
+msgid "Open window"
+msgstr "فتح النافذة"
+
+msgid "Quit"
+msgstr "إنهاء"
+
+msgid "Settings"
+msgstr "الإعدادات"
+
+msgid "Country"
+msgstr "البلد"
+
+msgid "Charts and radio stations are shown for this country"
+msgstr "تُعرض القوائم الأكثر استماعًا والمحطات الإذاعية لهذا البلد"
+
+msgid "Open the app"
+msgstr "فتح التطبيق"
+
+msgid "Podcasts and live radio"
+msgstr "بودكاست وإذاعة مباشرة"
+
+msgid "Home"
+msgstr "الرئيسية"
+
+msgid "Content"
+msgstr "المحتوى"
+
+msgid "Search a country…"
+msgstr "ابحث عن بلد…"
+
+msgid "Search YouTube…"
+msgstr "ابحث في YouTube…"
+
+msgid "Search YouTube for shows and podcasts"
+msgstr "ابحث في YouTube عن برامج وبودكاست"
+
+msgid "Type a show or a topic in the search bar above."
+msgstr "اكتب اسم برنامج أو موضوعًا في شريط البحث أعلاه."
+
+msgid "Followed YouTube channels"
+msgstr "قنوات YouTube المتابَعة"
+
+msgid "Channel"
+msgstr "القناة"
+
+msgid "Preparing audio…"
+msgstr "جارٍ تجهيز الصوت…"
+
+msgid "Couldn't get the audio. ({error})"
+msgstr "تعذّر الحصول على الصوت. ({error})"
+
+msgid "Plays the audio of YouTube videos with yt-dlp, which you install yourself. This may go against YouTube's terms of service; use it at your own risk."
+msgstr "يشغّل صوت مقاطع YouTube باستخدام yt-dlp الذي تثبّته بنفسك. قد يخالف ذلك شروط خدمة YouTube؛ استخدمه على مسؤوليتك."
+
+msgid "yt-dlp not found. Install it to use YouTube."
+msgstr "لم يتم العثور على yt-dlp. ثبّته لاستخدام YouTube."
+
+msgid "Top 10"
+msgstr "أفضل 10"
+
+msgid "Top 10 · {name}"
+msgstr "أفضل 10 · {name}"
+
+msgid "More popular podcasts"
+msgstr "المزيد من البودكاست الشائع"
+
+msgid "More in {genre}"
+msgstr "المزيد في {genre}"
+
+msgid "More stations"
+msgstr "المزيد من المحطات"
+
+msgid "All"
+msgstr "الكل"
+
+msgid "Arts"
+msgstr "فنون"
+
+msgid "Business"
+msgstr "أعمال"
+
+msgid "Comedy"
+msgstr "كوميديا"
+
+msgid "Education"
+msgstr "تعليم"
+
+msgid "Fiction"
+msgstr "خيال"
+
+msgid "Government"
+msgstr "حكومة"
+
+msgid "History"
+msgstr "تاريخ"
+
+msgid "Health & Fitness"
+msgstr "الصحة واللياقة"
+
+msgid "Kids & Family"
+msgstr "الأطفال والعائلة"
+
+msgid "Leisure"
+msgstr "ترفيه"
+
+msgid "Music"
+msgstr "موسيقى"
+
+msgid "News"
+msgstr "أخبار"
+
+msgid "Religion & Spirituality"
+msgstr "دين وروحانيات"
+
+msgid "Science"
+msgstr "علوم"
+
+msgid "Society & Culture"
+msgstr "مجتمع وثقافة"
+
+msgid "Sports"
+msgstr "رياضة"
+
+msgid "Technology"
+msgstr "تقنية"
+
+msgid "True Crime"
+msgstr "جرائم حقيقية"
+
+msgid "TV & Film"
+msgstr "تلفزيون وأفلام"
+
+msgid "City…"
+msgstr "المدينة…"
+
+msgid "Includes stations within 30 km, located with OpenStreetMap"
+msgstr "يشمل المحطات ضمن 30 كم، وتُحدَّد مواقعها عبر OpenStreetMap"
+
+msgid "Reset filters"
+msgstr "إعادة ضبط المرشّحات"
+
+msgid "Most popular"
+msgstr "الأكثر شعبية"
+
+msgid "Top rated"
+msgstr "الأعلى تقييمًا"
+
+msgid "A–Z"
+msgstr "أ–ي"
+
+msgid "Recently updated"
+msgstr "المحدَّثة مؤخرًا"
+
+msgid "Podcasts"
+msgstr "البودكاست"
+
+msgid "Downloads"
+msgstr "التنزيلات"
+
+msgid "No downloaded episodes"
+msgstr "لا توجد حلقات منزّلة"
+
+msgid "Open a podcast and press the download button next to an episode to listen offline."
+msgstr "افتح بودكاست واضغط على زر التنزيل بجانب حلقة للاستماع بدون إنترنت."
+
+msgid "Remove download"
+msgstr "حذف التنزيل"
+
+msgid "Downloading…"
+msgstr "جارٍ التنزيل…"
+
+msgid "Download for offline listening"
+msgstr "تنزيل للاستماع بدون إنترنت"
+
+msgid "Downloaded"
+msgstr "تم التنزيل"
+
+msgid "Download failed. ({error})"
+msgstr "فشل التنزيل. ({error})"
+
+msgid "Offline: showing the downloaded episodes."
+msgstr "بدون اتصال: تُعرض الحلقات المنزّلة."
+
+msgid "{size} MB"
+msgstr "{size} ميغابايت"
+
+msgid "Automatic downloads"
+msgstr "التنزيل التلقائي"
+
+msgid "Downloads the 3 latest episodes of the podcasts you follow, when Podial starts and every hour."
+msgstr "ينزّل آخر 3 حلقات من البودكاست الذي تتابعه، عند تشغيل Podial ثم كل ساعة."
+
+msgid "Cancel download"
+msgstr "إلغاء التنزيل"
+
+msgid "{n} episode"
+msgid_plural "{n} episodes"
+msgstr[0] "لا حلقات"
+msgstr[1] "حلقة واحدة"
+msgstr[2] "حلقتان"
+msgstr[3] "{n} حلقات"
+msgstr[4] "{n} حلقة"
+msgstr[5] "{n} حلقة"
+
+msgid "Latest {n} episode"
+msgid_plural "Latest {n} episodes"
+msgstr[0] "لا حلقات"
+msgstr[1] "آخر حلقة"
+msgstr[2] "آخر حلقتين"
+msgstr[3] "آخر {n} حلقات"
+msgstr[4] "آخر {n} حلقة"
+msgstr[5] "آخر {n} حلقة"
+
+msgid "{n} episode · {size} MB"
+msgid_plural "{n} episodes · {size} MB"
+msgstr[0] "لا حلقات"
+msgstr[1] "حلقة واحدة · {size} ميغابايت"
+msgstr[2] "حلقتان · {size} ميغابايت"
+msgstr[3] "{n} حلقات · {size} ميغابايت"
+msgstr[4] "{n} حلقة · {size} ميغابايت"
+msgstr[5] "{n} حلقة · {size} ميغابايت"
+
+msgid "{h} h {m:02d}"
+msgstr "{h} س {m:02d}"
+
+msgid "{m} min"
+msgstr "{m} د"
+
+msgid "Sleep timer"
+msgstr "مؤقّت النوم"
+
+msgid "15 minutes"
+msgstr "15 دقيقة"
+
+msgid "30 minutes"
+msgstr "30 دقيقة"
+
+msgid "45 minutes"
+msgstr "45 دقيقة"
+
+msgid "1 hour"
+msgstr "ساعة واحدة"
+
+msgid "2 hours"
+msgstr "ساعتان"
+
+msgid "End of episode"
+msgstr "نهاية الحلقة"
+
+msgid "min"
+msgstr "د"
+
+msgid "Start"
+msgstr "ابدأ"
+
+msgid "Cancel timer"
+msgstr "إلغاء المؤقّت"
+
+msgid "End"
+msgstr "النهاية"

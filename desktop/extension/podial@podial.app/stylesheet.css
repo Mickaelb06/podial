@@ -1,0 +1,74 @@
+/* ===== Pastille dans la barre du haut ===== */
+.pb-pill {
+    spacing: 7px;
+    padding: 0 12px;
+    height: 24px;
+    margin: 4px 2px;
+    border-radius: 99px;
+    background-gradient-direction: horizontal;
+    background-gradient-start: #8b5cf6;
+    background-gradient-end: #ec4899;
+    color: white;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.45);
+}
+.pb-pill-idle {
+    background-gradient-start: rgba(139, 92, 246, 0.7);
+    background-gradient-end: rgba(236, 72, 153, 0.7);
+    box-shadow: none;
+}
+.pb-icon { icon-size: 15px; color: white; }
+.pb-label { color: white; font-weight: 800; font-size: 0.92em; }
+.pb-eq { spacing: 2px; height: 16px; }
+.pb-eq-bar { width: 3px; border-radius: 2px; background-color: white; }
+
+/* ===== Menu déroulant ===== */
+.pb-popup { -arrow-background-color: #1c1b24; -arrow-border-color: rgba(255, 255, 255, 0.10);
+    -arrow-border-width: 1px; -arrow-base: 0px; -arrow-rise: 0px; color: white; }
+.pb-popup-box { background-color: #1c1b24; color: white; }
+.pb-content { background-color: #1c1b24; border-radius: 18px; width: 310px; padding: 14px 16px 12px 16px; spacing: 8px; }
+.pb-glow {
+    border-radius: 140px;
+    background-color: rgba(236, 72, 153, 0.06);
+    box-shadow: 0 0 46px 10px rgba(139, 92, 246, 0.6);
+}
+.pb-disc { border-radius: 140px; border: 8px solid #15151a; background-color: #15151a; }
+.pb-disc-empty {
+    border-radius: 140px; border: 8px solid #15151a;
+    background-gradient-direction: vertical;
+    background-gradient-start: #8b5cf6;
+    background-gradient-end: #ec4899;
+}
+.pb-hole { width: 34px; height: 34px; border-radius: 99px; background-color: #15151a;
+    border: 3px solid rgba(255, 255, 255, 0.18); }
+.pb-title { font-weight: 800; font-size: 1.15em; text-align: center; color: white; }
+.pb-sub { font-size: 0.95em; text-align: center; color: rgba(255, 255, 255, 0.62); }
+.pb-live {
+    background-color: #e5484d; color: white; font-weight: 800; font-size: 0.78em;
+    border-radius: 99px; padding: 2px 11px;
+}
+.pb-spectrum { spacing: 3px; height: 36px; }
+.pb-spec-bar {
+    width: 6px; border-radius: 3px;
+    background-gradient-direction: vertical;
+    background-gradient-start: #f472b6;
+    background-gradient-end: #8b5cf6;
+}
+.pb-time { font-size: 0.82em; color: rgba(255, 255, 255, 0.62); font-feature-settings: "tnum"; }
+.pb-menu-slider { -barlevel-height: 6px; -barlevel-background-color: rgba(255, 255, 255, 0.18);
+    -barlevel-active-background-color: #ec4899; -slider-handle-radius: 8px; color: white; height: 22px; }
+.pb-btn { width: 42px; height: 42px; border-radius: 99px; color: white;
+    background-color: rgba(255, 255, 255, 0.08); }
+.pb-btn:hover { background-color: rgba(255, 255, 255, 0.22); }
+.pb-btn:active { background-color: rgba(255, 255, 255, 0.34); }
+.pb-play {
+    width: 62px; height: 62px; border-radius: 99px; color: white;
+    background-gradient-direction: horizontal;
+    background-gradient-start: #8b5cf6;
+    background-gradient-end: #ec4899;
+    box-shadow: 0 0 18px rgba(236, 72, 153, 0.55);
+}
+.pb-play:hover { background-gradient-start: #a78bfa; background-gradient-end: #f472b6; }
+.pb-play:active { background-gradient-start: #7c3aed; background-gradient-end: #db2777; }
+.pb-open { padding: 6px 16px; border-radius: 99px; color: white; font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.1); }
+.pb-open:hover { background-color: rgba(255, 255, 255, 0.22); }

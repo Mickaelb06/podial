@@ -1,0 +1,402 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Podial\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+
+msgid "Radios"
+msgstr "Radios"
+
+msgid "Library"
+msgstr "Bibliothek"
+
+msgid "Listen"
+msgstr "Hören"
+
+msgid "Search podcasts…"
+msgstr "Podcasts suchen …"
+
+msgid "Search radio stations…"
+msgstr "Radiosender suchen …"
+
+msgid "Popular in {country}"
+msgstr "Beliebt in {country}"
+
+msgid "My subscriptions"
+msgstr "Meine Abos"
+
+msgid "My favorites"
+msgstr "Meine Favoriten"
+
+msgid "Followed podcasts"
+msgstr "Abonnierte Podcasts"
+
+msgid "Favorite radio stations"
+msgstr "Lieblingssender"
+
+msgid "No results"
+msgstr "Keine Ergebnisse"
+
+msgid "Nothing found for “{term}”."
+msgstr "Nichts gefunden für „{term}“."
+
+msgid "Results for “{term}”"
+msgstr "Ergebnisse für „{term}“"
+
+msgid "Your library is empty"
+msgstr "Deine Bibliothek ist leer"
+
+msgid "Open a podcast or station and press “Subscribe” or “Add to favorites”."
+msgstr "Öffne einen Podcast oder Sender und tippe auf „Abonnieren“ oder „Zu Favoriten hinzufügen“."
+
+msgid "Connection failed"
+msgstr "Verbindung fehlgeschlagen"
+
+msgid "Check your internet connection. ({error})"
+msgstr "Überprüfe deine Internetverbindung. ({error})"
+
+msgid "LIVE"
+msgstr "LIVE"
+
+msgid "● LIVE"
+msgstr "● LIVE"
+
+msgid "Listen live"
+msgstr "Live hören"
+
+msgid "Play the latest episode"
+msgstr "Neueste Folge abspielen"
+
+msgid "Subscribe"
+msgstr "Abonnieren"
+
+msgid "Subscribed"
+msgstr "Abonniert"
+
+msgid "Add to favorites"
+msgstr "Zu Favoriten hinzufügen"
+
+msgid "Remove from favorites"
+msgstr "Aus Favoriten entfernen"
+
+msgid "Unreadable feed"
+msgstr "Feed nicht lesbar"
+
+msgid "Couldn't load the episodes. ({error})"
+msgstr "Die Folgen konnten nicht geladen werden. ({error})"
+
+msgid "No episodes"
+msgstr "Keine Folgen"
+
+msgid "{n} episode"
+msgid_plural "{n} episodes"
+msgstr[0] "{n} Folge"
+msgstr[1] "{n} Folgen"
+
+msgid "Latest {n} episode"
+msgid_plural "Latest {n} episodes"
+msgstr[0] "Die letzten {n} Folgen"
+msgstr[1] "Die letzten {n} Folgen"
+
+msgid "Untitled"
+msgstr "Ohne Titel"
+
+msgid "Rewind 15 s"
+msgstr "15 s zurück"
+
+msgid "Forward 30 s"
+msgstr "30 s vor"
+
+msgid "Playback speed"
+msgstr "Wiedergabegeschwindigkeit"
+
+msgid "Equalizer"
+msgstr "Equalizer"
+
+msgid "Flat"
+msgstr "Neutral"
+
+msgid "Voice (clear speech)"
+msgstr "Stimme (klare Sprache)"
+
+msgid "Bass boost"
+msgstr "Bässe +"
+
+msgid "Treble boost"
+msgstr "Höhen +"
+
+msgid "Smooth volume"
+msgstr "Lautstärke angleichen"
+
+msgid "Reduces the gap between loud and quiet parts"
+msgstr "Verringert den Unterschied zwischen lauten und leisen Stellen"
+
+msgid "Sound"
+msgstr "Klang"
+
+msgid "Equalizer and volume"
+msgstr "Equalizer und Lautstärke"
+
+msgid "Live · {text}"
+msgstr "Live · {text}"
+
+msgid "Playback error: {message}"
+msgstr "Wiedergabefehler: {message}"
+
+msgid "Live radio"
+msgstr "Live-Radio"
+
+msgid "Nothing playing"
+msgstr "Keine Wiedergabe"
+
+msgid "Play"
+msgstr "Wiedergabe"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Open window"
+msgstr "Fenster öffnen"
+
+msgid "Quit"
+msgstr "Beenden"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Country"
+msgstr "Land"
+
+msgid "Charts and radio stations are shown for this country"
+msgstr "Charts und Radiosender werden für dieses Land angezeigt"
+
+msgid "Open the app"
+msgstr "App öffnen"
+
+msgid "Podcasts and live radio"
+msgstr "Podcasts und Live-Radio"
+
+msgid "Home"
+msgstr "Start"
+
+msgid "Content"
+msgstr "Inhalt"
+
+msgid "Search a country…"
+msgstr "Land suchen …"
+
+msgid "Search YouTube…"
+msgstr "YouTube durchsuchen …"
+
+msgid "Search YouTube for shows and podcasts"
+msgstr "Suche auf YouTube nach Sendungen und Podcasts"
+
+msgid "Type a show or a topic in the search bar above."
+msgstr "Gib oben in der Suchleiste eine Sendung oder ein Thema ein."
+
+msgid "Followed YouTube channels"
+msgstr "Abonnierte YouTube-Kanäle"
+
+msgid "Channel"
+msgstr "Kanal"
+
+msgid "Preparing audio…"
+msgstr "Audio wird vorbereitet …"
+
+msgid "Couldn't get the audio. ({error})"
+msgstr "Das Audio konnte nicht geladen werden. ({error})"
+
+msgid "Plays the audio of YouTube videos with yt-dlp, which you install yourself. This may go against YouTube's terms of service; use it at your own risk."
+msgstr "Spielt das Audio von YouTube-Videos mit yt-dlp ab, das du selbst installierst. Das kann gegen die Nutzungsbedingungen von YouTube verstoßen; Nutzung auf eigene Gefahr."
+
+msgid "yt-dlp not found. Install it to use YouTube."
+msgstr "yt-dlp nicht gefunden. Installiere es, um YouTube zu nutzen."
+
+msgid "More popular podcasts"
+msgstr "Weitere beliebte Podcasts"
+
+msgid "More in {genre}"
+msgstr "Mehr in {genre}"
+
+msgid "More stations"
+msgstr "Weitere Sender"
+
+msgid "All"
+msgstr "Alle"
+
+msgid "Arts"
+msgstr "Kunst"
+
+msgid "Business"
+msgstr "Wirtschaft"
+
+msgid "Comedy"
+msgstr "Comedy"
+
+msgid "Education"
+msgstr "Bildung"
+
+msgid "Fiction"
+msgstr "Fiktion"
+
+msgid "Government"
+msgstr "Regierung"
+
+msgid "History"
+msgstr "Geschichte"
+
+msgid "Health & Fitness"
+msgstr "Gesundheit & Fitness"
+
+msgid "Kids & Family"
+msgstr "Kinder & Familie"
+
+msgid "Leisure"
+msgstr "Freizeit"
+
+msgid "Music"
+msgstr "Musik"
+
+msgid "News"
+msgstr "Nachrichten"
+
+msgid "Religion & Spirituality"
+msgstr "Religion & Spiritualität"
+
+msgid "Science"
+msgstr "Wissenschaft"
+
+msgid "Society & Culture"
+msgstr "Gesellschaft & Kultur"
+
+msgid "Sports"
+msgstr "Sport"
+
+msgid "Technology"
+msgstr "Technologie"
+
+msgid "True Crime"
+msgstr "True Crime"
+
+msgid "TV & Film"
+msgstr "TV & Film"
+
+msgid "Region"
+msgstr "Region"
+
+msgid "All regions"
+msgstr "Alle Regionen"
+
+msgid "Search a region…"
+msgstr "Region suchen …"
+
+msgid "City…"
+msgstr "Stadt …"
+
+msgid "Includes stations within 30 km, located with OpenStreetMap"
+msgstr "Enthält Sender im Umkreis von 30 km (Standort über OpenStreetMap)"
+
+msgid "Reset filters"
+msgstr "Filter zurücksetzen"
+
+msgid "Loading regions…"
+msgstr "Regionen werden geladen …"
+
+msgid "No regions listed for this country"
+msgstr "Für dieses Land sind keine Regionen verzeichnet"
+
+msgid "Most popular"
+msgstr "Am beliebtesten"
+
+msgid "Top rated"
+msgstr "Am besten bewertet"
+
+msgid "Recently updated"
+msgstr "Kürzlich aktualisiert"
+
+msgid "Downloads"
+msgstr "Downloads"
+
+msgid "No downloaded episodes"
+msgstr "Keine heruntergeladenen Folgen"
+
+msgid "Open a podcast and press the download button next to an episode to listen offline."
+msgstr "Öffne einen Podcast und tippe neben einer Folge auf die Download-Schaltfläche, um sie offline zu hören."
+
+msgid "{n} episode · {size} MB"
+msgid_plural "{n} episodes · {size} MB"
+msgstr[0] "{n} Folge · {size} MB"
+msgstr[1] "{n} Folgen · {size} MB"
+
+msgid "Remove download"
+msgstr "Download entfernen"
+
+msgid "Downloading…"
+msgstr "Wird heruntergeladen…"
+
+msgid "Download for offline listening"
+msgstr "Für Offline-Wiedergabe herunterladen"
+
+msgid "Downloaded"
+msgstr "Heruntergeladen"
+
+msgid "Download failed. ({error})"
+msgstr "Download fehlgeschlagen. ({error})"
+
+msgid "Offline: showing the downloaded episodes."
+msgstr "Offline: Heruntergeladene Folgen werden angezeigt."
+
+msgid "{size} MB"
+msgstr "{size} MB"
+
+msgid "Automatic downloads"
+msgstr "Automatische Downloads"
+
+msgid "Downloads the 3 latest episodes of the podcasts you follow, when Podial starts and every hour."
+msgstr "Lädt die 3 neuesten Folgen der abonnierten Podcasts beim Start von Podial und danach stündlich herunter."
+
+msgid "Cancel download"
+msgstr "Download abbrechen"
+
+msgid "{h} h {m:02d}"
+msgstr "{h} Std. {m:02d}"
+
+msgid "{m} min"
+msgstr "{m} Min."
+
+msgid "Sleep timer"
+msgstr "Einschlaftimer"
+
+msgid "15 minutes"
+msgstr "15 Minuten"
+
+msgid "30 minutes"
+msgstr "30 Minuten"
+
+msgid "45 minutes"
+msgstr "45 Minuten"
+
+msgid "1 hour"
+msgstr "1 Stunde"
+
+msgid "2 hours"
+msgstr "2 Stunden"
+
+msgid "End of episode"
+msgstr "Ende der Folge"
+
+msgid "min"
+msgstr "Min."
+
+msgid "Start"
+msgstr "Starten"
+
+msgid "Cancel timer"
+msgstr "Timer abbrechen"
+
+msgid "End"
+msgstr "Ende"
