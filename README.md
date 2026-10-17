@@ -4,6 +4,8 @@
 
 Podcasts and live radio in one app. Free, no account, no tracking.
 
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/mickaelb06)
+
 <p align="center">
   <img src="docs/screenshots/top-bar-player.png" width="780" alt="Podial with the animated player in the GNOME top bar">
 </p>
