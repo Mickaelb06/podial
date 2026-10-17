@@ -13,3 +13,7 @@ android/local.properties
 *.jks
 *.keystore
 keystore.properties
+compose-desktop/build/
+compose-desktop/.gradle/
+compose-desktop/.kotlin/
+android/.kotlin/

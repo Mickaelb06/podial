@@ -3,6 +3,7 @@
 Podcasts and live radio in one app. Free, no account, no tracking.
 
 - **Desktop (Linux / GNOME):** a GTK4 + libadwaita app, plus a GNOME Shell extension that puts an animated player in the top bar (spinning vinyl, spectrum, progress and volume).
+- **Windows / macOS / Linux (Compose Desktop):** a cross-platform app sharing its network and data code with Android. Audio uses JavaFX Media, so nothing else to install.
 - **Android:** a companion app with Android Auto support, built without any Google dependency (F-Droid friendly).
 
 ## Features
@@ -28,6 +29,17 @@ python3 podial.py
 
 Log out and back in once so GNOME Shell loads the extension.
 
+## Cross-platform desktop (Windows, macOS, Linux)
+
+```sh
+cd compose-desktop
+./gradlew run                              # run from source (JDK 17)
+./gradlew packageDistributionForCurrentOS  # installer for the OS you are on (.msi, .dmg, .deb)
+```
+
+Installers for each system are built by the GitHub Actions workflow `Desktop builds`. The Windows and macOS builds have not been tested yet; only Linux has.
+Known limits: no media keys / system "now playing" integration yet, and a few radio streams (e.g. raw AAC or Ogg) may not play with JavaFX Media.
+
 ## Android
 
 ```sh
@@ -41,7 +53,7 @@ Release signing uses a keystore outside the repository: `~/.podial-signing/keyst
 
 ## Status
 
-Early version (0.1). The Android app has not yet been tested on a real device or in a car.
+Early version. The Android app has not yet been tested on a real device or in a car, and the Windows/macOS desktop builds have not been tested on those systems.
 
 ## License
 

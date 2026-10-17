@@ -1,11 +1,12 @@
 package app.podial
 
-import android.util.Xml
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import org.xmlpull.v1.XmlPullParser
+import org.xml.sax.Attributes
+import org.xml.sax.helpers.DefaultHandler
+import javax.xml.parsers.SAXParserFactory
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -73,30 +74,42 @@ object Api {
         c.inputStream.use { parseFeed(it) }
     }
 
+    private class StopParsing : RuntimeException()
+
     private fun parseFeed(input: java.io.InputStream): Pair<String, List<Episode>> {
-        val p = Xml.newPullParser()
-        p.setInput(input, null)
         var desc = ""
         val eps = mutableListOf<Episode>()
         var inItem = false
         var title = ""; var url = ""; var date = ""; var dur = ""; var art = ""
-        while (p.next() != XmlPullParser.END_DOCUMENT) {
-            if (p.eventType == XmlPullParser.START_TAG) {
-                when (p.name) {
+        val text = StringBuilder()
+        val handler = object : DefaultHandler() {
+            override fun startElement(uri: String?, local: String?, q: String, a: Attributes) {
+                text.setLength(0)
+                when (q) {
                     "item" -> { inItem = true; title = ""; url = ""; date = ""; dur = ""; art = "" }
-                    "title" -> if (inItem) title = p.nextText().trim()
-                    "description" -> if (!inItem && desc.isEmpty()) desc = p.nextText().replace(Regex("<[^>]+>"), " ").trim()
-                    "pubDate" -> if (inItem) date = p.nextText().trim().take(16)
-                    "enclosure" -> if (inItem) url = p.getAttributeValue(null, "url") ?: ""
-                    "duration" -> if (inItem) dur = formatDuration(p.nextText().trim())
-                    "image" -> if (inItem && p.prefix == "itunes") art = p.getAttributeValue(null, "href") ?: ""
+                    "enclosure" -> if (inItem) url = a.getValue("url") ?: ""
+                    "itunes:image" -> if (inItem) art = a.getValue("href") ?: ""
                 }
-            } else if (p.eventType == XmlPullParser.END_TAG && p.name == "item") {
-                inItem = false
-                if (url.isNotEmpty()) eps += Episode(title.ifEmpty { "—" }, url, date, dur, art)
-                if (eps.size >= 200) break
+            }
+            override fun characters(ch: CharArray, start: Int, length: Int) { text.append(ch, start, length) }
+            override fun endElement(uri: String?, local: String?, q: String) {
+                val t = text.toString().trim()
+                when (q) {
+                    "title" -> if (inItem) title = t
+                    "description" -> if (!inItem && desc.isEmpty()) desc = t.replace(Regex("<[^>]+>"), " ").trim()
+                    "pubDate" -> if (inItem) date = t.take(16)
+                    "itunes:duration" -> if (inItem) dur = formatDuration(t)
+                    "item" -> {
+                        inItem = false
+                        if (url.isNotEmpty()) eps += Episode(title.ifEmpty { "—" }, url, date, dur, art)
+                        if (eps.size >= 200) throw StopParsing()
+                    }
+                }
             }
         }
+        val factory = SAXParserFactory.newInstance()
+        runCatching { factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) }
+        try { factory.newSAXParser().parse(input, handler) } catch (e: StopParsing) { /* assez d'épisodes */ }
         return desc to eps
     }
 

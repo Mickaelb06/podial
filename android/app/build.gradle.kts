@@ -41,6 +41,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    // Code commun avec l'application de bureau (Compose Desktop)
+    sourceSets["main"].java.srcDir("../../shared/src")
     buildFeatures { compose = true }
     // F-Droid : pas de bloc de métadonnées chiffré propre à Google
     dependenciesInfo {
