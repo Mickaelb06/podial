@@ -40,15 +40,15 @@ Podcast data comes from the public iTunes Search API and Apple RSS charts. RTL's
 
 ## Download
 
-Installers are attached to each [release](https://github.com/Mickaelb06/podial/releases/latest).
+Installers are attached to each [release](https://github.com/Mickaelb06/podial/releases).
 
 | Platform | Files |
 |---|---|
-| Linux (Debian, Ubuntu, Mint) | `podial_*_all.deb`: GTK app with the GNOME top-bar extension |
-| Linux (other distributions) | `podial-linux-*.tar.gz` (run `./install.sh`), or the cross-platform `.deb` / `.rpm` |
-| Windows | `.exe` installer (or `.msi`) |
-| macOS | `.dmg` |
-| Android | `podial-android.apk` |
+| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.0_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.0/podial_0.5.0_all.deb): GTK app with the GNOME top-bar extension |
+| Linux (other distributions) | [`podial-linux-0.5.0.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.0/podial-linux-0.5.0.tar.gz) (run `./install.sh`), or the cross-platform `.deb` / `.rpm` |
+| Windows | [`Podial-0.5.0.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.0/Podial-0.5.0.exe) (or `.msi`) |
+| macOS | [`Podial-1.0.0.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.0/Podial-1.0.0.dmg) |
+| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.0/podial-android.apk) |
 
 Building from source is explained below. Releases are marked "pre-release" until the Windows, macOS and Android builds have had more testing.
 
@@ -79,7 +79,7 @@ Known limits: no media keys / system "now playing" integration yet, and a few ra
 
 ## Android
 
-Download `podial-android.apk` from the [latest release](https://github.com/Mickaelb06/podial/releases/latest) (allow installs from your browser or file manager when Android asks). Requires Android 8.0 or newer.
+Download [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.0/podial-android.apk) from the [latest release](https://github.com/Mickaelb06/podial/releases) (allow installs from your browser or file manager when Android asks). Requires Android 8.0 or newer.
 
 ```sh
 cd android
