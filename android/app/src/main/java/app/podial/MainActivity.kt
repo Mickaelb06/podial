@@ -219,27 +219,36 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
     var genre by remember { mutableStateOf<Int?>(null) }
     var items by remember(kind) { mutableStateOf<List<Item>?>(null) }
     var failed by remember(kind) { mutableStateOf(false) }
-    LaunchedEffect(kind, query, genre) {
+    var country by remember { mutableStateOf(Store.radioCountry) }
+    var map by remember { mutableStateOf(false) }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val countries = remember { runCatching { World.parse(ctx.assets.open("world.json").bufferedReader().use { it.readText() }) }.getOrDefault(emptyList()) }
+    LaunchedEffect(kind, query, genre, country) {
         if (query.isNotBlank()) delay(500)   // on attend la fin de la frappe
         items = null; failed = false
         items = try {
             if (kind == "podcast") { if (query.isBlank()) Api.topPodcasts(genre) else Api.searchPodcasts(query) }
-            else Api.radios(Api.country(), query.ifBlank { null })
+            else Api.radios(country, query.ifBlank { null })
         } catch (e: Exception) { failed = true; emptyList() }
     }
     val header: @Composable () -> Unit = {
         Column {
-            OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
-                placeholder = { Text(stringResource(if (kind == "podcast") R.string.search_podcasts else R.string.search_radios)) },
-                leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth().padding(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
+                    placeholder = { Text(stringResource(if (kind == "podcast") R.string.search_podcasts else R.string.search_radios)) },
+                    leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
+                if (kind == "radio" && countries.isNotEmpty()) FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, stringResource(R.string.world_map)) }
+            }
             if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                 item { FilterChip(genre == null, { genre = null }, { Text(stringResource(R.string.all)) }) }
                 items(Api.APPLE_GENRES.entries.toList()) { g -> FilterChip(genre == g.key, { genre = g.key }, { Text(g.value) }) }
             }
-            if (query.isBlank() && items?.isNotEmpty() == true) Text(stringResource(R.string.top10), style = MaterialTheme.typography.titleLarge,
+            if (query.isBlank() && items?.isNotEmpty() == true) Text(if (kind == "radio") World.flag(country) + " " + World.name(country) + " · " + stringResource(R.string.top10) else stringResource(R.string.top10), style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(8.dp))
         }
     }
+    if (map) WorldMapDialog(countries, country, stringResource(R.string.world_map), stringResource(R.string.show_radios), stringResource(R.string.close),
+        onConfirm = { country = it; Store.radioCountry = it; map = false }, onClose = { map = false })
     val list = items
     when {
         list == null -> Column { header(); Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }

@@ -28,7 +28,7 @@ Cross-platform desktop version (Windows, macOS, Linux):
 
 - Podcasts: top 10 by country and genre, search, subscriptions, offline downloads (manual or automatic, cancellable), cover art kept offline.
 - New episodes: a badge on the podcasts you follow, a notification (checked every hour), and a "played" mark on episodes you have finished.
-- Live radio from all countries ([radio-browser.info](https://www.radio-browser.info)), browse by country and city, duplicates removed, favorites.
+- Live radio from all countries ([radio-browser.info](https://www.radio-browser.info)), browse by country, city or on a world map (tap a country; small island states are only in the country list), duplicates removed, favorites.
 - Radio pages show the station logo, quality, the title currently playing (when the station sends it) and, for RTL, today's schedule with the current show highlighted (Android). There is no common source for radio schedules, so each station needs its own support.
 - Optional YouTube audio on desktop (requires `yt-dlp`, which you install yourself; this may go against YouTube's terms of service, use at your own risk).
 - Transcripts and quotes: when a podcast publishes its transcript (Podcasting 2.0, SRT/VTT/JSON), read it while listening, tap a line to jump there and highlight sentences. A "Quote" button also saves the moment you are listening to. "My quotes" lists them with notes, and you can play from there or share them. Works with right-to-left and Asian scripts. Shows without a published transcript have none yet.
@@ -46,11 +46,11 @@ Installers are attached to each [release](https://github.com/Mickaelb06/podial/r
 
 | Platform | Files |
 |---|---|
-| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.2_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/podial_0.5.2_all.deb): GTK app with the GNOME top-bar extension |
-| Linux (other distributions) | [`podial-linux-0.5.2.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/podial-linux-0.5.2.tar.gz) (run `./install.sh`), or the cross-platform `.deb` / `.rpm` |
-| Windows | [`Podial-0.5.2.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/Podial-0.5.2.exe) (or `.msi`) |
-| macOS | [`Podial-1.0.2.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/Podial-1.0.2.dmg) |
-| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/podial-android.apk) |
+| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.3_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/podial_0.5.3_all.deb): GTK app with the GNOME top-bar extension |
+| Linux (other distributions) | [`podial-linux-0.5.3.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/podial-linux-0.5.3.tar.gz) (run `./install.sh`), or the cross-platform `.deb` / `.rpm` |
+| Windows | [`Podial-0.5.3.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/Podial-0.5.3.exe) (or `.msi`) |
+| macOS | [`Podial-1.0.3.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/Podial-1.0.3.dmg) |
+| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/podial-android.apk) |
 
 Building from source is explained below. Releases are marked "pre-release" until the Windows, macOS and Android builds have had more testing.
 
@@ -81,7 +81,7 @@ Known limits: no media keys / system "now playing" integration yet, and a few ra
 
 ## Android
 
-Download [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/podial-android.apk) from the [latest release](https://github.com/Mickaelb06/podial/releases) (allow installs from your browser or file manager when Android asks). Requires Android 8.0 or newer.
+Download [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/podial-android.apk) from the [latest release](https://github.com/Mickaelb06/podial/releases) (allow installs from your browser or file manager when Android asks). Requires Android 8.0 or newer.
 
 ```sh
 cd android
@@ -103,7 +103,6 @@ Early version. The Android app has not yet been tested on a real device or in a 
 - Local transcription for episodes that publish no transcript, and search inside episodes (runs on your machine).
 - Listen to a podcast in another language, for example an English episode in French, through translated subtitles or voice.
 - Sync between devices without an account.
-- World map to discover radios by clicking a country.
 
 ## License
 

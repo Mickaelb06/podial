@@ -532,3 +532,9 @@ msgstr ""
 
 msgid "Save"
 msgstr ""
+
+msgid "World map"
+msgstr ""
+
+msgid "Show radios"
+msgstr ""

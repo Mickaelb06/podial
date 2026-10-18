@@ -38,6 +38,12 @@ object Store {
     val radios: StateFlow<List<Item>> = _radios
     val downloads: StateFlow<List<Download>> = _downloads
 
+    /** Pays dont on affiche les radios (choisi sur la carte) ; par défaut, le pays du système. */
+    @Volatile private var radioCountryValue: String? = null
+    var radioCountry: String
+        get() = radioCountryValue ?: Api.country()
+        set(v) { radioCountryValue = v; save() }
+
     // ----- citations -----
     private val _quotes = MutableStateFlow<List<Quote>>(emptyList())
     val quotes: StateFlow<List<Quote>> = _quotes
@@ -107,6 +113,7 @@ object Store {
             val o = org.json.JSONObject(libFile.readText())
             fun items(k: String) = o.optJSONArray(k)?.let { a -> (0 until a.length()).map { Item.fromJson(a.getJSONObject(it)) } } ?: emptyList()
             _podcasts.value = items("podcasts"); _radios.value = items("radios")
+            radioCountryValue = o.optString("radioCountry").ifEmpty { null }
             o.optJSONArray("quotes")?.let { a -> _quotes.value = (0 until a.length()).map { Quote.fromJson(a.getJSONObject(it)) } }
             o.optJSONArray("played")?.let { a -> _played.value = (0 until a.length()).map { a.getString(it) }.toSet() }
             o.optJSONObject("feeds")?.let { f ->
@@ -129,6 +136,7 @@ object Store {
             .put("radios", JSONArray(_radios.value.map { it.toJson() }))
             .put("downloads", JSONArray(_downloads.value.map { it.toJson() }))
             .put("quotes", JSONArray(_quotes.value.map { it.toJson() }))
+            .put("radioCountry", radioCountryValue ?: "")
             .put("played", JSONArray(_played.value.toList().takeLast(5000)))
             .put("feeds", org.json.JSONObject().also { f ->
                 for ((k, v) in known) f.put(k, org.json.JSONObject().put("known", JSONArray(v.toList())).put("new", fresh[k] ?: 0))

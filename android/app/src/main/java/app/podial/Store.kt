@@ -40,6 +40,11 @@ object Store {
     private val _newCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
     val newCounts: StateFlow<Map<String, Int>> = _newCounts
 
+    /** Pays dont on affiche les radios (choisi sur la carte) ; par défaut, le pays du téléphone. */
+    var radioCountry: String
+        get() = prefs.getString("radio_country", null) ?: Api.country()
+        set(v) { prefs.edit().putString("radio_country", v).apply() }
+
     // ----- citations -----
     private val _quotes = MutableStateFlow<List<Quote>>(emptyList())
     val quotes: StateFlow<List<Quote>> = _quotes

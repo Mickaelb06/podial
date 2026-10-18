@@ -93,7 +93,7 @@ class GenreBar(Gtk.ScrolledWindow):
 class RadioBar(Gtk.Box):
     """Filtres des radios : pays, ville, tri."""
 
-    def __init__(self, on_change, country_popover):
+    def __init__(self, on_change, country_popover, on_map=None):
         super().__init__(spacing=8, valign=Gtk.Align.START)
         self.on_change = on_change
         self.order = "clickcount"
@@ -103,6 +103,10 @@ class RadioBar(Gtk.Box):
 
         self.country_btn = Gtk.MenuButton(popover=country_popover, css_classes=["chip-btn"])
         self.append(self.country_btn)
+        if on_map:
+            map_btn = Gtk.Button(icon_name="find-location-symbolic", tooltip_text=_("World map"), css_classes=["flat", "circular"])
+            map_btn.connect("clicked", lambda *_a: on_map())
+            self.append(map_btn)
 
         # ville : région contenant la ville, nom de radio ou radios à moins de 30 km
         self.city = Gtk.SearchEntry(placeholder_text=_("City…"), width_chars=22, hexpand=True,

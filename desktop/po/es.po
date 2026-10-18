@@ -521,3 +521,9 @@ msgstr "Cancelar"
 
 msgid "Save"
 msgstr "Guardar"
+
+msgid "World map"
+msgstr "Mapa del mundo"
+
+msgid "Show radios"
+msgstr "Ver radios"

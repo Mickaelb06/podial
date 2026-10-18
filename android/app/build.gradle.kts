@@ -14,8 +14,8 @@ android {
         applicationId = "app.podial"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.5.2"
+        versionCode = 8
+        versionName = "0.5.3"
     }
     // Clé de signature hors du dépôt : ~/.podial-signing/keystore.properties (ou variable PODIAL_KEYSTORE_PROPS)
     val keyProps = Properties().apply {
@@ -43,6 +43,7 @@ android {
     kotlinOptions { jvmTarget = "17" }
     // Code commun avec l'application de bureau (Compose Desktop)
     sourceSets["main"].java.srcDir("../../shared/src")
+    sourceSets["main"].assets.srcDir("../../shared/data")
     buildFeatures { compose = true }
     // F-Droid : pas de bloc de métadonnées chiffré propre à Google
     dependenciesInfo {

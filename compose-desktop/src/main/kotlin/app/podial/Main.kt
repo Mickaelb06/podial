@@ -203,26 +203,34 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
     var genre by remember { mutableStateOf<Int?>(null) }
     var items by remember(kind) { mutableStateOf<List<Item>?>(null) }
     var failed by remember(kind) { mutableStateOf(false) }
-    LaunchedEffect(kind, query, genre) {
+    var country by remember { mutableStateOf(Store.radioCountry) }
+    var map by remember { mutableStateOf(false) }
+    val countries = remember { runCatching { World.parse(object {}.javaClass.getResourceAsStream("/world.json")!!.bufferedReader().use { it.readText() }) }.getOrDefault(emptyList()) }
+    LaunchedEffect(kind, query, genre, country) {
         if (query.isNotBlank()) delay(500)
         items = null; failed = false
         items = try {
             if (kind == "podcast") { if (query.isBlank()) Api.topPodcasts(genre) else Api.searchPodcasts(query) }
-            else Api.radios(Api.country(), query.ifBlank { null })
+            else Api.radios(country, query.ifBlank { null })
         } catch (e: Exception) { failed = true; emptyList() }
     }
+    if (map) WorldMapDialog(countries, country, T["world_map"], T["show_radios"], T["close"],
+        onConfirm = { country = it; Store.radioCountry = it; map = false }, onClose = { map = false })
     val list = items
     LazyVerticalGrid(GridCells.Adaptive(170.dp), contentPadding = PaddingValues(12.dp), modifier = Modifier.fillMaxSize()) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column {
-                OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
-                    placeholder = { Text(T[if (kind == "podcast") "search_podcasts" else "search_radios"]) },
-                    leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth().padding(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
+                        placeholder = { Text(T[if (kind == "podcast") "search_podcasts" else "search_radios"]) },
+                        leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
+                    if (kind == "radio" && countries.isNotEmpty()) FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, T["world_map"]) }
+                }
                 if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                     item { FilterChip(genre == null, { genre = null }, { Text(T["all"]) }) }
                     items(Api.APPLE_GENRES.entries.toList()) { g -> FilterChip(genre == g.key, { genre = g.key }, { Text(g.value) }) }
                 }
-                if (query.isBlank() && list?.isNotEmpty() == true) SectionTitle(T["top10"])
+                if (query.isBlank() && list?.isNotEmpty() == true) SectionTitle(if (kind == "radio") World.name(country) + " · " + T["top10"] else T["top10"])
             }
         }
         when {
@@ -411,7 +419,7 @@ fun PlayerBar(onTranscript: () -> Unit) {
     }
 }
 
-const val APP_VERSION = "0.5.2"
+const val APP_VERSION = "0.5.3"
 
 @Composable
 fun AboutDialog(onClose: () -> Unit) {

@@ -527,3 +527,9 @@ msgstr "ביטול"
 
 msgid "Save"
 msgstr "שמירה"
+
+msgid "World map"
+msgstr "מפת העולם"
+
+msgid "Show radios"
+msgstr "הצגת תחנות רדיו"

@@ -28,7 +28,7 @@ Version de bureau multiplateforme (Windows, macOS, Linux) :
 
 - Podcasts : Top 10 par pays et par genre, recherche, abonnements, téléchargements hors ligne (manuels ou automatiques, annulables), pochettes conservées hors ligne.
 - Nouveaux épisodes : un badge sur les podcasts suivis, une notification (vérification toutes les heures) et une coche « écouté » sur les épisodes terminés.
-- Radios en direct du monde entier ([radio-browser.info](https://www.radio-browser.info)), parcourues par pays et par ville, doublons supprimés, favoris.
+- Radios en direct du monde entier ([radio-browser.info](https://www.radio-browser.info)), parcourues par pays, par ville ou sur une carte du monde (touche un pays ; les petits États insulaires sont seulement dans la liste des pays), doublons supprimés, favoris.
 - Les pages de radio affichent le logo, la qualité, le titre en cours (quand la station l'envoie) et, pour RTL, le programme du jour avec l'émission en cours mise en avant (Android). Il n'existe pas de source commune pour les programmes des radios : chaque station demande son propre développement.
 - Audio YouTube en option sur le bureau (nécessite `yt-dlp`, que tu installes toi-même ; cela peut aller à l'encontre des conditions d'utilisation de YouTube, à tes risques).
 - Transcriptions et citations : quand un podcast publie sa transcription (Podcasting 2.0, SRT/VTT/JSON), tu la lis pendant l'écoute, tu touches une ligne pour y aller et tu surlignes des phrases. Un bouton « Citation » enregistre aussi le moment écouté. « Mes citations » les liste avec des notes, tu peux écouter à partir de là ou les partager. Fonctionne avec les écritures de droite à gauche et asiatiques. Les émissions sans transcription publiée n'en ont pas encore.
@@ -46,11 +46,11 @@ Les installateurs sont joints à chaque [release](https://github.com/Mickaelb06/
 
 | Plateforme | Fichiers |
 |---|---|
-| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.2_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/podial_0.5.2_all.deb) : application GTK avec l'extension GNOME |
-| Linux (autres distributions) | [`podial-linux-0.5.2.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/podial-linux-0.5.2.tar.gz) (lance `./install.sh`), ou les `.deb` / `.rpm` multiplateformes |
-| Windows | installateur [`Podial-0.5.2.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/Podial-0.5.2.exe) (ou `.msi`) |
-| macOS | [`Podial-1.0.2.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/Podial-1.0.2.dmg) |
-| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/podial-android.apk) |
+| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.3_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/podial_0.5.3_all.deb) : application GTK avec l'extension GNOME |
+| Linux (autres distributions) | [`podial-linux-0.5.3.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/podial-linux-0.5.3.tar.gz) (lance `./install.sh`), ou les `.deb` / `.rpm` multiplateformes |
+| Windows | installateur [`Podial-0.5.3.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/Podial-0.5.3.exe) (ou `.msi`) |
+| macOS | [`Podial-1.0.3.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/Podial-1.0.3.dmg) |
+| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/podial-android.apk) |
 
 La compilation depuis les sources est expliquée plus bas. Les releases sont marquées « pre-release » tant que les versions Windows, macOS et Android n'ont pas été davantage testées.
 
@@ -81,7 +81,7 @@ Limites connues : pas encore de touches multimédia ni d'intégration « en lect
 
 ## Android
 
-Télécharge [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.2/podial-android.apk) depuis la [dernière release](https://github.com/Mickaelb06/podial/releases) (autorise l'installation depuis ton navigateur ou ton gestionnaire de fichiers quand Android te le demande). Android 8.0 ou plus récent.
+Télécharge [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.3/podial-android.apk) depuis la [dernière release](https://github.com/Mickaelb06/podial/releases) (autorise l'installation depuis ton navigateur ou ton gestionnaire de fichiers quand Android te le demande). Android 8.0 ou plus récent.
 
 ```sh
 cd android
@@ -103,7 +103,6 @@ Version précoce. L'application Android n'a pas encore été testée sur un vrai
 - Transcription locale pour les épisodes sans transcription publiée, et recherche dans les épisodes (tout se passe sur ton ordinateur).
 - Écouter un podcast dans une autre langue, par exemple un épisode anglais en français, grâce à des sous-titres ou une voix traduits.
 - Synchronisation entre appareils sans compte.
-- Carte du monde pour découvrir les radios en cliquant sur un pays.
 
 ## Licence
 

@@ -78,4 +78,6 @@
     <string name="delete">Supprimer</string>
     <string name="update_title">Mise à jour de Podial</string>
     <string name="update_fmt">La version %1$s est disponible. Touche pour la télécharger.</string>
+    <string name="world_map">Radios du monde entier</string>
+    <string name="show_radios">Voir les radios</string>
 </resources>

@@ -85,7 +85,7 @@ class PlaybackService : MediaLibraryService() {
                     parentId == PODCASTS -> Store.podcasts.value.map { podcastFolder(it) }
                     parentId == RADIOS -> {
                         val favs = Store.radios.value
-                        val top = runCatching { Api.radios(Api.country(), limit = 30) }.getOrDefault(emptyList())
+                        val top = runCatching { Api.radios(Store.radioCountry, limit = 30) }.getOrDefault(emptyList())
                             .filter { t -> favs.none { it.key == t.key } }
                         (favs + top).map { radioItem(it) }
                     }

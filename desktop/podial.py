@@ -24,6 +24,7 @@ from catalog import (  # noqa: E402
     http_get, item_key, radio_browse, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
     add_quote, cue_index, fmt_clock, load_quotes, load_transcript, quote_id, remove_quote, set_quote_note, share_text,
     youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path)
+from worldmap import AVAILABLE as WORLD_MAP, WorldMap
 from filters import CountryChooser, GenreBar, RadioBar  # noqa: E402
 from i18n import _, ngettext  # noqa: E402
 
@@ -472,6 +473,42 @@ class Window(Adw.ApplicationWindow):
         if hasattr(self, "radio_bar"):
             self.radio_bar.refresh()
 
+    def show_world_map(self):
+        """Carte du monde : on clique un pays, son nom s'affiche, puis « Voir les radios »."""
+        from catalog import COUNTRY_NAMES, COUNTRY_CODES
+        dlg = Adw.Dialog(title=_("World map"), content_width=760, content_height=520)
+        view = Adw.ToolbarView()
+        view.add_top_bar(Adw.HeaderBar())
+        dlg.set_child(view)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, margin_start=12, margin_end=12, margin_bottom=12)
+        label = Gtk.Label(xalign=0, hexpand=True, css_classes=["title-4"])
+        go = Gtk.Button(label=_("Show radios"), css_classes=["suggested-action", "pill"])
+        state = {"code": get_country()}
+
+        def picked(code):
+            state["code"] = code
+            known = code in COUNTRY_CODES
+            label.set_text(country_label(code) if known else code)
+            go.set_sensitive(known)
+
+        world = WorldMap(picked, get_country())
+        picked(get_country())
+        go.connect("clicked", lambda *_a: (dlg.close(), self.on_country_changed(state["code"])))
+        zoom = Gtk.Box(spacing=4)
+        for icon, f in (("zoom-in-symbolic", 1.4), ("zoom-out-symbolic", 1 / 1.4)):
+            b = Gtk.Button(icon_name=icon, css_classes=["flat", "circular"])
+            b.connect("clicked", lambda _b, f=f: world.zoom_center(f))
+            zoom.append(b)
+        bar = Gtk.Box(spacing=8)
+        for w in (label, zoom, go):
+            bar.append(w)
+        frame = Gtk.Frame(child=world)
+        frame.set_overflow(Gtk.Overflow.HIDDEN)
+        box.append(frame)
+        box.append(bar)
+        view.set_content(box)
+        dlg.present(self)
+
     def on_country_changed(self, code):
         for popover in self.country_popovers:
             popover.popdown()
@@ -514,7 +551,7 @@ class Window(Adw.ApplicationWindow):
 
         # filtres : genres de podcasts, ou pays / région / ville / tri pour les radios
         self.genre_bar = GenreBar(self.show_home)
-        self.radio_bar = RadioBar(self.show_home, self.make_country_popover())
+        self.radio_bar = RadioBar(self.show_home, self.make_country_popover(), self.show_world_map if WORLD_MAP else None)
         self.filter_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, vhomogeneous=False,
                                       valign=Gtk.Align.START)
         self.filter_stack.add_named(Gtk.Box(), "none")
