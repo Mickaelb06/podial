@@ -129,13 +129,17 @@ footer a { text-decoration: none; margin: 0 8px; }
     <p class="sub" data-i18n="f_sub">Podcasts, radio and offline listening, with the small details that make a player pleasant.</p>
     <div class="grid">
       <div class="card"><div class="ic">🎙️</div><h3 data-i18n="f1t">Podcasts</h3><p data-i18n="f1d">Top 10 by country and genre, search, subscriptions, and a badge when a new episode arrives.</p></div>
-      <div class="card"><div class="ic">📻</div><h3 data-i18n="f2t">Live radio worldwide</h3><p data-i18n="f2d">Browse stations by country and city. Duplicates are removed, favorites are one click away.</p></div>
+      <div class="card"><div class="ic">📻</div><h3 data-i18n="f2t">Live radio worldwide</h3><p data-i18n="f2d">Browse stations by country, city or on a world map. Duplicates are removed, favorites are one click away.</p></div>
       <div class="card"><div class="ic">⬇️</div><h3 data-i18n="f3t">Offline listening</h3><p data-i18n="f3d">Download episodes by hand or automatically. Cover art is kept too. Cancel any time.</p></div>
       <div class="card"><div class="ic">😴</div><h3 data-i18n="f4t">Sleep timer</h3><p data-i18n="f4d">Stop after minutes, hours or at the end of the episode, with a gentle volume fade-out.</p></div>
       <div class="card"><div class="ic">🔒</div><h3 data-i18n="f5t">Private by design</h3><p data-i18n="f5d">No account, no tracking, no server of ours. Your library stays on your device.</p></div>
       <div class="card"><div class="ic">🌍</div><h3 data-i18n="f6t">Speaks your language</h3><p data-i18n="f6d">English, French, Spanish, German, Portuguese, Hebrew and Arabic, including right-to-left layout.</p></div>
       <div class="card"><div class="ic">✨</div><h3 data-i18n="f7t">A player in your top bar</h3><p data-i18n="f7d">On GNOME, an animated pill with a spinning vinyl, a live spectrum, progress and volume.</p></div>
       <div class="card"><div class="ic">🚗</div><h3 data-i18n="f8t">Android Auto</h3><p data-i18n="f8d">The Android app shows your podcasts, radios and downloads in the car, with no Google dependency.</p></div>
+      <div class="card"><div class="ic">🗺️</div><h3 data-i18n="f9t">A live world map</h3><p data-i18n="f9d">Tap a country to hear its radios. The map shows day and night in real time.</p></div>
+      <div class="card"><div class="ic">💬</div><h3 data-i18n="f10t">Transcripts and quotes</h3><p data-i18n="f10d">Read the published transcript while you listen, tap a line to jump there, highlight sentences and keep your quotes with notes. Works with right-to-left and Asian scripts.</p></div>
+      <div class="card"><div class="ic">📱</div><h3 data-i18n="f11t">Home-screen widgets</h3><p data-i18n="f11d">On Android, a compact widget with the cover and controls, or a vinyl that spins while it plays.</p></div>
+      <div class="card"><div class="ic">🔔</div><h3 data-i18n="f12t">Never miss an episode</h3><p data-i18n="f12d">A badge on the podcasts you follow, a notification when a new episode is out, and a mark on what you have finished.</p></div>
     </div>
   </div>
 </section>
@@ -148,6 +152,8 @@ footer a { text-decoration: none; margin: 0 8px; }
       <figure><img src="screenshots/radios.png" alt="Radios by country and city" loading="lazy"><figcaption data-i18n="s1">Radios by country and city</figcaption></figure>
       <figure><img src="screenshots/podcast-detail.png" alt="A podcast page" loading="lazy"><figcaption data-i18n="s2">A podcast page, with downloads</figcaption></figure>
       <figure><img src="screenshots/sleep-timer.png" alt="The sleep timer" loading="lazy"><figcaption data-i18n="s3">The sleep timer</figcaption></figure>
+      <figure><img src="screenshots/world-map.png" alt="World map with day and night" loading="lazy"><figcaption data-i18n="s5">The world map, with day and night in real time</figcaption></figure>
+      <figure><img src="screenshots/transcript.png" alt="A transcript" loading="lazy"><figcaption data-i18n="s6">A transcript, with quotes you can highlight</figcaption></figure>
       <figure><img src="screenshots/desktop-windows-mac.png" alt="Cross-platform desktop version" loading="lazy"><figcaption data-i18n="s4">The cross-platform desktop version</figcaption></figure>
     </div>
   </div>
@@ -209,15 +215,19 @@ const T = {
     cta_dl: "Télécharger Podial", cta_gh: "Voir sur GitHub", cta_coffee: "Offre-moi un café", cta_coffee2: "Offre-moi un café",
     f_title: "Tout ce que tu écoutes, au même endroit", f_sub: "Podcasts, radios et écoute hors ligne, avec les petits détails qui rendent un lecteur agréable.",
     f1t: "Podcasts", f1d: "Top 10 par pays et par genre, recherche, abonnements, et un badge quand un nouvel épisode arrive.",
-    f2t: "Radios du monde entier", f2d: "Parcours les radios par pays et par ville. Les doublons sont supprimés, les favoris sont à un clic.",
+    f2t: "Radios du monde entier", f2d: "Parcours les radios par pays, par ville ou sur une carte du monde. Les doublons sont supprimés, les favoris sont à un clic.",
     f3t: "Écoute hors ligne", f3d: "Télécharge des épisodes à la main ou automatiquement. Les pochettes sont gardées aussi. Annulation possible à tout moment.",
     f4t: "Minuteur de sommeil", f4d: "Arrêt après des minutes, des heures ou à la fin de l'épisode, avec une baisse douce du volume.",
     f5t: "Respectueux de ta vie privée", f5d: "Pas de compte, pas de pistage, aucun serveur de notre côté. Ta bibliothèque reste sur ton appareil.",
     f6t: "Parle ta langue", f6d: "Anglais, français, espagnol, allemand, portugais, hébreu et arabe, avec l'écriture de droite à gauche.",
     f7t: "Un lecteur dans ta barre du haut", f7d: "Sous GNOME, une pastille animée avec un vinyle qui tourne, un spectre en direct, la progression et le volume.",
+    f9t: "Une carte du monde en direct", f9d: "Touche un pays pour écouter ses radios. La carte montre le jour et la nuit en temps réel.",
+    f10t: "Transcriptions et citations", f10d: "Lis la transcription publiée pendant l'écoute, touche une ligne pour y aller, surligne des phrases et garde tes citations avec des notes. Fonctionne avec les écritures de droite à gauche et asiatiques.",
+    f11t: "Widgets d'écran d'accueil", f11d: "Sur Android, un widget compact avec la pochette et les boutons, ou un vinyle qui tourne pendant la lecture.",
+    f12t: "Ne rate aucun épisode", f12d: "Un badge sur les podcasts suivis, une notification à la sortie d'un nouvel épisode et une coche sur ceux que tu as terminés.",
     f8t: "Android Auto", f8d: "L'application Android affiche tes podcasts, radios et téléchargements dans la voiture, sans dépendance Google.",
     s_title: "Voir Podial en action", s_sub: "De vraies captures d'écran de Podial.",
-    s1: "Radios par pays et par ville", s2: "La page d'un podcast, avec les téléchargements", s3: "Le minuteur de sommeil", s4: "La version de bureau multiplateforme",
+    s1: "Radios par pays et par ville", s2: "La page d'un podcast, avec les téléchargements", s3: "Le minuteur de sommeil", s4: "La version de bureau multiplateforme", s5: "La carte du monde, avec le jour et la nuit en temps réel", s6: "Une transcription, avec des citations à surligner",
     d_title: "Obtenir Podial", d_sub: "Un projet, quatre plateformes. Linux est la plus aboutie ; les autres sont des pré-versions.",
     p_linux: "Application GTK avec l'extension GNOME pour la barre du haut.", p_win: "Application de bureau multiplateforme.", p_mac: "Application de bureau multiplateforme.",
     p_and: "Avec Android Auto. Compatible F-Droid.", t_tested: "Testé", t_early: "Pré-version", t_early2: "Pré-version", t_early3: "Pré-version",

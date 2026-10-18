@@ -16,6 +16,10 @@ Podcasts et radios en direct dans une seule application. Gratuit, sans compte, s
 |---|---|---|
 | <img src="docs/screenshots/radios.png" width="260"> | <img src="docs/screenshots/podcast-detail.png" width="260"> | <img src="docs/screenshots/sleep-timer.png" width="260"> |
 
+| Carte du monde, jour et nuit en temps réel | Transcription avec citations surlignées |
+|---|---|
+| <img src="docs/screenshots/world-map.png" width="400"> | <img src="docs/screenshots/transcript.png" width="300"> |
+
 Version de bureau multiplateforme (Windows, macOS, Linux) :
 
 <img src="docs/screenshots/desktop-windows-mac.png" width="520" alt="Podial pour Windows, macOS et Linux">
@@ -28,14 +32,14 @@ Version de bureau multiplateforme (Windows, macOS, Linux) :
 
 - Podcasts : Top 10 par pays et par genre, recherche, abonnements, téléchargements hors ligne (manuels ou automatiques, annulables), pochettes conservées hors ligne.
 - Nouveaux épisodes : un badge sur les podcasts suivis, une notification (vérification toutes les heures) et une coche « écouté » sur les épisodes terminés.
-- Radios en direct du monde entier ([radio-browser.info](https://www.radio-browser.info)), parcourues par pays, par ville ou sur une carte du monde (touche un pays ; les petits États insulaires sont seulement dans la liste des pays), doublons supprimés, favoris.
+- Radios en direct du monde entier ([radio-browser.info](https://www.radio-browser.info)), parcourues par pays, par ville ou sur une carte du monde (touche un pays ; la carte montre le jour et la nuit en temps réel ; les petits États insulaires sont seulement dans la liste des pays), doublons supprimés, favoris.
 - Les pages de radio affichent le logo, la qualité, le titre en cours (quand la station l'envoie) et, pour RTL, le programme du jour avec l'émission en cours mise en avant (Android). Il n'existe pas de source commune pour les programmes des radios : chaque station demande son propre développement.
 - Audio YouTube en option sur le bureau (nécessite `yt-dlp`, que tu installes toi-même ; cela peut aller à l'encontre des conditions d'utilisation de YouTube, à tes risques).
 - Transcriptions et citations : quand un podcast publie sa transcription (Podcasting 2.0, SRT/VTT/JSON), tu la lis pendant l'écoute, tu touches une ligne pour y aller et tu surlignes des phrases. Un bouton « Citation » enregistre aussi le moment écouté. « Mes citations » les liste avec des notes, tu peux écouter à partir de là ou les partager. Fonctionne avec les écritures de droite à gauche et asiatiques. Les émissions sans transcription publiée n'en ont pas encore.
 - Widgets Android pour l'écran d'accueil : un compact (pochette et boutons) et un vinyle qui tourne pendant la lecture.
 - Minuteur de sommeil : en minutes, en heures ou à la fin de l'épisode, avec une baisse douce du volume.
 - Égaliseur, volume lissé, vitesse de lecture, commandes MPRIS et touches multimédia sur le bureau Linux.
-- Clic droit sur le lecteur de la barre GNOME pour ouvrir ou quitter Podial. « Lancer à l'ouverture de session » sur le bureau. Une fenêtre « À propos » et une vérification des mises à jour (releases GitHub, désactivée par défaut sous Linux).
+- Clic droit sur le lecteur de la barre GNOME pour ouvrir ou quitter Podial. « Lancer à l'ouverture de session » sur le bureau. Une fenêtre « À propos » et une vérification des mises à jour (releases GitHub ; désactivée par défaut sous Linux ; Android te prévient une fois par nouvelle version).
 - Interface en anglais, français, espagnol, allemand, portugais, hébreu et arabe (écriture de droite à gauche gérée) sur le bureau Linux ; anglais et français sur Android.
 
 Les données des podcasts viennent de l'API publique iTunes Search et des classements RSS d'Apple. Le programme de RTL vient de la page publique de rtl.fr. Podial n'est affilié ni à Apple, ni à YouTube, ni à RTL. Rien n'est envoyé à un serveur qui nous appartient : il n'y en a pas.
