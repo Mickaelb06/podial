@@ -1,18 +1,69 @@
 """Podial — carte du monde (contours Natural Earth 110m, domaine public) : un clic choisit un pays."""
 import json
+import math
 import os
+import time
 import zlib
 
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Gsk", "4.0")
-from gi.repository import Gdk, Graphene, Gsk, Gtk
+from gi.repository import Gdk, GLib, Graphene, Gsk, Gtk
 
 # Le dessin passe par Gsk.PathBuilder (GTK 4.14 ou plus récent) : pas besoin de cairo ni de python3-gi-cairo.
 AVAILABLE = hasattr(Gsk, "PathBuilder") and hasattr(Gtk.Snapshot, "append_fill")
 
 LAT_TOP, LAT_SPAN, LON_SPAN = 84.0, 142.0, 360.0
-TONES = ["#7c5ce0", "#5b7ce8", "#3fa7b8", "#9b6bd6", "#6a8fd9", "#8a63d2"]
+TONES = ["#5e9a62", "#6ba36a", "#58935f", "#76a86f", "#639b68", "#82ae74"]
+
+
+def sun_position(now):
+    """(déclinaison, longitude du point subsolaire) en degrés ; now = secondes depuis 1970."""
+    n = now / 86400.0 + 2440587.5 - 2451545.0
+    mean_lon = (280.460 + 0.9856474 * n) % 360
+    g = math.radians((357.528 + 0.9856003 * n) % 360)
+    lam = math.radians(mean_lon + 1.915 * math.sin(g) + 0.020 * math.sin(2 * g))
+    eps = math.radians(23.439 - 0.0000004 * n)
+    dec = math.asin(math.sin(eps) * math.sin(lam))
+    ra = math.atan2(math.cos(eps) * math.sin(lam), math.cos(lam))
+    gmst = (280.46061837 + 360.98564736629 * n) % 360
+    lon = (math.degrees(ra) - gmst) % 360
+    return math.degrees(dec), lon - 360 if lon > 180 else lon
+
+
+def dark_intervals(lon, dec, sub, alt):
+    """Latitudes où le Soleil est sous la hauteur `alt` sur le méridien `lon` : intervalles (bas, haut) en degrés."""
+    a = math.sin(math.radians(dec))
+    b = math.cos(math.radians(dec)) * math.cos(math.radians(lon - sub))
+    s0 = math.sin(math.radians(alt))
+    r = math.hypot(a, b)
+    if r < 1e-12:
+        return [(-90.0, 90.0)] if s0 > 0 else []
+    if s0 >= r:
+        return [(-90.0, 90.0)]
+    if s0 <= -r:
+        return []
+    theta, base, half = math.atan2(b, a), math.asin(s0 / r), math.pi / 2
+    cuts = sorted(phi for k in range(-2, 3) for c in (base - theta, math.pi - base - theta)
+                  for phi in [c + 2 * math.pi * k] if -half < phi < half)
+    edges = [-half] + cuts + [half]
+    out = []
+    for lo, hi in zip(edges, edges[1:]):
+        mid = (lo + hi) / 2
+        if a * math.sin(mid) + b * math.cos(mid) < s0:
+            out.append((math.degrees(lo), math.degrees(hi)))
+    return out
+
+
+def night_bands(now, alt, step=0.5):
+    """Zone où le Soleil est sous `alt` degrés : liste de (lon0, lon1, lat bas, lat haut)."""
+    dec, sub = sun_position(now)
+    out = []
+    for i in range(int(360 / step)):
+        lon = -180 + i * step
+        for lo, hi in dark_intervals(lon + step / 2, dec, sub, alt):
+            out.append((lon, lon + step, lo, hi))
+    return out
 
 
 def load_world():
@@ -55,6 +106,9 @@ class WorldMap(Gtk.Widget):
                 pb.close()
             self.paths[code] = pb.to_path()
         self.on_pick, self.selected = on_pick, selected
+        self.night = []
+        self.refresh_night()
+        GLib.timeout_add_seconds(60, self._tick)
         self.zoom, self.pan = 1.0, (0.0, 0.0)
         self._drag_start = (0.0, 0.0)
         self._focused = False
@@ -68,6 +122,22 @@ class WorldMap(Gtk.Widget):
         scroll = Gtk.EventControllerScroll(flags=Gtk.EventControllerScrollFlags.VERTICAL)
         scroll.connect("scroll", self._scrolled)
         self.add_controller(scroll)
+
+    def refresh_night(self):
+        """Zone de nuit en temps réel : jour, puis crépuscules empilés pour un dégradé doux."""
+        now = time.time()
+        self.night = []
+        for alt in (0.0, -3.0, -6.0, -9.0, -12.0, -15.0, -18.0):
+            pb = Gsk.PathBuilder.new()
+            for x0, x1, lo, hi in night_bands(now, alt):
+                hi, lo = (400 if hi >= 89.9 else hi), (-400 if lo <= -89.9 else lo)  # recouvre aussi la mer au-delà de la carte
+                pb.add_rect(Graphene.Rect().init(x0 + 180, LAT_TOP - hi, x1 - x0, hi - lo))
+            self.night.append(pb.to_path())
+
+    def _tick(self):
+        self.refresh_night()
+        self.queue_draw()
+        return True
 
     # géométrie : écran = origine + pan + (point de la carte) × base × zoom
     def _base(self):
@@ -122,7 +192,9 @@ class WorldMap(Gtk.Widget):
             c = Gdk.RGBA()
             c.parse(hex_color)
             return c
-        bg, edge, accent, white = rgba("#111a3a"), rgba("#111a3a"), rgba("#ec4899"), rgba("#ffffff")
+        bg, edge, accent, white = rgba("#1b5e8e"), rgba("#2f5f3c"), rgba("#ec4899"), rgba("#ffffff")
+        shade = rgba("#050a24")
+        shade.alpha = 0.1
         tones = [rgba(c) for c in TONES]
         rect = Graphene.Rect().init(0, 0, w, h)
         snapshot.push_clip(rect)
@@ -136,6 +208,8 @@ class WorldMap(Gtk.Widget):
             if code != self.selected:
                 snapshot.append_fill(path, Gsk.FillRule.EVEN_ODD, tones[zlib.crc32(code.encode()) % len(tones)])
                 snapshot.append_stroke(path, stroke, edge)
+        for path in self.night:
+            snapshot.append_fill(path, Gsk.FillRule.WINDING, shade)
         if self.selected in self.paths:
             path = self.paths[self.selected]
             snapshot.append_fill(path, Gsk.FillRule.EVEN_ODD, accent)

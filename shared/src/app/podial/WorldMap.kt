@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
 
 /** Carte du monde : toucher un pays le sélectionne ; pincer, glisser ou les boutons +/− pour zoomer. */
 @Composable
@@ -49,12 +51,23 @@ fun WorldMap(countries: List<World.Country>, selected: String?, onPick: (String)
     var size by remember { mutableStateOf(IntSize.Zero) }
     var zoom by remember { mutableFloatStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
-    // la carte garde ses couleurs quel que soit le thème : mer sombre, pays dans les teintes de Podial, pays choisi en rose
-    val sea = Color(0xFF111A3A)
-    val edge = Color(0xFF111A3A)
+    // la carte garde ses couleurs quel que soit le thème : océan, terres vertes, pays choisi en rose ; la nuit est calculée en temps réel
+    val sea = Color(0xFF1B5E8E)
+    val edge = Color(0xFF2F5F3C)
     val accent = Color(0xFFEC4899)
-    val tones = remember { listOf(0xFF7C5CE0, 0xFF5B7CE8, 0xFF3FA7B8, 0xFF9B6BD6, 0xFF6A8FD9, 0xFF8A63D2).map { Color(it) } }
+    val tones = remember { listOf(0xFF5E9A62, 0xFF6BA36A, 0xFF58935F, 0xFF76A86F, 0xFF639B68, 0xFF82AE74).map { Color(it) } }
     fun tone(code: String) = tones[(code.hashCode() and 0x7fffffff) % tones.size]
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { delay(60_000); now = System.currentTimeMillis() } }
+    // nuit : jour / crépuscule civil / nautique / astronomique empilés pour un dégradé doux
+    val night = remember(now / 60_000) {
+        listOf(0.0, -3.0, -6.0, -9.0, -12.0, -15.0, -18.0).map { alt ->
+            Path().apply { for (b in Sun.bands(now, alt)) {   // la nuit prolongée jusqu'aux pôles recouvre aussi la mer au-delà de la carte
+                    val hi = if (b.hi >= 89.9f) 400f else b.hi; val lo = if (b.lo <= -89.9f) -400f else b.lo
+                    addRect(Rect(b.lon0 + 180f, World.LAT_TOP - hi, b.lon1 + 180f, World.LAT_TOP - lo))
+                } }
+        }
+    }
 
     // origine de la carte ajustée et centrée dans la zone, échelle de base : toute la carte tient
     fun base() = minOf(size.width / World.LON_SPAN, size.height / World.LAT_SPAN).coerceAtLeast(0.01f)
@@ -101,6 +114,7 @@ fun WorldMap(countries: List<World.Country>, selected: String?, onPick: (String)
                     drawPath(path, tone(code))
                     drawPath(path, edge, style = Stroke(0.35f / zoom.coerceAtLeast(1f)))
                 }
+                for (p in night) drawPath(p, Color(0xFF050A24).copy(alpha = 0.1f))
                 paths[selected]?.let { drawPath(it, accent); drawPath(it, Color.White, style = Stroke(0.7f / zoom.coerceAtLeast(1f))) }
             }
         }
