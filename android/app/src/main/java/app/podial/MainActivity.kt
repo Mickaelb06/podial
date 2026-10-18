@@ -570,7 +570,45 @@ fun RadioDetail(item: Item, player: PlayerState, onBack: () -> Unit) {
                 Icon(Icons.Default.Language, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.website))
             }
         }
+        ProgramToday(item)
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Grille du jour (quand la station en publie une) : l'émission en cours est mise en avant. */
+@Composable
+fun ProgramToday(item: Item) {
+    if (!Programs.supports(item)) return
+    var shows by remember(item.key) { mutableStateOf<List<Show>?>(null) }
+    var failed by remember(item.key) { mutableStateOf(false) }
+    LaunchedEffect(item.key) { try { shows = Programs.today(item) } catch (e: Exception) { failed = true } }
+    val list = shows ?: run {
+        if (!failed) Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(28.dp)) }
+        return
+    }
+    if (list.isEmpty()) return
+    val now = Programs.current(list)
+    Spacer(Modifier.height(20.dp))
+    Column(Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.program_today), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(bottom = 8.dp))
+        list.forEach { sh ->
+            val live = sh == now
+            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(14.dp))
+                .background(if (live) MaterialTheme.colorScheme.primaryContainer else Color.Transparent).padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text("${sh.start.replace('h', ':')}", fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp),
+                    color = if (live) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.weight(1f)) {
+                    Text(sh.title, fontWeight = if (live) FontWeight.ExtraBold else FontWeight.SemiBold)
+                    if (sh.host.isNotEmpty()) Text(sh.host, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (live) Text(stringResource(R.string.now_label), color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(horizontal = 8.dp, vertical = 2.dp))
+            }
+        }
+        Text(stringResource(R.string.program_source, Programs.sourceName(item)), style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
     }
 }
 

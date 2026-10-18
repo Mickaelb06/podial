@@ -51,4 +51,7 @@
     <string name="close">Fermer</string>
     <string name="on_air">EN CE MOMENT</string>
     <string name="website">Site web</string>
+    <string name="program_today">Programme du jour</string>
+    <string name="now_label">EN COURS</string>
+    <string name="program_source">Source : %s</string>
 </resources>

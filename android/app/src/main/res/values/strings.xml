@@ -54,4 +54,7 @@
     <string name="close">Close</string>
     <string name="on_air">ON AIR</string>
     <string name="website">Website</string>
+    <string name="program_today">Today\'s schedule</string>
+    <string name="now_label">NOW</string>
+    <string name="program_source">Source: %s</string>
 </resources>
