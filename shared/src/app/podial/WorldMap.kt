@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -48,10 +49,12 @@ fun WorldMap(countries: List<World.Country>, selected: String?, onPick: (String)
     var size by remember { mutableStateOf(IntSize.Zero) }
     var zoom by remember { mutableFloatStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
-    val land = MaterialTheme.colorScheme.surfaceVariant
-    val sea = MaterialTheme.colorScheme.surfaceContainerLow
-    val accent = MaterialTheme.colorScheme.primary
-    val edge = MaterialTheme.colorScheme.outline
+    // la carte garde ses couleurs quel que soit le thème : mer sombre, pays dans les teintes de Podial, pays choisi en rose
+    val sea = Color(0xFF111A3A)
+    val edge = Color(0xFF111A3A)
+    val accent = Color(0xFFEC4899)
+    val tones = remember { listOf(0xFF7C5CE0, 0xFF5B7CE8, 0xFF3FA7B8, 0xFF9B6BD6, 0xFF6A8FD9, 0xFF8A63D2).map { Color(it) } }
+    fun tone(code: String) = tones[(code.hashCode() and 0x7fffffff) % tones.size]
 
     // origine de la carte ajustée et centrée dans la zone, échelle de base : toute la carte tient
     fun base() = minOf(size.width / World.LON_SPAN, size.height / World.LAT_SPAN).coerceAtLeast(0.01f)
@@ -95,15 +98,15 @@ fun WorldMap(countries: List<World.Country>, selected: String?, onPick: (String)
             val o = origin() + pan
             withTransform({ translate(o.x, o.y); scale(s, s, Offset.Zero) }) {
                 for ((code, path) in paths) if (code != selected) {
-                    drawPath(path, land)
+                    drawPath(path, tone(code))
                     drawPath(path, edge, style = Stroke(0.35f / zoom.coerceAtLeast(1f)))
                 }
-                paths[selected]?.let { drawPath(it, accent); drawPath(it, edge, style = Stroke(0.5f / zoom.coerceAtLeast(1f))) }
+                paths[selected]?.let { drawPath(it, accent); drawPath(it, Color.White, style = Stroke(0.7f / zoom.coerceAtLeast(1f))) }
             }
         }
         Column(Modifier.align(Alignment.BottomEnd).padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            FilledTonalIconButton({ zoomAround(Offset(size.width / 2f, size.height / 2f), 1.6f) }) { Icon(Icons.Default.Add, "+") }
-            FilledTonalIconButton({ zoomAround(Offset(size.width / 2f, size.height / 2f), 1f / 1.6f) }) { Icon(Icons.Default.Remove, "−") }
+            FilledTonalIconButton({ zoomAround(Offset(size.width / 2f, size.height / 2f), 1.6f) }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Color(0xFF26325F), contentColor = Color.White)) { Icon(Icons.Default.Add, "+") }
+            FilledTonalIconButton({ zoomAround(Offset(size.width / 2f, size.height / 2f), 1f / 1.6f) }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Color(0xFF26325F), contentColor = Color.White)) { Icon(Icons.Default.Remove, "−") }
         }
     }
 }

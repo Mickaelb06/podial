@@ -1,6 +1,7 @@
 """Podial — carte du monde (contours Natural Earth 110m, domaine public) : un clic choisit un pays."""
 import json
 import os
+import zlib
 
 import gi
 gi.require_version("Gtk", "4.0")
@@ -11,6 +12,7 @@ from gi.repository import Gdk, Graphene, Gsk, Gtk
 AVAILABLE = hasattr(Gsk, "PathBuilder") and hasattr(Gtk.Snapshot, "append_fill")
 
 LAT_TOP, LAT_SPAN, LON_SPAN = 84.0, 142.0, 360.0
+TONES = ["#7c5ce0", "#5b7ce8", "#3fa7b8", "#9b6bd6", "#6a8fd9", "#8a63d2"]
 
 
 def load_world():
@@ -115,12 +117,13 @@ class WorldMap(Gtk.Widget):
         if not self._focused and w > 200 and h > 100:  # la taille définitive n'est connue qu'après l'affichage de la fenêtre
             self._focused = True
             self._focus_selected()
-        fg = self.get_color()
-        bg, land, edge, accent = Gdk.RGBA(), Gdk.RGBA(), Gdk.RGBA(), Gdk.RGBA()
-        bg.red, bg.green, bg.blue, bg.alpha = fg.red, fg.green, fg.blue, 0.05
-        land.red, land.green, land.blue, land.alpha = fg.red, fg.green, fg.blue, 0.22
-        edge.red, edge.green, edge.blue, edge.alpha = fg.red, fg.green, fg.blue, 0.45
-        accent.parse("#8b5cf6")
+        # la carte garde ses couleurs quel que soit le thème : mer sombre, pays dans les teintes de Podial, pays choisi en rose
+        def rgba(hex_color):
+            c = Gdk.RGBA()
+            c.parse(hex_color)
+            return c
+        bg, edge, accent, white = rgba("#111a3a"), rgba("#111a3a"), rgba("#ec4899"), rgba("#ffffff")
+        tones = [rgba(c) for c in TONES]
         rect = Graphene.Rect().init(0, 0, w, h)
         snapshot.push_clip(rect)
         snapshot.append_color(bg, rect)
@@ -128,10 +131,15 @@ class WorldMap(Gtk.Widget):
         snapshot.save()
         snapshot.translate(Graphene.Point().init(ox + self.pan[0], oy + self.pan[1]))
         snapshot.scale(b * self.zoom, b * self.zoom)
-        stroke = Gsk.Stroke.new(0.4 / self.zoom)
+        stroke = Gsk.Stroke.new(0.35 / self.zoom)
         for code, path in self.paths.items():
-            snapshot.append_fill(path, Gsk.FillRule.EVEN_ODD, accent if code == self.selected else land)
-            snapshot.append_stroke(path, stroke, edge)
+            if code != self.selected:
+                snapshot.append_fill(path, Gsk.FillRule.EVEN_ODD, tones[zlib.crc32(code.encode()) % len(tones)])
+                snapshot.append_stroke(path, stroke, edge)
+        if self.selected in self.paths:
+            path = self.paths[self.selected]
+            snapshot.append_fill(path, Gsk.FillRule.EVEN_ODD, accent)
+            snapshot.append_stroke(path, Gsk.Stroke.new(0.7 / self.zoom), white)
         snapshot.restore()
         snapshot.pop()
 
