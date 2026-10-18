@@ -79,4 +79,6 @@
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>
+    <string name="update_title">Podial update</string>
+    <string name="update_fmt">Version %1$s is available. Tap to download it.</string>
 </resources>

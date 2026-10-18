@@ -76,4 +76,6 @@
     <string name="save">Enregistrer</string>
     <string name="cancel">Annuler</string>
     <string name="delete">Supprimer</string>
+    <string name="update_title">Mise à jour de Podial</string>
+    <string name="update_fmt">La version %1$s est disponible. Touche pour la télécharger.</string>
 </resources>

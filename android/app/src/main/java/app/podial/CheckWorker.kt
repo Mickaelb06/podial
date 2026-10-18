@@ -32,6 +32,7 @@ class CheckWorker(private val ctx: Context, params: WorkerParameters) : Coroutin
         }
         val total = Store.newCounts.value.values.sum()
         if (total > before) notify(total, names)
+        notifyUpdate()
         PlaybackService.libraryChanged()
         return Result.success()
     }
@@ -49,7 +50,27 @@ class CheckWorker(private val ctx: Context, params: WorkerParameters) : Coroutin
         NotificationManagerCompat.from(ctx).notify(1, n)
     }
 
+    /** Prévient une seule fois par version quand une version plus récente de Podial est publiée sur GitHub. */
+    private suspend fun notifyUpdate() {
+        val current = runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull() ?: return
+        val r = runCatching { Release.check(current) }.getOrNull() ?: return
+        val prefs = ctx.getSharedPreferences("podial", Context.MODE_PRIVATE)
+        if (prefs.getString("update_notified", "") == r.first) return
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.createNotificationChannel(NotificationChannel(UPDATE_CHANNEL, ctx.getString(R.string.update_title), NotificationManager.IMPORTANCE_DEFAULT))
+        val open = PendingIntent.getActivity(ctx, 2, Intent(Intent.ACTION_VIEW, android.net.Uri.parse(r.second)), PendingIntent.FLAG_IMMUTABLE)
+        val n = NotificationCompat.Builder(ctx, UPDATE_CHANNEL)
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setContentTitle(ctx.getString(R.string.update_title))
+            .setContentText(ctx.getString(R.string.update_fmt, r.first))
+            .setContentIntent(open).setAutoCancel(true).build()
+        NotificationManagerCompat.from(ctx).notify(2, n)
+        prefs.edit().putString("update_notified", r.first).apply()
+    }
+
     companion object {
+        private const val UPDATE_CHANNEL = "app_update"
         private const val CHANNEL = "new_episodes"
 
         fun schedule(ctx: Context) {

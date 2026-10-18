@@ -6,7 +6,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** Vérification de mise à jour : interroge GitHub (dernière « release » publiée). Rien d'autre n'est envoyé. */
+/** Vérification de mise à jour : interroge GitHub (dernière « release » publiée, pré-versions comprises). Rien d'autre n'est envoyé. */
 object Release {
     const val REPO = "Mickaelb06/podial"
     const val SITE = "https://github.com/$REPO"
@@ -25,14 +25,16 @@ object Release {
 
     /** Renvoie (version, adresse) si une version plus récente existe, null si on est à jour ou si rien n'est publié. */
     suspend fun check(current: String): Pair<String, String>? = withContext(Dispatchers.IO) {
-        val c = URL("https://api.github.com/repos/$REPO/releases/latest").openConnection() as HttpURLConnection
+        val c = URL("https://api.github.com/repos/$REPO/releases?per_page=5").openConnection() as HttpURLConnection
         c.connectTimeout = 15000; c.readTimeout = 15000
         c.setRequestProperty("User-Agent", "Podial/$current")
         c.setRequestProperty("Accept", "application/vnd.github+json")
         try {
-            if (c.responseCode == 404) return@withContext null   // aucune release publiée
+            if (c.responseCode == 404) return@withContext null   // dépôt sans release
             if (c.responseCode !in 200..299) throw java.io.IOException("HTTP ${c.responseCode}")
-            val o = JSONObject(c.inputStream.bufferedReader().use { it.readText() })
+            // « latest » ignore les pré-versions : on lit la liste et on prend la plus récente qui n'est pas un brouillon
+            val list = org.json.JSONArray(c.inputStream.bufferedReader().use { it.readText() })
+            val o = (0 until list.length()).map { list.getJSONObject(it) }.firstOrNull { !it.optBoolean("draft") } ?: return@withContext null
             val tag = o.optString("tag_name")
             if (tag.isNotEmpty() && isNewer(tag, current)) tag.trimStart('v') to o.optString("html_url", "$SITE/releases") else null
         } finally { c.disconnect() }

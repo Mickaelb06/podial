@@ -20,7 +20,7 @@ from email.utils import parsedate_to_datetime
 
 from i18n import _
 
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 REPO = "Mickaelb06/podial"
 UA = f"Podial/{VERSION} (+https://github.com/{REPO})"
 ITUNES_NS = "{http://www.itunes.com/dtds/podcast-1.0.dtd}"
@@ -755,11 +755,13 @@ def check_update():
     """Interroge GitHub (dernière « release » publiée). Renvoie (version, adresse) si une version plus récente existe,
     ("", "") si Podial est à jour ou si aucune version n'a encore été publiée."""
     try:
-        data = json.loads(http_get(f"https://api.github.com/repos/{REPO}/releases/latest", timeout=15))
+        releases = json.loads(http_get(f"https://api.github.com/repos/{REPO}/releases?per_page=5", timeout=15))
     except urllib.error.HTTPError as exc:
         if exc.code == 404:      # aucune release publiée pour l'instant
             return "", ""
         raise
+    # « latest » ignore les pré-versions : on prend la plus récente qui n'est pas un brouillon
+    data = next((r for r in releases if not r.get("draft")), {})
     tag = data.get("tag_name", "")
     if tag and _version_tuple(tag) > _version_tuple(VERSION):
         return tag.lstrip("v"), data.get("html_url", f"https://github.com/{REPO}/releases")
