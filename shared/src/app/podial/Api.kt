@@ -154,7 +154,9 @@ object Api {
                 val n = s.optString("name").trim()
                 if (stream.isEmpty() || n.isEmpty() || !seen.add(stationKey(n))) null
                 else Item("radio", n, listOf(s.optString("state"), s.optString("country")).filter { it.isNotBlank() }.joinToString(", "),
-                    s.optString("favicon"), stream = stream, tags = s.optString("tags"))
+                    s.optString("favicon"), stream = stream, tags = s.optString("tags"), homepage = s.optString("homepage"),
+                    quality = listOf(s.optString("codec").uppercase().takeIf { it.isNotBlank() && it != "UNKNOWN" },
+                        s.optInt("bitrate").takeIf { it > 0 }?.let { "$it kbps" }).filterNotNull().joinToString(" · "))
             }.take(limit)
         }
 

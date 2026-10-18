@@ -52,4 +52,6 @@
     <string name="update_available">Version %s is available.</string>
     <string name="update_failed">Couldn\'t check for updates.</string>
     <string name="close">Close</string>
+    <string name="on_air">ON AIR</string>
+    <string name="website">Website</string>
 </resources>

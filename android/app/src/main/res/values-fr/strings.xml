@@ -49,4 +49,6 @@
     <string name="update_available">La version %s est disponible.</string>
     <string name="update_failed">Vérification impossible.</string>
     <string name="close">Fermer</string>
+    <string name="on_air">EN CE MOMENT</string>
+    <string name="website">Site web</string>
 </resources>

@@ -5,7 +5,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -72,6 +76,8 @@ class PlayerState {
     var duration by mutableLongStateOf(0L)
     var live by mutableStateOf(false)
     var speed by mutableFloatStateOf(1f)
+    var station by mutableStateOf("")      // radio : nom de la station
+    var nowPlaying by mutableStateOf("")   // radio : titre en cours, quand la station l'envoie
 
     fun refresh() {
         val c = controller ?: return
@@ -81,6 +87,10 @@ class PlayerState {
         art = c.mediaMetadata.artworkUri?.toString()
         mediaId = c.currentMediaItem?.mediaId ?: ""
         live = c.isCurrentMediaItemLive || mediaId.startsWith("radio|")
+        val itemTitle = c.currentMediaItem?.mediaMetadata?.title?.toString() ?: ""
+        station = if (live) itemTitle else ""
+        nowPlaying = if (live) title.takeIf { it.isNotBlank() && it != itemTitle } ?: "" else ""
+        if (live && itemTitle.isNotBlank()) title = itemTitle
         duration = c.duration.coerceAtLeast(0)
         position = c.currentPosition
         speed = c.playbackParameters.speed
@@ -254,6 +264,7 @@ fun LibraryScreen(onAbout: () -> Unit, onOpen: (Item) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
+    if (item.kind == "radio") { RadioDetail(item, player, onBack); return }
     val pods by Store.podcasts.collectAsState()
     val radios by Store.radios.collectAsState()
     val downloads by Store.downloads.collectAsState()
@@ -371,7 +382,7 @@ fun DownloadsScreen(player: PlayerState) {
 fun MiniPlayer(p: PlayerState, onOpen: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).clickable(onClick = onOpen).padding(8.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Cover(p.art, p.title, 44)
+        if (p.live) RadioLogo(null, p.art, p.title, 44) else Cover(p.art, p.title, 44)
         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
             Text(p.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
             Text(p.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
@@ -395,6 +406,7 @@ fun PlayerSheet(p: PlayerState, onClose: () -> Unit) {
     var timerMenu by remember { mutableStateOf(false) }
     var seeking by remember { mutableStateOf<Float?>(null) }
     ModalBottomSheet(onDismissRequest = onClose) {
+        if (p.live) { RadioSheet(p); return@ModalBottomSheet }
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Cover(p.art, p.title, 220)
             Text(p.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, maxLines = 2,
@@ -482,4 +494,118 @@ fun AboutDialog(version: String, onClose: () -> Unit) {
         },
         dismissButton = { TextButton(onClose) { Text(stringResource(R.string.close)) } },
     )
+}
+
+// ---------- radios ----------
+/** Logo de station : affiché en entier sur fond clair (les logos de radio sont rarement carrés ni recadrables). */
+@Composable
+fun RadioLogo(item: Item?, art: String?, name: String, size: Int) {
+    val hue = (name.hashCode().toUInt() % 360u).toFloat()
+    Box(Modifier.size(size.dp).shadow(18.dp, RoundedCornerShape(28.dp), spotColor = Violet).clip(RoundedCornerShape(28.dp))
+        .background(if (art.isNullOrEmpty()) Brush.linearGradient(listOf(Color.hsv(hue, 0.6f, 0.9f), Color.hsv((hue + 50) % 360, 0.7f, 0.8f)))
+                    else Brush.linearGradient(listOf(Color(0xFFFFFFFF), Color(0xFFF1EEFA)))),
+        contentAlignment = Alignment.Center) {
+        Text(name.firstOrNull()?.uppercase() ?: "?", color = Color.White, fontWeight = FontWeight.ExtraBold,
+            style = MaterialTheme.typography.displayMedium)
+        if (!art.isNullOrEmpty()) AsyncImage(art, null, Modifier.fillMaxSize().padding((size / 9).dp), contentScale = ContentScale.Fit)
+    }
+}
+
+@Composable
+fun LivePill() {
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "live")
+    val a by t.animateFloat(0.35f, 1f, androidx.compose.animation.core.infiniteRepeatable(
+        androidx.compose.animation.core.tween(900), androidx.compose.animation.core.RepeatMode.Reverse), label = "dot")
+    Row(Modifier.clip(CircleShape).background(Color(0xFFE5484D)).padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).alpha(a).clip(CircleShape).background(Color.White))
+        Spacer(Modifier.width(6.dp))
+        Text(stringResource(R.string.live), color = Color.White, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Composable
+fun NowPlaying(text: String) {
+    if (text.isBlank()) return
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(14.dp)) {
+        Text(stringResource(R.string.on_air), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        Text(text, fontWeight = FontWeight.SemiBold, maxLines = 3, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun RadioDetail(item: Item, player: PlayerState, onBack: () -> Unit) {
+    val radios by Store.radios.collectAsState()
+    val saved = radios.any { it.key == item.key }
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    val here = player.mediaId == "radio|" + item.stream
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(Modifier.fillMaxWidth()) { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, stringResource(R.string.back)) } }
+        RadioLogo(item, item.art, item.name, 210)
+        Spacer(Modifier.height(20.dp))
+        LivePill()
+        Spacer(Modifier.height(10.dp))
+        Text(item.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(item.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        val chips = (item.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }.take(4) + listOf(item.quality)).filter { it.isNotEmpty() }
+        if (chips.isNotEmpty()) FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
+            chips.forEach { AssistChip(onClick = {}, label = { Text(it) }) }
+        }
+        Spacer(Modifier.height(20.dp))
+        FilledIconButton({ if (here) player.controller?.let { if (it.isPlaying) it.pause() else it.play() } else player.play(PlaybackService.radioItem(item)) },
+            Modifier.size(76.dp)) {
+            Icon(if (here && player.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                stringResource(if (here && player.isPlaying) R.string.pause else R.string.play), Modifier.size(42.dp))
+        }
+        Spacer(Modifier.height(16.dp))
+        if (here) NowPlaying(player.nowPlaying)
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedButton(onClick = { Store.toggle(item) }) {
+                Icon(if (saved) Icons.Default.Star else Icons.Outlined.StarOutline, null)
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(if (saved) R.string.remove_favorite else R.string.add_favorite))
+            }
+            if (item.homepage.startsWith("http")) OutlinedButton(onClick = { uri.openUri(item.homepage) }) {
+                Icon(Icons.Default.Language, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.website))
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Lecteur plein écran d'une radio : logo, « en direct », titre en cours, un seul gros bouton, minuteur. */
+@Composable
+fun RadioSheet(p: PlayerState) {
+    val remaining by SleepTimer.remaining.collectAsState()
+    var timerMenu by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        RadioLogo(null, p.art, p.station.ifEmpty { p.title }, 190)
+        Spacer(Modifier.height(18.dp))
+        LivePill()
+        Spacer(Modifier.height(10.dp))
+        Text(p.station.ifEmpty { p.title }, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, maxLines = 2,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(p.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(16.dp))
+        NowPlaying(p.nowPlaying)
+        Spacer(Modifier.height(20.dp))
+        FilledIconButton({ p.controller?.let { if (it.isPlaying) it.pause() else it.play() } }, Modifier.size(76.dp)) {
+            Icon(if (p.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                stringResource(if (p.isPlaying) R.string.pause else R.string.play), Modifier.size(42.dp))
+        }
+        Box(Modifier.padding(top = 10.dp)) {
+            TextButton({ timerMenu = true }) {
+                Icon(Icons.Default.Alarm, stringResource(R.string.sleep_timer)); Spacer(Modifier.width(6.dp))
+                Text(remaining?.let { clock(it * 1000L) } ?: stringResource(R.string.sleep_timer))
+            }
+            DropdownMenu(timerMenu, { timerMenu = false }) {
+                for (m in listOf(15, 30, 45)) DropdownMenuItem({ Text(stringResource(R.string.minutes_fmt, m)) }, { SleepTimer.startMinutes(m); timerMenu = false })
+                DropdownMenuItem({ Text(stringResource(R.string.one_hour)) }, { SleepTimer.startMinutes(60); timerMenu = false })
+                DropdownMenuItem({ Text(stringResource(R.string.two_hours)) }, { SleepTimer.startMinutes(120); timerMenu = false })
+                if (remaining != null) DropdownMenuItem({ Text(stringResource(R.string.cancel_timer), color = MaterialTheme.colorScheme.error) }, { SleepTimer.cancel(); timerMenu = false })
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+    }
 }

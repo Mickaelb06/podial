@@ -11,16 +11,18 @@ data class Item(
     val feed: String = "",     // podcast : adresse du flux RSS
     val stream: String = "",   // radio : adresse du flux audio
     val tags: String = "",
+    val homepage: String = "",  // radio : site web de la station
+    val quality: String = "",   // radio : « MP3 · 128 kbps »
 ) {
     val key: String get() = if (kind == "radio") stream else feed
 
     fun toJson() = JSONObject().put("kind", kind).put("name", name).put("artist", artist).put("art", art)
-        .put("feed", feed).put("stream", stream).put("tags", tags)
+        .put("feed", feed).put("stream", stream).put("tags", tags).put("homepage", homepage).put("quality", quality)
 
     companion object {
         fun fromJson(o: JSONObject) = Item(
             o.getString("kind"), o.getString("name"), o.optString("artist"), o.optString("art"),
-            o.optString("feed"), o.optString("stream"), o.optString("tags"),
+            o.optString("feed"), o.optString("stream"), o.optString("tags"), o.optString("homepage"), o.optString("quality"),
         )
     }
 }
