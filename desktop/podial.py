@@ -28,7 +28,7 @@ from worldmap import AVAILABLE as WORLD_MAP, WorldMap
 from filters import CountryChooser, GenreBar, RadioBar  # noqa: E402
 from i18n import _, ngettext  # noqa: E402
 
-APP_NAME = "Podial"
+APP_NAME = "Podial Player"
 APP_ID = integration.DESKTOP_ID
 EXT_UUID = "podial@podial.app"
 FADE_SECONDS = 10   # durée de la baisse progressive du volume avant l'arrêt du minuteur

@@ -1,4 +1,4 @@
-# Podial: guide for Claude Code
+# Podial Player: guide for Claude Code
 
 Podial = podcasts + live radio in one free app, no account, no tracking. Four apps share one repo.
 Owner: Mickael (French speaker; answer in French, keep replies short and plain). GitHub: `Mickaelb06/podial` (MIT).

@@ -1,4 +1,4 @@
-# Podial
+# Podial Player
 
 **English** · [Français](README.fr.md)
 

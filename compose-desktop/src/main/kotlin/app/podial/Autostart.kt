@@ -46,7 +46,7 @@ object Autostart {
             else ->
                 if (enabled) {
                     linuxFile.parentFile.mkdirs()
-                    linuxFile.writeText("[Desktop Entry]\nType=Application\nName=Podial\nExec=\"$path\" --minimized\nTerminal=false\n")
+                    linuxFile.writeText("[Desktop Entry]\nType=Application\nName=Podial Player\nExec=\"$path\" --minimized\nTerminal=false\n")
                 } else linuxFile.delete()
         }
     }

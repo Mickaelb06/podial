@@ -13,7 +13,7 @@ from gi.repository import Gio, GLib
 
 from i18n import _, DOMAIN, _DIRS
 
-APP_NAME = "Podial"
+APP_NAME = "Podial Player"
 DESKTOP_ID = "io.github.podial.Podial"  # à adapter au compte GitHub / domaine définitif
 ICON_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", "hicolor", "symbolic", "apps")
 ART_DIR = os.path.join(GLib.get_user_cache_dir(), "podial", "art")

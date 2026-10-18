@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Podial</string>
+    <string name="app_name">Podial Player</string>
     <string name="tab_podcasts">Podcasts</string>
     <string name="tab_radios">Radios</string>
     <string name="tab_library">Library</string>

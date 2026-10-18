@@ -76,7 +76,7 @@ private fun runApp(minimized: Boolean) = application {
     LaunchedEffect(Unit) {   // vérifie les nouveaux épisodes au démarrage puis toutes les heures
         while (true) { runCatching { Store.checkAll() }; delay(3_600_000) }
     }
-    Window(onCloseRequest = ::exitApplication, title = "Podial", state = rememberWindowState(width = 1100.dp, height = 760.dp, isMinimized = minimized)) {
+    Window(onCloseRequest = ::exitApplication, title = "Podial Player", state = rememberWindowState(width = 1100.dp, height = 760.dp, isMinimized = minimized)) {
         MaterialTheme(colorScheme = if (androidx.compose.foundation.isSystemInDarkTheme())
             darkColorScheme(primary = Violet) else lightColorScheme(primary = Violet)) {
             Surface(Modifier.fillMaxSize()) { PodialApp() }

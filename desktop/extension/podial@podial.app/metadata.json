@@ -1,6 +1,6 @@
 {
     "uuid": "podial@podial.app",
-    "name": "Podial",
+    "name": "Podial Player",
     "description": "Podial in the top bar: animated pill, spinning vinyl cover, progress, controls and volume.",
     "gettext-domain": "podial",
     "shell-version": ["48", "49", "50"],

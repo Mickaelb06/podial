@@ -26,7 +26,7 @@ chmod 755 "$ROOT/usr/bin/podial"
 cat > "$ROOT/usr/share/applications/io.github.podial.Podial.desktop" <<DESK
 [Desktop Entry]
 Type=Application
-Name=Podial
+Name=Podial Player
 Comment=Podcasts and live radio
 Comment[fr]=Podcasts et radios en direct
 Exec=podial
