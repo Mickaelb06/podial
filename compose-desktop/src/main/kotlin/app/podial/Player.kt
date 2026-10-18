@@ -27,6 +27,10 @@ object Player {
     var speed by mutableFloatStateOf(1f)
     var volume by mutableFloatStateOf(1f)
     var error by mutableStateOf<String?>(null)
+    var feed by mutableStateOf("")
+    var transcriptUrl by mutableStateOf("")
+    var transcriptType by mutableStateOf("")
+    private var pendingSeek = 0L
 
     private var mp: MediaPlayer? = null
     private var started = false
@@ -41,7 +45,7 @@ object Player {
     }
 
     /** Lit un épisode (fichier local s'il est téléchargé) ou une radio. */
-    fun play(item: Item, ep: Episode?) {
+    fun play(item: Item, ep: Episode?, startMs: Long = 0L) {
         val url: String; val k: String
         if (ep == null) { url = item.stream; k = "radio|" + item.stream }
         else {
@@ -51,13 +55,17 @@ object Player {
         }
         key = k; title = ep?.title ?: item.name; artist = if (ep != null) item.name else item.artist
         art = ep?.art?.takeIf { it.isNotEmpty() } ?: item.art.takeIf { it.isNotEmpty() }
-        live = ep == null; positionMs = 0; durationMs = 0; speed = 1f; error = null; isPlaying = true
+        feed = item.feed; transcriptUrl = ep?.transcript ?: ""; transcriptType = ep?.transcriptType ?: ""; pendingSeek = startMs
+        live = ep == null; positionMs = startMs; durationMs = 0; speed = 1f; error = null; isPlaying = true
         fx {
             mp?.dispose()
             try {
                 val player = MediaPlayer(Media(url))
                 player.volume = volume.toDouble()
-                player.setOnReady { durationMs = if (live) 0 else player.totalDuration.toMillis().toLong().coerceAtLeast(0) }
+                player.setOnReady {
+                    durationMs = if (live) 0 else player.totalDuration.toMillis().toLong().coerceAtLeast(0)
+                    if (pendingSeek > 0) { player.seek(Duration.millis(pendingSeek.toDouble())); pendingSeek = 0 }
+                }
                 player.setOnEndOfMedia { isPlaying = false; Sleep.onEnded() }
                 player.setOnError { error = T["stream_error"]; isPlaying = false }
                 mp = player

@@ -31,6 +31,8 @@ Version de bureau multiplateforme (Windows, macOS, Linux) :
 - Radios en direct du monde entier ([radio-browser.info](https://www.radio-browser.info)), parcourues par pays et par ville, doublons supprimés, favoris.
 - Les pages de radio affichent le logo, la qualité, le titre en cours (quand la station l'envoie) et, pour RTL, le programme du jour avec l'émission en cours mise en avant (Android). Il n'existe pas de source commune pour les programmes des radios : chaque station demande son propre développement.
 - Audio YouTube en option sur le bureau (nécessite `yt-dlp`, que tu installes toi-même ; cela peut aller à l'encontre des conditions d'utilisation de YouTube, à tes risques).
+- Transcriptions et citations : quand un podcast publie sa transcription (Podcasting 2.0, SRT/VTT/JSON), tu la lis pendant l'écoute, tu touches une ligne pour y aller et tu surlignes des phrases. Un bouton « Citation » enregistre aussi le moment écouté. « Mes citations » les liste avec des notes, tu peux écouter à partir de là ou les partager. Fonctionne avec les écritures de droite à gauche et asiatiques. Les émissions sans transcription publiée n'en ont pas encore.
+- Widgets Android pour l'écran d'accueil : un compact (pochette et boutons) et un vinyle qui tourne pendant la lecture.
 - Minuteur de sommeil : en minutes, en heures ou à la fin de l'épisode, avec une baisse douce du volume.
 - Égaliseur, volume lissé, vitesse de lecture, commandes MPRIS et touches multimédia sur le bureau Linux.
 - Clic droit sur le lecteur de la barre GNOME pour ouvrir ou quitter Podial. « Lancer à l'ouverture de session » sur le bureau. Une fenêtre « À propos » et une vérification des mises à jour (releases GitHub, désactivée par défaut sous Linux).
@@ -98,7 +100,7 @@ Version précoce. L'application Android n'a pas encore été testée sur un vrai
 
 - Programmes de radio pour d'autres stations (Radio France et d'autres, une par une).
 - Enregistrer les radios en direct, avec programmation.
-- Transcription locale et recherche dans les épisodes (tout se passe sur ton ordinateur).
+- Transcription locale pour les épisodes sans transcription publiée, et recherche dans les épisodes (tout se passe sur ton ordinateur).
 - Écouter un podcast dans une autre langue, par exemple un épisode anglais en français, grâce à des sous-titres ou une voix traduits.
 - Synchronisation entre appareils sans compte.
 - Carte du monde pour découvrir les radios en cliquant sur un pays.

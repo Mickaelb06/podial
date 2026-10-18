@@ -493,3 +493,42 @@ msgstr ""
 
 msgid "Starts Podial in the background when you log in. Open it from the top bar or the Applications menu."
 msgstr ""
+
+msgid "My quotes"
+msgstr ""
+
+msgid "Quote"
+msgstr ""
+
+msgid "Transcript"
+msgstr ""
+
+msgid "This episode has no published transcript. Many shows do not provide one."
+msgstr ""
+
+msgid "Click a line to listen from there. Use the quote button to highlight it."
+msgstr ""
+
+msgid "No quotes yet. While listening, press the quote button, or open the transcript and highlight a sentence."
+msgstr ""
+
+msgid "Play from here"
+msgstr ""
+
+msgid "Add a note"
+msgstr ""
+
+msgid "Copy to share"
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+msgid "Quote saved at {time}"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Save"
+msgstr ""

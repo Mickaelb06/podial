@@ -22,6 +22,7 @@ import integration  # noqa: E402
 from catalog import (  # noqa: E402
     COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, VERSION, REPO, check_new_episodes, check_update, delete_download, download_episode, fetch_feed, load_played, mark_seen, new_counts, seen_urls, set_played, fetch_youtube_feed, flag, get_country, get_setting,
     http_get, item_key, radio_browse, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
+    add_quote, cue_index, fmt_clock, load_quotes, load_transcript, quote_id, remove_quote, set_quote_note, share_text,
     youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path)
 from filters import CountryChooser, GenreBar, RadioBar  # noqa: E402
 from i18n import _, ngettext  # noqa: E402
@@ -44,6 +45,9 @@ CSS = """
 @define-color accent_bg_color #8b5cf6;
 @define-color accent_color #a78bfa;
 @define-color accent_fg_color #ffffff;
+.cue-row { border-radius: 10px; padding: 6px 8px; }
+.cue-current { background: alpha(@accent_bg_color, 0.14); }
+.cue-quoted { background: alpha(@accent_bg_color, 0.32); }
 .cover { border-radius: 14px; background: alpha(currentColor, 0.08); }
 .cover-big { border-radius: 22px; box-shadow: 0 10px 30px alpha(black, 0.35); }
 .cover-card { box-shadow: 0 4px 14px alpha(black, 0.25); }
@@ -313,11 +317,12 @@ class Window(Adw.ApplicationWindow):
 
     def build_main_menu(self):
         """Menu principal (≡) : préférences et à propos."""
-        for name, cb in (("preferences", self.show_preferences), ("about", self.show_about)):
+        for name, cb in (("quotes", self.show_quotes), ("preferences", self.show_preferences), ("about", self.show_about)):
             act = Gio.SimpleAction.new(name, None)
             act.connect("activate", lambda *_a, f=cb: f())
             self.add_action(act)
         menu = Gio.Menu()
+        menu.append(_("My quotes"), "win.quotes")
         menu.append(_("Preferences"), "win.preferences")
         menu.append(_("About Podial"), "win.about")
         return Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text=_("Main menu"),
@@ -678,6 +683,7 @@ class Window(Adw.ApplicationWindow):
     def play_downloaded(self, key):
         v = self.downloads.get(key)
         if v:
+            self.playing_ep = {"url": key, "title": v["title"], "transcript": v.get("transcript", ""), "transcript_type": v.get("transcript_type", "")}
             self.play("file://" + v["file"], v["title"], v["item"]["name"], False, v["item"], key=key)
 
     # ---------- téléchargements ----------
@@ -980,12 +986,16 @@ class Window(Adw.ApplicationWindow):
         run_async(lambda: check_new_episodes(list(self.lists["podcast"])), done,
                   lambda e: setattr(self, "check_running", False))
 
-    def play_episode(self, item, ep):
+    def play_episode(self, item, ep, start_ms=0):
+        self.pending_seek_ns = start_ms * Gst.MSECOND if start_ms > 0 else 0
         if ep["url"] in self.downloads:
             self.play_downloaded(ep["url"])
+            self.playing_ep = ep
         elif ep.get("yt"):
+            self.playing_ep = ep
             self.play_youtube(ep["id"], ep["title"], item["name"], dict(item, art=ep.get("art") or item.get("art")))
         else:
+            self.playing_ep = ep
             self.play(ep["url"], ep["title"], item["name"], False, item)
 
     def play_youtube(self, video_id, title, subtitle, item):
@@ -1089,6 +1099,12 @@ class Window(Adw.ApplicationWindow):
         self.speed_btn.connect("clicked", self.on_speed)
         self.vol = Gtk.VolumeButton(value=1.0, css_classes=["flat"])
         self.vol.connect("value-changed", lambda b, v: self.player.set_property("volume", v))
+        self.quote_btn = Gtk.Button(icon_name="bookmark-new-symbolic", tooltip_text=_("Quote"), css_classes=["flat"], visible=False)
+        self.quote_btn.connect("clicked", lambda *_a: self.save_quote("", self.position_ms()))
+        self.transcript_btn = Gtk.Button(icon_name="view-list-symbolic", tooltip_text=_("Transcript"), css_classes=["flat"], visible=False)
+        self.transcript_btn.connect("clicked", lambda *_a: self.show_transcript())
+        right.append(self.quote_btn)
+        right.append(self.transcript_btn)
         right.append(self.build_sleep_menu())
         right.append(self.speed_btn)
         right.append(self.vol)
@@ -1221,6 +1237,10 @@ class Window(Adw.ApplicationWindow):
         self.player.set_property("uri", url)
         self.player.set_state(Gst.State.PLAYING)
         self.playing_url, self.playing_item, self.live = url, item, live
+        if live:
+            self.playing_ep = None
+        self.quote_btn.set_visible(not live)
+        self.transcript_btn.set_visible(not live)
         self.playing_key = key or url  # identifie l'épisode dans la liste (l'adresse lue peut être un fichier local)
         self.paused, self.art_path, self.live_title = False, None, None
         self.duration, self.rate_idx = 0, 0
@@ -1286,6 +1306,176 @@ class Window(Adw.ApplicationWindow):
             self.seek_to(int(max(0.0, min(1.0, value)) * self.duration))
         return False
 
+    def position_ms(self):
+        ok, pos = self.player.query_position(Gst.Format.TIME)
+        return int(pos // Gst.MSECOND) if ok else 0
+
+    # ---------- citations et transcriptions ----------
+    def save_quote(self, text, start_ms):
+        ep = getattr(self, "playing_ep", None)
+        if not ep or self.live:
+            return
+        item = self.playing_item or {}
+        add_quote({"id": quote_id(ep["url"], start_ms, text), "text": text, "start": start_ms, "url": ep["url"], "title": ep["title"],
+                   "podcast": item.get("name", ""), "feed": item.get("feed", ""), "art": item.get("art", ""), "note": ""})
+        if not text:
+            self.quote_btn.set_icon_name("emblem-ok-symbolic")
+            self.quote_btn.set_tooltip_text(_("Quote saved at {time}").format(time=fmt_clock(start_ms)))
+            GLib.timeout_add(1800, lambda: (self.quote_btn.set_icon_name("bookmark-new-symbolic"), self.quote_btn.set_tooltip_text(_("Quote")), False)[-1])
+
+    @staticmethod
+    def is_rtl(text):
+        import unicodedata
+        for ch in text:
+            d = unicodedata.bidirectional(ch)
+            if d in ("R", "AL"):
+                return True
+            if d == "L":
+                return False
+        return False
+
+    def show_transcript(self):
+        ep = getattr(self, "playing_ep", None)
+        if not ep or self.live:
+            return
+        dlg = Adw.Dialog(title=_("Transcript"), content_width=640, content_height=680)
+        view = Adw.ToolbarView()
+        view.add_top_bar(Adw.HeaderBar())
+        dlg.set_child(view)
+        stack = Gtk.Stack()
+        view.set_content(stack)
+        spinner = Gtk.Spinner(spinning=True, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, width_request=32, height_request=32)
+        stack.add_named(spinner, "loading")
+        stack.add_named(Adw.StatusPage(icon_name="view-list-symbolic", title=_("Transcript"),
+                                       description=_("This episode has no published transcript. Many shows do not provide one.")), "none")
+        state = {"cues": [], "rows": [], "cur": -2, "follow": True}
+        url = ep["url"]
+
+        def build(cues):
+            if not cues:
+                stack.set_visible_child_name("none")
+                return
+            state["cues"] = cues
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_start=12, margin_end=12, margin_bottom=12)
+            box.append(Gtk.Label(label=_("Click a line to listen from there. Use the quote button to highlight it."), xalign=0,
+                                 wrap=True, css_classes=["dim-label", "caption"], margin_top=6, margin_bottom=6))
+            lb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            for i, c in enumerate(cues):
+                row = Gtk.Box(spacing=8, css_classes=["cue-row"])
+                if c["start"] >= 0:
+                    row.append(Gtk.Label(label=fmt_clock(c["start"]), css_classes=["numeric", "caption", "dim-label"], valign=Gtk.Align.START, width_chars=6, xalign=1))
+                lbl = Gtk.Label(label=c["text"], wrap=True, xalign=0, hexpand=True, selectable=True)
+                if self.is_rtl(c["text"]):
+                    lbl.set_direction(Gtk.TextDirection.RTL)
+                row.append(lbl)
+                qb = Gtk.Button(icon_name="bookmark-new-symbolic", css_classes=["flat", "circular"], valign=Gtk.Align.START, tooltip_text=_("Quote"))
+                qb.connect("clicked", lambda _b, c=c: toggle_quote(c))
+                row.append(qb)
+                if c["start"] >= 0:
+                    g = Gtk.GestureClick()
+                    g.connect("released", lambda _g, n, x, y, c=c: self.seek_to(c["start"] * Gst.MSECOND))
+                    row.add_controller(g)
+                lb.append(row)
+                state["rows"].append(row)
+            box.append(lb)
+            sw = Gtk.ScrolledWindow(vexpand=True, hscrollbar_policy=Gtk.PolicyType.NEVER, child=box)
+            state["sw"], state["lb"] = sw, lb
+            stack.add_named(sw, "list")
+            stack.set_visible_child_name("list")
+            refresh()
+
+        def toggle_quote(c):
+            qid = quote_id(url, c["start"], c["text"])
+            if any(q["id"] == qid for q in load_quotes()):
+                remove_quote(qid)
+            else:
+                self.save_quote(c["text"], c["start"])
+            refresh(force=True)
+
+        def refresh(force=False):
+            if not state["rows"]:
+                return True
+            cur = cue_index(state["cues"], self.position_ms())
+            quoted = {q["id"] for q in load_quotes()} if force or cur != state["cur"] else None
+            if cur == state["cur"] and not force:
+                return True
+            state["cur"] = cur
+            for i, row in enumerate(state["rows"]):
+                row.remove_css_class("cue-current")
+                if i == cur:
+                    row.add_css_class("cue-current")
+                c = state["cues"][i]
+                if quote_id(url, c["start"], c["text"]) in quoted:
+                    row.add_css_class("cue-quoted")
+                else:
+                    row.remove_css_class("cue-quoted")
+            if cur >= 0 and state["follow"]:
+                pt = state["rows"][max(0, cur - 1)].translate_coordinates(state["lb"], 0, 0)
+                if pt:
+                    state["sw"].get_vadjustment().set_value(pt[1])
+            return True
+
+        timer = GLib.timeout_add(500, refresh)
+        dlg.connect("closed", lambda *_a: GLib.source_remove(timer))
+
+        stack.set_visible_child_name("loading")
+        run_async(lambda: load_transcript(url, ep.get("transcript", ""), ep.get("transcript_type", "")), build,
+                  lambda e: stack.set_visible_child_name("none"))
+        dlg.present(self)
+
+    def show_quotes(self):
+        dlg = Adw.Dialog(title=_("My quotes"), content_width=640, content_height=680)
+        view = Adw.ToolbarView()
+        view.add_top_bar(Adw.HeaderBar())
+        dlg.set_child(view)
+        holder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        view.set_content(holder)
+
+        def rebuild():
+            while (child := holder.get_first_child()) is not None:
+                holder.remove(child)
+            quotes = load_quotes()
+            if not quotes:
+                holder.append(Adw.StatusPage(icon_name="bookmark-new-symbolic", title=_("My quotes"), vexpand=True,
+                                             description=_("No quotes yet. While listening, press the quote button, or open the transcript and highlight a sentence.")))
+                return
+            lb = Gtk.ListBox(css_classes=["boxed-list"], selection_mode=Gtk.SelectionMode.NONE, margin_start=12, margin_end=12, margin_top=8, margin_bottom=12)
+            for q in quotes:
+                sub = " · ".join(x for x in (q["podcast"], q["title"], fmt_clock(q["start"]) if q.get("start", -1) >= 0 else "") if x)
+                text = f"“{q['text']}”" if q.get("text") else (q.get("note") or fmt_clock(q["start"]))
+                row = Adw.ActionRow(title=GLib.markup_escape_text(text), title_lines=0, subtitle=GLib.markup_escape_text(sub), subtitle_lines=2)
+                if self.is_rtl(q.get("text", "")):
+                    row.set_direction(Gtk.TextDirection.RTL)
+                if q.get("text") and q.get("note"):
+                    row.set_subtitle(GLib.markup_escape_text(q["note"] + "\n" + sub))
+                for icon, tip, cb in (("media-playback-start-symbolic", _("Play from here"), lambda _b, q=q: (dlg.close(), self.play_quote(q))),
+                                      ("document-edit-symbolic", _("Add a note"), lambda _b, q=q: edit_note(q)),
+                                      ("edit-copy-symbolic", _("Copy to share"), lambda _b, q=q: self.get_clipboard().set(share_text(q))),
+                                      ("user-trash-symbolic", _("Delete"), lambda _b, q=q: (remove_quote(q["id"]), rebuild()))):
+                    b = Gtk.Button(icon_name=icon, tooltip_text=tip, valign=Gtk.Align.CENTER, css_classes=["flat"])
+                    b.connect("clicked", cb)
+                    row.add_suffix(b)
+                lb.append(row)
+            holder.append(Gtk.ScrolledWindow(vexpand=True, hscrollbar_policy=Gtk.PolicyType.NEVER, child=lb))
+
+        def edit_note(q):
+            ad = Adw.AlertDialog(heading=_("Add a note"))
+            entry = Gtk.Entry(text=q.get("note", ""), activates_default=True)
+            ad.set_extra_child(entry)
+            ad.add_response("cancel", _("Cancel"))
+            ad.add_response("save", _("Save"))
+            ad.set_response_appearance("save", Adw.ResponseAppearance.SUGGESTED)
+            ad.set_default_response("save")
+            ad.connect("response", lambda _d, r: (set_quote_note(q["id"], entry.get_text().strip()), rebuild()) if r == "save" else None)
+            ad.present(dlg)
+
+        rebuild()
+        dlg.present(self)
+
+    def play_quote(self, q):
+        item = {"kind": "podcast", "name": q["podcast"], "artist": "", "art": q.get("art", ""), "feed": q.get("feed", "")}
+        self.play_episode(item, {"title": q["title"], "url": q["url"], "date": "", "duration": ""}, max(0, q.get("start", 0)))
+
     def tick(self):
         self.sleep_tick()
         if self.playing_url:
@@ -1298,6 +1488,9 @@ class Window(Adw.ApplicationWindow):
                     if dur != self.duration:
                         self.duration = dur
                         self.sync_desktop()  # la durée n'est connue qu'après le début de lecture
+                        if getattr(self, "pending_seek_ns", 0):
+                            self.seek_to(self.pending_seek_ns)
+                            self.pending_seek_ns = 0
                     self.dur_lbl.set_text(fmt_time(dur))
                 if ok_p and self.duration:
                     self.scale.set_value(min(1.0, pos / self.duration))

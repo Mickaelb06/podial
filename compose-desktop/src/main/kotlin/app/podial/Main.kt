@@ -30,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.Dispatchers
@@ -88,6 +90,8 @@ fun PodialApp() {
     var detail by remember { mutableStateOf<Item?>(null) }
     var about by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf(false) }
+    var quotes by remember { mutableStateOf(false) }
+    var transcript by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         while (true) {
             Player.poll()
@@ -110,6 +114,7 @@ fun PodialApp() {
                         }, label = { Text(T[label]) })
                 }
                 Spacer(Modifier.weight(1f))
+                IconButton(onClick = { quotes = true }) { Icon(Icons.Default.FormatQuote, T["my_quotes"]) }
                 IconButton(onClick = { settings = true }) { Icon(Icons.Default.Settings, T["settings"]) }
                 IconButton(onClick = { about = true }, modifier = Modifier.padding(bottom = 8.dp)) { Icon(Icons.Default.Info, T["about"]) }
             }
@@ -124,7 +129,9 @@ fun PodialApp() {
                 }
             }
         }
-        if (Player.key.isNotEmpty()) PlayerBar()
+        if (Player.key.isNotEmpty()) PlayerBar(onTranscript = { transcript = true })
+        if (transcript) TranscriptDialog { transcript = false }
+        if (quotes) QuotesDialog { quotes = false }
         if (about) AboutDialog { about = false }
         if (settings) SettingsDialog { settings = false }
     }
@@ -352,7 +359,7 @@ private fun clock(ms: Long): String {
 }
 
 @Composable
-fun PlayerBar() {
+fun PlayerBar(onTranscript: () -> Unit) {
     var timerMenu by remember { mutableStateOf(false) }
     var seeking by remember { mutableStateOf<Float?>(null) }
     val remaining = Sleep.remainingSec
@@ -376,6 +383,10 @@ fun PlayerBar() {
                     { seeking = it }, Modifier.weight(1f),
                     onValueChangeFinished = { seeking?.let { Player.seekTo((it * Player.durationMs).toLong()) }; seeking = null })
                 Text(clock(Player.durationMs), style = MaterialTheme.typography.bodySmall)
+            }
+            if (!Player.live) {
+                IconButton({ saveQuote("", Player.positionMs) }) { Icon(Icons.Default.FormatQuote, T["quote"]) }
+                IconButton(onTranscript) { Icon(Icons.Default.Subject, T["transcript"]) }
             }
             if (!Player.live) TextButton({
                 val l = listOf(1f, 1.25f, 1.5f, 2f, 0.75f)
@@ -461,4 +472,124 @@ fun SettingsDialog(onClose: () -> Unit) {
         },
         confirmButton = { TextButton(onClose) { Text(T["close"]) } },
     )
+}
+
+
+// ---------- citations et transcriptions ----------
+fun saveQuote(text: String, startMs: Long) {
+    val url = Player.key.removePrefix("ep|")
+    Store.addQuote(Quote(Quote.idFor(url, startMs, text), text, startMs, url, Player.title, Player.artist, Player.feed, Player.art ?: ""))
+}
+
+@Composable
+fun TranscriptDialog(onClose: () -> Unit) {
+    val url = Player.key.removePrefix("ep|")
+    var cues by remember { mutableStateOf<List<Cue>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    LaunchedEffect(url) {
+        if (Player.transcriptUrl.isEmpty()) { failed = true; return@LaunchedEffect }
+        val r = runCatching { withContext(Dispatchers.IO) { Store.loadTranscript(url, Player.transcriptUrl, Player.transcriptType) } }
+        cues = r.getOrNull()?.takeIf { it.isNotEmpty() }
+        failed = cues == null
+    }
+    val saved by Store.quotes.collectAsState()
+    val list = cues
+    val timed = list != null && list.firstOrNull()?.startMs?.let { it >= 0 } == true
+    val current = if (timed) Transcripts.indexAt(list!!, Player.positionMs) else -1
+    val state = androidx.compose.foundation.lazy.rememberLazyListState()
+    var follow by remember { mutableStateOf(true) }
+    LaunchedEffect(current, follow) { if (follow && current >= 0) state.animateScrollToItem(maxOf(0, current - 1)) }
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.width(760.dp).fillMaxHeight(0.9f), shape = RoundedCornerShape(16.dp), tonalElevation = 6.dp) {
+            Column(Modifier.fillMaxSize()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text(T["transcript"], fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleMedium)
+                        Text(Player.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (timed) IconButton({ follow = !follow }) {
+                        Icon(Icons.Default.MyLocation, T["follow"], tint = if (follow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClose) { Icon(Icons.Default.Close, T["close"]) }
+                }
+                when {
+                    failed -> Message(T["no_transcript"])
+                    list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    else -> {
+                        Text(T["transcript_hint"], style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                        LazyColumn(state = state, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            items(list.size) { i ->
+                                val c = list[i]
+                                val id = Quote.idFor(url, c.startMs, c.text)
+                                val on = saved.any { it.id == id }
+                                val primary = MaterialTheme.colorScheme.primary
+                                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                                    .background(when { on -> primary.copy(alpha = 0.28f); i == current -> primary.copy(alpha = 0.10f); else -> Color.Transparent })
+                                    .clickable { if (c.startMs >= 0) { Player.seekTo(c.startMs); follow = true } }.padding(8.dp),
+                                    verticalAlignment = Alignment.Top) {
+                                    if (c.startMs >= 0) Text(clock(c.startMs), style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(56.dp).padding(top = 3.dp))
+                                    Text(c.text, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Content),
+                                        fontWeight = if (i == current) FontWeight.Bold else FontWeight.Normal)
+                                    IconButton({ if (on) Store.removeQuote(id) else saveQuote(c.text, c.startMs) }, Modifier.size(32.dp)) {
+                                        Icon(Icons.Default.FormatQuote, T["quote"], tint = if (on) primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QuotesDialog(onClose: () -> Unit) {
+    val quotes by Store.quotes.collectAsState()
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    var editing by remember { mutableStateOf<Quote?>(null) }
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.width(760.dp).fillMaxHeight(0.9f), shape = RoundedCornerShape(16.dp), tonalElevation = 6.dp) {
+            Column(Modifier.fillMaxSize()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(T["my_quotes"], fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                    IconButton(onClose) { Icon(Icons.Default.Close, T["close"]) }
+                }
+                if (quotes.isEmpty()) Message(T["no_quotes"])
+                else LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(quotes.size) { i ->
+                        val q = quotes[i]
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(14.dp)) {
+                                if (q.text.isNotBlank()) Text("“${q.text}”", style = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Content), fontWeight = FontWeight.Medium)
+                                if (q.note.isNotBlank()) Text(q.note, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 6.dp))
+                                Text(buildString { append(q.podcast); append(" · "); append(q.episodeTitle); if (q.startMs >= 0) append(" · ${clock(q.startMs)}") },
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+                                Row {
+                                    IconButton({
+                                        Player.play(Item("podcast", q.podcast, "", q.art, feed = q.feed), Episode(q.episodeTitle, q.episodeUrl, "", "", q.art), maxOf(0, q.startMs))
+                                        onClose()
+                                    }) { Icon(Icons.Default.PlayArrow, T["play_here"]) }
+                                    IconButton({ editing = q }) { Icon(Icons.Default.Edit, T["note"]) }
+                                    IconButton({ clipboard.setText(androidx.compose.ui.text.AnnotatedString(Quote.shareText(q))) }) { Icon(Icons.Default.ContentCopy, T["copy"]) }
+                                    Spacer(Modifier.weight(1f))
+                                    IconButton({ Store.removeQuote(q.id) }) { Icon(Icons.Default.Delete, T["delete"], tint = MaterialTheme.colorScheme.error) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    editing?.let { q ->
+        var text by remember(q.id) { mutableStateOf(q.note) }
+        AlertDialog(onDismissRequest = { editing = null },
+            title = { Text(T["note"]) },
+            text = { OutlinedTextField(text, { text = it }, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = { TextButton({ Store.setNote(q.id, text.trim()); editing = null }) { Text(T["save"]) } },
+            dismissButton = { TextButton({ editing = null }) { Text(T["cancel"]) } })
+    }
 }

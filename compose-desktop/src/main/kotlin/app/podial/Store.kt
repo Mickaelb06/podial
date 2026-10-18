@@ -37,6 +37,25 @@ object Store {
     val podcasts: StateFlow<List<Item>> = _podcasts
     val radios: StateFlow<List<Item>> = _radios
     val downloads: StateFlow<List<Download>> = _downloads
+
+    // ----- citations -----
+    private val _quotes = MutableStateFlow<List<Quote>>(emptyList())
+    val quotes: StateFlow<List<Quote>> = _quotes
+
+    @Synchronized fun addQuote(q: Quote) {
+        if (_quotes.value.any { it.id == q.id }) return
+        _quotes.value = listOf(q) + _quotes.value; save()
+    }
+    @Synchronized fun removeQuote(id: String) { _quotes.value = _quotes.value.filter { it.id != id }; save() }
+    @Synchronized fun setNote(id: String, note: String) { _quotes.value = _quotes.value.map { if (it.id == id) it.copy(note = note) else it }; save() }
+
+    /** Transcription d'un épisode : lue depuis le cache, sinon téléchargée puis gardée pour l'écoute hors ligne. */
+    fun loadTranscript(episodeUrl: String, url: String, type: String): List<Cue> {
+        val d = File(dir, "transcripts").apply { mkdirs() }
+        val f = File(d, "%08x.txt".format(CRC32().apply { update(episodeUrl.toByteArray()) }.value))
+        val body = if (f.exists()) f.readText() else Transcripts.download(url).also { if (it.isNotBlank()) f.writeText(it) }
+        return Transcripts.parse(body, type)
+    }
     private val _active = MutableStateFlow<Map<String, Float>>(emptyMap())
     val active: StateFlow<Map<String, Float>> = _active
     private val jobs = HashMap<String, Job>()
@@ -88,6 +107,7 @@ object Store {
             val o = org.json.JSONObject(libFile.readText())
             fun items(k: String) = o.optJSONArray(k)?.let { a -> (0 until a.length()).map { Item.fromJson(a.getJSONObject(it)) } } ?: emptyList()
             _podcasts.value = items("podcasts"); _radios.value = items("radios")
+            o.optJSONArray("quotes")?.let { a -> _quotes.value = (0 until a.length()).map { Quote.fromJson(a.getJSONObject(it)) } }
             o.optJSONArray("played")?.let { a -> _played.value = (0 until a.length()).map { a.getString(it) }.toSet() }
             o.optJSONObject("feeds")?.let { f ->
                 for (k in f.keys()) {
@@ -108,6 +128,7 @@ object Store {
             .put("podcasts", JSONArray(_podcasts.value.map { it.toJson() }))
             .put("radios", JSONArray(_radios.value.map { it.toJson() }))
             .put("downloads", JSONArray(_downloads.value.map { it.toJson() }))
+            .put("quotes", JSONArray(_quotes.value.map { it.toJson() }))
             .put("played", JSONArray(_played.value.toList().takeLast(5000)))
             .put("feeds", org.json.JSONObject().also { f ->
                 for ((k, v) in known) f.put(k, org.json.JSONObject().put("known", JSONArray(v.toList())).put("new", fresh[k] ?: 0))

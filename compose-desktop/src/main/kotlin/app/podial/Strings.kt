@@ -27,6 +27,12 @@ object T {
         "settings" to "Settings", "launch_login" to "Launch at login",
         "launch_login_desc" to "Starts Podial minimized when you log in.",
         "launch_login_unavailable" to "Available in the installed app (not when run from source).",
+        "my_quotes" to "My quotes", "quote" to "Quote", "transcript" to "Transcript", "follow" to "Follow the audio",
+        "transcript_hint" to "Click a line to listen from there. Click the quote icon to highlight it.",
+        "no_transcript" to "This episode has no published transcript. Many shows do not provide one.",
+        "no_quotes" to "No quotes yet. While listening, press Quote, or open the transcript and highlight a sentence.",
+        "play_here" to "Play from here", "note" to "Note", "copy" to "Copy to share", "delete" to "Delete", "save" to "Save", "cancel" to "Cancel",
+        "quote_saved" to "Quote saved at %s",
     )
     private val frMap = mapOf(
         "library" to "Bibliothèque", "downloads" to "Téléchargements", "search_podcasts" to "Rechercher un podcast…",
@@ -49,6 +55,12 @@ object T {
         "settings" to "Réglages", "launch_login" to "Lancer à l'ouverture de session",
         "launch_login_desc" to "Démarre Podial réduit à l'ouverture de session.",
         "launch_login_unavailable" to "Disponible dans l'application installée (pas depuis les sources).",
+        "my_quotes" to "Mes citations", "quote" to "Citation", "transcript" to "Transcription", "follow" to "Suivre l'audio",
+        "transcript_hint" to "Clique sur une ligne pour écouter à partir de là. Clique sur l'icône de citation pour la surligner.",
+        "no_transcript" to "Cet épisode n'a pas de transcription publiée. Beaucoup d'émissions n'en proposent pas.",
+        "no_quotes" to "Aucune citation. Pendant l'écoute, appuie sur Citation, ou ouvre la transcription et surligne une phrase.",
+        "play_here" to "Écouter à partir d'ici", "note" to "Note", "copy" to "Copier pour partager", "delete" to "Supprimer", "save" to "Enregistrer", "cancel" to "Annuler",
+        "quote_saved" to "Citation enregistrée à %s",
     )
     operator fun get(k: String): String = (if (fr) frMap[k] else null) ?: en[k] ?: k
 }

@@ -31,6 +31,8 @@ Cross-platform desktop version (Windows, macOS, Linux):
 - Live radio from all countries ([radio-browser.info](https://www.radio-browser.info)), browse by country and city, duplicates removed, favorites.
 - Radio pages show the station logo, quality, the title currently playing (when the station sends it) and, for RTL, today's schedule with the current show highlighted (Android). There is no common source for radio schedules, so each station needs its own support.
 - Optional YouTube audio on desktop (requires `yt-dlp`, which you install yourself; this may go against YouTube's terms of service, use at your own risk).
+- Transcripts and quotes: when a podcast publishes its transcript (Podcasting 2.0, SRT/VTT/JSON), read it while listening, tap a line to jump there and highlight sentences. A "Quote" button also saves the moment you are listening to. "My quotes" lists them with notes, and you can play from there or share them. Works with right-to-left and Asian scripts. Shows without a published transcript have none yet.
+- Android home-screen widgets: a compact one (cover and controls) and a vinyl one that spins while playing.
 - Sleep timer: in minutes, hours, or at the end of the episode, with a gentle volume fade.
 - Equalizer, smooth volume, playback speed, MPRIS controls and media keys on desktop.
 - Right-click the GNOME top-bar player to open or quit Podial. "Launch at login" on desktop. An About dialog and an update check (GitHub releases, off by default on Linux).
@@ -98,7 +100,7 @@ Early version. The Android app has not yet been tested on a real device or in a 
 
 - Radio schedules for more stations (Radio France and others, one by one).
 - Record live radio, with scheduling.
-- Local transcription and search inside episodes (runs on your machine).
+- Local transcription for episodes that publish no transcript, and search inside episodes (runs on your machine).
 - Listen to a podcast in another language, for example an English episode in French, through translated subtitles or voice.
 - Sync between devices without an account.
 - World map to discover radios by clicking a country.

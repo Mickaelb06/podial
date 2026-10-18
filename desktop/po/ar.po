@@ -498,3 +498,42 @@ msgstr "التشغيل عند تسجيل الدخول"
 
 msgid "Starts Podial in the background when you log in. Open it from the top bar or the Applications menu."
 msgstr "يشغّل Podial في الخلفية عند تسجيل الدخول. افتحه من الشريط العلوي أو من قائمة التطبيقات."
+
+msgid "My quotes"
+msgstr "اقتباساتي"
+
+msgid "Quote"
+msgstr "اقتباس"
+
+msgid "Transcript"
+msgstr "النص المكتوب"
+
+msgid "This episode has no published transcript. Many shows do not provide one."
+msgstr "لا توجد نسخة نصية منشورة لهذه الحلقة. كثير من البرامج لا تقدّمها."
+
+msgid "Click a line to listen from there. Use the quote button to highlight it."
+msgstr "انقر على سطر للاستماع من هناك. استخدم زر الاقتباس لتمييزه."
+
+msgid "No quotes yet. While listening, press the quote button, or open the transcript and highlight a sentence."
+msgstr "لا توجد اقتباسات بعد. أثناء الاستماع اضغط زر الاقتباس، أو افتح النص المكتوب وميّز جملة."
+
+msgid "Play from here"
+msgstr "استمع من هنا"
+
+msgid "Add a note"
+msgstr "إضافة ملاحظة"
+
+msgid "Copy to share"
+msgstr "نسخ للمشاركة"
+
+msgid "Delete"
+msgstr "حذف"
+
+msgid "Quote saved at {time}"
+msgstr "تم حفظ الاقتباس عند {time}"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Save"
+msgstr "حفظ"

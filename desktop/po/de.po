@@ -482,3 +482,42 @@ msgstr "Beim Anmelden starten"
 
 msgid "Starts Podial in the background when you log in. Open it from the top bar or the Applications menu."
 msgstr "Startet Podial beim Anmelden im Hintergrund. Öffne es über die obere Leiste oder das Anwendungsmenü."
+
+msgid "My quotes"
+msgstr "Meine Zitate"
+
+msgid "Quote"
+msgstr "Zitat"
+
+msgid "Transcript"
+msgstr "Transkript"
+
+msgid "This episode has no published transcript. Many shows do not provide one."
+msgstr "Für diese Folge gibt es kein veröffentlichtes Transkript. Viele Sendungen bieten keines an."
+
+msgid "Click a line to listen from there. Use the quote button to highlight it."
+msgstr "Klicke auf eine Zeile, um ab dort zu hören. Mit der Zitat-Taste markierst du sie."
+
+msgid "No quotes yet. While listening, press the quote button, or open the transcript and highlight a sentence."
+msgstr "Noch keine Zitate. Drücke beim Hören die Zitat-Taste oder öffne das Transkript und markiere einen Satz."
+
+msgid "Play from here"
+msgstr "Ab hier abspielen"
+
+msgid "Add a note"
+msgstr "Notiz hinzufügen"
+
+msgid "Copy to share"
+msgstr "Zum Teilen kopieren"
+
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Quote saved at {time}"
+msgstr "Zitat gespeichert bei {time}"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Save"
+msgstr "Speichern"

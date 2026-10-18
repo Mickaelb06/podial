@@ -488,3 +488,42 @@ msgstr "הפעלה בעת כניסה למערכת"
 
 msgid "Starts Podial in the background when you log in. Open it from the top bar or the Applications menu."
 msgstr "מפעיל את Podial ברקע בעת הכניסה למערכת. אפשר לפתוח אותו מהסרגל העליון או מתפריט היישומים."
+
+msgid "My quotes"
+msgstr "הציטוטים שלי"
+
+msgid "Quote"
+msgstr "ציטוט"
+
+msgid "Transcript"
+msgstr "תמלול"
+
+msgid "This episode has no published transcript. Many shows do not provide one."
+msgstr "לפרק זה אין תמלול שפורסם. תוכניות רבות אינן מספקות תמלול."
+
+msgid "Click a line to listen from there. Use the quote button to highlight it."
+msgstr "לחצו על שורה כדי להאזין משם. השתמשו בכפתור הציטוט כדי לסמן אותה."
+
+msgid "No quotes yet. While listening, press the quote button, or open the transcript and highlight a sentence."
+msgstr "אין ציטוטים עדיין. בזמן ההאזנה לחצו על כפתור הציטוט, או פתחו את התמלול וסמנו משפט."
+
+msgid "Play from here"
+msgstr "האזנה מכאן"
+
+msgid "Add a note"
+msgstr "הוספת הערה"
+
+msgid "Copy to share"
+msgstr "העתקה לשיתוף"
+
+msgid "Delete"
+msgstr "מחיקה"
+
+msgid "Quote saved at {time}"
+msgstr "ציטוט נשמר ב־{time}"
+
+msgid "Cancel"
+msgstr "ביטול"
+
+msgid "Save"
+msgstr "שמירה"

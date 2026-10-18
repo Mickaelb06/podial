@@ -341,10 +341,17 @@ def fetch_feed(feed_url, untitled="Untitled"):
                 date = parsedate_to_datetime(pub).strftime("%x")  # format de date de la langue du système
             except (TypeError, ValueError):
                 date = pub[:16]
+        tr_url, tr_type = "", ""
+        for child in item:  # balise podcast:transcript (espace de noms Podcasting 2.0) : on garde le format le plus utile
+            if child.tag.endswith("}transcript") and child.get("url"):
+                t = child.get("type") or ""
+                if not tr_url or transcript_rank(t) < transcript_rank(tr_type):
+                    tr_url, tr_type = child.get("url"), t
         eps.append({
             "title": (item.findtext("title") or untitled).strip(),
             "url": enc.get("url"), "date": date,
             "duration": parse_duration(item.findtext(ITUNES_NS + "duration")),
+            "transcript": tr_url, "transcript_type": tr_type,
         })
     return {"description": desc, "episodes": eps}
 
@@ -539,7 +546,8 @@ def download_episode(item, ep, progress=None, cancel=None):
             pass
     data = load_downloads()
     data[key] = {"file": path, "title": ep["title"], "date": ep.get("date", ""), "duration": ep.get("duration", ""),
-                 "yt": bool(ep.get("yt")), "id": ep.get("id"), "item": item, "size": os.path.getsize(path)}
+                 "yt": bool(ep.get("yt")), "id": ep.get("id"), "item": item,
+                 "transcript": ep.get("transcript", ""), "transcript_type": ep.get("transcript_type", ""), "size": os.path.getsize(path)}
     _save_downloads(data)
     return path
 
@@ -756,3 +764,127 @@ def check_update():
     if tag and _version_tuple(tag) > _version_tuple(VERSION):
         return tag.lstrip("v"), data.get("html_url", f"https://github.com/{REPO}/releases")
     return "", ""
+
+
+# ---------- transcriptions et citations ----------
+def transcript_rank(mime):
+    """Plus petit = préféré : le JSON et les formats minutés passent avant le texte brut."""
+    if "json" in mime: return 0
+    if "vtt" in mime: return 1
+    if "subrip" in mime or "srt" in mime: return 2
+    if "html" in mime: return 4
+    return 5 if not mime else 3
+
+
+def _stamp_ms(text):
+    secs = 0.0
+    for part in text.replace(",", ".").split(":"):
+        secs = secs * 60 + float(part)
+    return int(secs * 1000)
+
+
+_TIME_LINE = re.compile(r"((?:\d+:)?\d+:\d+(?:[.,]\d+)?)\s*-->")
+
+
+def parse_transcript(body, mime=""):
+    """Texte de transcription -> liste de {"start": ms ou -1, "text": phrase}. JSON, WebVTT, SRT, HTML ou texte."""
+    t = body.lstrip("\ufeff \n\r\t")
+    cues = []
+    if t.startswith(("{", "[")) or "json" in mime:
+        try:
+            data = json.loads(t)
+            segs = data if isinstance(data, list) else data.get("segments", [])
+            for seg in segs:
+                text = str(seg.get("body", "")).strip()
+                if text:
+                    cues.append({"start": int(float(seg.get("startTime", -0.001)) * 1000), "text": text})
+            return cues
+        except (ValueError, AttributeError):
+            return []
+    if "-->" in t:
+        for block in re.split(r"\n\s*\n", t.replace("\r", "")):
+            lines = block.split("\n")
+            idx = next((i for i, ln in enumerate(lines) if "-->" in ln), None)
+            m = _TIME_LINE.search(lines[idx]) if idx is not None else None
+            if not m:
+                continue
+            text = " ".join(re.sub(r"<[^>]+>", "", ln).strip() for ln in lines[idx + 1:]).strip()
+            if text:
+                try:
+                    cues.append({"start": _stamp_ms(m.group(1)), "text": text})
+                except ValueError:
+                    cues.append({"start": -1, "text": text})
+        return cues
+    if "html" in mime or t.startswith("<"):
+        t = re.sub(r"(?is)<(script|style).*?</\1>", "", t)
+        t = re.sub(r"(?i)</p>|<br\s*/?>|</div>|</h\d>", "\n\n", t)
+        t = html.unescape(re.sub(r"<[^>]+>", "", t))
+    return [{"start": -1, "text": p.strip()} for p in re.split(r"\n", t.replace("\r", "")) if p.strip()]
+
+
+def load_transcript(episode_url, url, mime=""):
+    """Transcription d'un épisode : lue depuis le cache local, sinon téléchargée puis gardée pour l'écoute hors ligne."""
+    folder = os.path.join(DATA_DIR, "transcripts")
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, f"{zlib.crc32(episode_url.encode()):08x}.txt")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            body = f.read()
+    else:
+        if not url:
+            raise ValueError("no transcript")
+        body = http_get(url, timeout=20)
+        if isinstance(body, bytes):
+            body = body.decode("utf-8", "replace")
+        if body.strip():
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(body)
+    return parse_transcript(body, mime)
+
+
+def cue_index(cues, pos_ms):
+    """Index de la phrase en cours (-1 si le texte n'est pas minuté)."""
+    if not cues or cues[0]["start"] < 0:
+        return -1
+    ans = 0
+    for i, c in enumerate(cues):
+        if c["start"] <= pos_ms:
+            ans = i
+        else:
+            break
+    return ans
+
+
+QUOTES_FILE = os.path.join(DATA_DIR, "quotes.json")
+
+
+def quote_id(episode_url, start, text):
+    return f"{zlib.crc32(f'{episode_url}|{start}|{text}'.encode()):08x}"
+
+
+def load_quotes():
+    return _read_json(QUOTES_FILE, [])
+
+
+def add_quote(q):
+    data = load_quotes()
+    if not any(x["id"] == q["id"] for x in data):
+        _write_json(QUOTES_FILE, [q] + data)
+
+
+def remove_quote(qid):
+    _write_json(QUOTES_FILE, [x for x in load_quotes() if x["id"] != qid])
+
+
+def set_quote_note(qid, note):
+    _write_json(QUOTES_FILE, [dict(x, note=note) if x["id"] == qid else x for x in load_quotes()])
+
+
+def share_text(q):
+    at = f" ({fmt_clock(q['start'])})" if q.get("start", -1) >= 0 else ""
+    return f"“{q.get('text') or q.get('note', '')}”\n— {q['podcast']}, {q['title']}{at}"
+
+
+def fmt_clock(ms):
+    s = max(0, int(ms // 1000))
+    return f"{s // 3600}:{s // 60 % 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60}:{s % 60:02d}"
