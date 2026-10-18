@@ -106,6 +106,11 @@ class PodcastsIndicator extends PanelMenu.Button {
         this._clip.add_child(this._label);
         this._pill.add_child(this._clip);
         this.add_child(this._pill);
+        // après un verrouillage d'écran la pastille réapparaît : on relance le défilement du titre
+        this._pill.connect('notify::mapped', () => {
+            if (this._pill.mapped && this._playing())
+                this._startMarquee();
+        });
     }
 
     _scale() {
@@ -136,12 +141,22 @@ class PodcastsIndicator extends PanelMenu.Button {
                         if (gen !== this._marqueeGen)
                             return;
                         this._label.translation_x = 0;
-                        this._label.ease({opacity: 255, duration: 250, onComplete: run});
+                        this._label.ease({opacity: 255, duration: 250, onComplete: () => this._later(1000, run)});
                     }});
                 },
             });
         };
         run();
+    }
+
+    /** Relance `fn` plus tard depuis la boucle principale : évite qu'une animation déjà terminée se relance sans fin (récursion). */
+    _later(ms, fn) {
+        const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+            this._timers.delete(id);
+            fn();
+            return GLib.SOURCE_REMOVE;
+        });
+        this._timers.add(id);
     }
 
     _popInTitle() {
@@ -287,7 +302,11 @@ class PodcastsIndicator extends PanelMenu.Button {
             this._ctx.toggle();
             return Clutter.EVENT_STOP;
         }
-        return super.vfunc_event(event);
+        try {
+            return super.vfunc_event(event);
+        } catch (e) {
+            return Clutter.EVENT_PROPAGATE;
+        }
     }
 
     _button(iconName, styleClass, size, onClick) {
