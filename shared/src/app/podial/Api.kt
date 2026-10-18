@@ -76,17 +76,21 @@ object Api {
 
     private class StopParsing : RuntimeException()
 
-    private fun parseFeed(input: java.io.InputStream): Pair<String, List<Episode>> {
+    internal fun parseFeed(input: java.io.InputStream): Pair<String, List<Episode>> {
         var desc = ""
         val eps = mutableListOf<Episode>()
         var inItem = false
-        var title = ""; var url = ""; var date = ""; var dur = ""; var art = ""
+        var title = ""; var url = ""; var date = ""; var dur = ""; var art = ""; var tr = ""; var trType = ""
         val text = StringBuilder()
         val handler = object : DefaultHandler() {
             override fun startElement(uri: String?, local: String?, q: String, a: Attributes) {
                 text.setLength(0)
                 when (q) {
-                    "item" -> { inItem = true; title = ""; url = ""; date = ""; dur = ""; art = "" }
+                    "item" -> { inItem = true; title = ""; url = ""; date = ""; dur = ""; art = ""; tr = ""; trType = "" }
+                    "podcast:transcript" -> if (inItem) {
+                        val type = a.getValue("type") ?: ""
+                        if (tr.isEmpty() || Transcripts.rank(type) < Transcripts.rank(trType)) { tr = a.getValue("url") ?: ""; trType = type }
+                    }
                     "enclosure" -> if (inItem) url = a.getValue("url") ?: ""
                     "itunes:image" -> if (inItem) art = a.getValue("href") ?: ""
                 }
@@ -101,7 +105,7 @@ object Api {
                     "itunes:duration" -> if (inItem) dur = formatDuration(t)
                     "item" -> {
                         inItem = false
-                        if (url.isNotEmpty()) eps += Episode(title.ifEmpty { "—" }, url, date, dur, art)
+                        if (url.isNotEmpty()) eps += Episode(title.ifEmpty { "—" }, url, date, dur, art, tr, trType)
                         if (eps.size >= 200) throw StopParsing()
                     }
                 }

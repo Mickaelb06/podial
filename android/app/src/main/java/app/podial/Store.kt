@@ -40,6 +40,27 @@ object Store {
     private val _newCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
     val newCounts: StateFlow<Map<String, Int>> = _newCounts
 
+    // ----- citations -----
+    private val _quotes = MutableStateFlow<List<Quote>>(emptyList())
+    val quotes: StateFlow<List<Quote>> = _quotes
+
+    @Synchronized fun addQuote(q: Quote) {
+        if (_quotes.value.any { it.id == q.id }) return
+        _quotes.value = listOf(q) + _quotes.value
+        saveQuotes()
+    }
+    @Synchronized fun removeQuote(id: String) { _quotes.value = _quotes.value.filter { it.id != id }; saveQuotes() }
+    @Synchronized fun setNote(id: String, note: String) { _quotes.value = _quotes.value.map { if (it.id == id) it.copy(note = note) else it }; saveQuotes() }
+    private fun saveQuotes() = prefs.edit().putString("quotes", JSONArray(_quotes.value.map { it.toJson() }).toString()).apply()
+
+    /** Transcription d'un épisode : lue depuis le cache du téléphone, sinon téléchargée puis gardée pour l'écoute hors ligne. */
+    fun loadTranscript(episodeUrl: String, url: String, type: String): List<Cue> {
+        val dir = File(ctx.filesDir, "transcripts").apply { mkdirs() }
+        val f = File(dir, "%08x.txt".format(CRC32().apply { update(episodeUrl.toByteArray()) }.value))
+        val body = if (f.exists()) f.readText() else Transcripts.download(url).also { if (it.isNotBlank()) f.writeText(it) }
+        return Transcripts.parse(body, type)
+    }
+
     private fun feeds() = JSONObject(prefs.getString("feeds", "{}") ?: "{}")
 
     private fun refreshCounts() {
@@ -81,6 +102,7 @@ object Store {
         _radios.value = readItems("radios")
         _played.value = runCatching { JSONArray(prefs.getString("played", "[]")).let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } }.getOrDefault(emptySet())
         refreshCounts()
+        _quotes.value = runCatching { JSONArray(prefs.getString("quotes", "[]")).let { a -> (0 until a.length()).map { Quote.fromJson(a.getJSONObject(it)) } } }.getOrDefault(emptyList())
         _downloads.value = runCatching {
             val a = JSONArray(prefs.getString("downloads", "[]"))
             (0 until a.length()).map { Download.fromJson(a.getJSONObject(it)) }.filter { File(it.file).exists() }

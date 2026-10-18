@@ -40,11 +40,20 @@ class PlaybackService : MediaLibraryService() {
                 if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) SleepTimer.onPlaybackEnded()
             }
         })
+        player.addListener(object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) {
+                if (events.containsAny(Player.EVENT_IS_PLAYING_CHANGED, Player.EVENT_MEDIA_ITEM_TRANSITION,
+                        Player.EVENT_MEDIA_METADATA_CHANGED, Player.EVENT_PLAYBACK_STATE_CHANGED)) Widgets.refresh(this@PlaybackService)
+            }
+        })
         SleepTimer.attach(player)
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         session = MediaLibrarySession.Builder(this, player, Callback()).setSessionActivity(open).build()
         instance = this
+        Widgets.refresh(this)
     }
+
+    fun player(): Player? = session?.player
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
 
@@ -56,6 +65,7 @@ class PlaybackService : MediaLibraryService() {
         instance = null
         session?.run { player.release(); release() }
         session = null
+        Widgets.refresh(applicationContext)
         super.onDestroy()
     }
 
@@ -138,7 +148,7 @@ class PlaybackService : MediaLibraryService() {
             return MediaItem.Builder().setMediaId(id).setUri(if (local != null) Uri.fromFile(File(local)) else Uri.parse(e.url)).setMediaMetadata(
                 MediaMetadata.Builder().setTitle(e.title).setArtist(p.name).setAlbumTitle(p.name)
                     .setIsBrowsable(false).setIsPlayable(true).setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-                    .setArtworkUri(art.takeIf { it.isNotEmpty() }?.let(Uri::parse)).setExtras(Bundle().apply { putString("feed", p.feed) }).build()).build()
+                    .setArtworkUri(art.takeIf { it.isNotEmpty() }?.let(Uri::parse)).setExtras(Bundle().apply { putString("feed", p.feed); putString("transcript", e.transcript); putString("transcriptType", e.transcriptType); putString("date", e.date) }).build()).build()
                 .also { cache[id] = it }
         }
     }

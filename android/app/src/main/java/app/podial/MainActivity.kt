@@ -78,6 +78,9 @@ class PlayerState {
     var speed by mutableFloatStateOf(1f)
     var station by mutableStateOf("")      // radio : nom de la station
     var nowPlaying by mutableStateOf("")   // radio : titre en cours, quand la station l'envoie
+    var feed by mutableStateOf("")
+    var transcriptUrl by mutableStateOf("")
+    var transcriptType by mutableStateOf("")
 
     fun refresh() {
         val c = controller ?: return
@@ -86,6 +89,10 @@ class PlayerState {
         artist = c.mediaMetadata.artist?.toString() ?: ""
         art = c.mediaMetadata.artworkUri?.toString()
         mediaId = c.currentMediaItem?.mediaId ?: ""
+        val ex = c.mediaMetadata.extras
+        feed = ex?.getString("feed") ?: ""
+        transcriptUrl = ex?.getString("transcript") ?: ""
+        transcriptType = ex?.getString("transcriptType") ?: ""
         live = c.isCurrentMediaItemLive || mediaId.startsWith("radio|")
         val itemTitle = c.currentMediaItem?.mediaMetadata?.title?.toString() ?: ""
         station = if (live) itemTitle else ""
@@ -97,9 +104,9 @@ class PlayerState {
         if (!live && mediaId.startsWith("ep|") && Updates.isFinished(position, duration)) Store.setPlayed(mediaId.removePrefix("ep|"), true)
     }
 
-    fun play(item: MediaItem) {
+    fun play(item: MediaItem, startMs: Long = 0L) {
         val c = controller ?: return
-        c.setMediaItem(item); c.prepare(); c.play()
+        c.setMediaItem(item, startMs); c.prepare(); c.play()
     }
 }
 
@@ -118,6 +125,8 @@ fun PodialApp() {
     var detail by remember { mutableStateOf<Item?>(null) }
     var sheet by remember { mutableStateOf(false) }
     var about by remember { mutableStateOf(false) }
+    var quotes by remember { mutableStateOf(false) }
+    var transcript by remember { mutableStateOf(false) }
     BackHandler(enabled = detail != null) { detail = null }
 
     Scaffold(
@@ -145,12 +154,14 @@ fun PodialApp() {
             else when (tab) {
                 0 -> BrowseScreen("podcast") { detail = it }
                 1 -> BrowseScreen("radio") { detail = it }
-                2 -> LibraryScreen(onAbout = { about = true }) { detail = it }
+                2 -> LibraryScreen(onAbout = { about = true }, onQuotes = { quotes = true }) { detail = it }
                 else -> DownloadsScreen(player)
             }
         }
     }
-    if (sheet) PlayerSheet(player) { sheet = false }
+    if (sheet) PlayerSheet(player, onTranscript = { sheet = false; transcript = true }) { sheet = false }
+    if (transcript) TranscriptScreen(player) { transcript = false }
+    if (quotes) QuotesScreen(player) { quotes = false }
     if (about) AboutDialog(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0") { about = false }
 }
 
@@ -239,12 +250,13 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
 }
 
 @Composable
-fun LibraryScreen(onAbout: () -> Unit, onOpen: (Item) -> Unit) {
+fun LibraryScreen(onAbout: () -> Unit, onQuotes: () -> Unit, onOpen: (Item) -> Unit) {
     val pods by Store.podcasts.collectAsState()
     val radios by Store.radios.collectAsState()
     LazyVerticalGrid(GridCells.Adaptive(150.dp), contentPadding = PaddingValues(8.dp), modifier = Modifier.fillMaxSize()) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                IconButton(onClick = onQuotes) { Icon(Icons.Default.FormatQuote, stringResource(R.string.my_quotes)) }
                 IconButton(onClick = onAbout) { Icon(Icons.Default.Info, stringResource(R.string.about)) }
             }
         }
@@ -400,7 +412,7 @@ private fun clock(ms: Long): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerSheet(p: PlayerState, onClose: () -> Unit) {
+fun PlayerSheet(p: PlayerState, onTranscript: () -> Unit, onClose: () -> Unit) {
     val remaining by SleepTimer.remaining.collectAsState()
     val eop by SleepTimer.endOfEpisode.collectAsState()
     var timerMenu by remember { mutableStateOf(false) }
@@ -426,6 +438,17 @@ fun PlayerSheet(p: PlayerState, onClose: () -> Unit) {
                     Icon(if (p.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, stringResource(if (p.isPlaying) R.string.pause else R.string.play), Modifier.size(36.dp))
                 }
                 IconButton({ p.controller?.seekForward() }, enabled = !p.live) { Icon(Icons.Default.Forward30, null) }
+            }
+            if (!p.live) {
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                val saved = stringResource(R.string.quote_saved)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    FilledTonalButton({
+                        saveQuote(p, "", p.position)
+                        android.widget.Toast.makeText(ctx, saved.format(clock(p.position)), android.widget.Toast.LENGTH_SHORT).show()
+                    }) { Icon(Icons.Default.FormatQuote, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.quote_here)) }
+                    FilledTonalButton(onTranscript) { Icon(Icons.Default.Subject, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.transcript)) }
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 if (!p.live) TextButton({
@@ -645,5 +668,130 @@ fun RadioSheet(p: PlayerState) {
             }
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+
+// ---------- citations et transcriptions ----------
+/** Enregistre une citation de l'épisode en cours (texte vide = simple moment marqué). */
+fun saveQuote(p: PlayerState, text: String, startMs: Long) {
+    val url = p.mediaId.removePrefix("ep|")
+    Store.addQuote(Quote(Quote.idFor(url, startMs, text), text, startMs, url, p.title, p.artist, p.feed, p.art ?: ""))
+}
+
+@Composable
+fun TranscriptScreen(p: PlayerState, onClose: () -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val url = p.mediaId.removePrefix("ep|")
+    var cues by remember { mutableStateOf<List<Cue>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    LaunchedEffect(url) {
+        if (p.transcriptUrl.isEmpty()) { failed = true; return@LaunchedEffect }
+        val r = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Store.loadTranscript(url, p.transcriptUrl, p.transcriptType) } }
+        cues = r.getOrNull()?.takeIf { it.isNotEmpty() }
+        failed = cues == null
+    }
+    val saved by Store.quotes.collectAsState()
+    val list = cues
+    val timed = list != null && list.firstOrNull()?.startMs?.let { it >= 0 } == true
+    val current = if (timed) Transcripts.indexAt(list!!, p.position) else -1
+    val state = androidx.compose.foundation.lazy.rememberLazyListState()
+    var follow by remember { mutableStateOf(true) }
+    LaunchedEffect(current, follow) { if (follow && current >= 0) state.animateScrollToItem(maxOf(0, current - 1)) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize().systemBarsPadding()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClose) { Icon(Icons.Default.ArrowBack, stringResource(R.string.back)) }
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.transcript), fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleMedium)
+                        Text(p.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (timed) IconButton({ follow = !follow }) {
+                        Icon(Icons.Default.MyLocation, stringResource(R.string.follow), tint = if (follow) Violet else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                when {
+                    failed -> Message(stringResource(R.string.no_transcript))
+                    list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    else -> {
+                        Text(stringResource(R.string.transcript_hint), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                        LazyColumn(state = state, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(list.size) { i ->
+                                val c = list[i]
+                                val id = Quote.idFor(url, c.startMs, c.text)
+                                val on = saved.any { it.id == id }
+                                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                                    .background(when { on -> Violet.copy(alpha = 0.28f); i == current -> Violet.copy(alpha = 0.10f); else -> Color.Transparent })
+                                    .clickable { if (c.startMs >= 0) { p.controller?.seekTo(c.startMs); follow = true } }.padding(8.dp),
+                                    verticalAlignment = Alignment.Top) {
+                                    if (c.startMs >= 0) Text(clock(c.startMs), style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(48.dp).padding(top = 3.dp))
+                                    Text(c.text, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Content),
+                                        fontWeight = if (i == current) FontWeight.Bold else FontWeight.Normal)
+                                    IconButton({ if (on) Store.removeQuote(id) else saveQuote(p, c.text, c.startMs) }, Modifier.size(32.dp)) {
+                                        Icon(if (on) Icons.Default.FormatQuote else Icons.Outlined.FormatQuote, stringResource(R.string.quote_here), tint = if (on) Violet else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QuotesScreen(p: PlayerState, onClose: () -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val quotes by Store.quotes.collectAsState()
+    var editing by remember { mutableStateOf<Quote?>(null) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize().systemBarsPadding()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClose) { Icon(Icons.Default.ArrowBack, stringResource(R.string.back)) }
+                    Text(stringResource(R.string.my_quotes), fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleLarge)
+                }
+                if (quotes.isEmpty()) Message(stringResource(R.string.no_quotes))
+                else LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(quotes.size) { i ->
+                        val q = quotes[i]
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(14.dp)) {
+                                if (q.text.isNotBlank()) Text("“${q.text}”", style = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Content), fontWeight = FontWeight.Medium)
+                                if (q.note.isNotBlank()) Text(q.note, color = Violet, modifier = Modifier.padding(top = 6.dp))
+                                Text(buildString { append(q.podcast); append(" · "); append(q.episodeTitle); if (q.startMs >= 0) append(" · ${clock(q.startMs)}") },
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+                                Row {
+                                    IconButton({
+                                        val item = Item("podcast", q.podcast, "", q.art, feed = q.feed)
+                                        p.play(PlaybackService.episodeItem(item, Episode(q.episodeTitle, q.episodeUrl, "", "", q.art)), maxOf(0, q.startMs))
+                                        onClose()
+                                    }) { Icon(Icons.Default.PlayArrow, stringResource(R.string.play_from_here)) }
+                                    IconButton({ editing = q }) { Icon(Icons.Default.Edit, stringResource(R.string.note)) }
+                                    IconButton({
+                                        ctx.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND)
+                                            .setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT, Quote.shareText(q)), null))
+                                    }) { Icon(Icons.Default.Share, stringResource(R.string.share)) }
+                                    Spacer(Modifier.weight(1f))
+                                    IconButton({ Store.removeQuote(q.id) }) { Icon(Icons.Default.Delete, stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    editing?.let { q ->
+        var text by remember(q.id) { mutableStateOf(q.note) }
+        AlertDialog(onDismissRequest = { editing = null },
+            title = { Text(stringResource(R.string.note)) },
+            text = { OutlinedTextField(text, { text = it }, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = { TextButton({ Store.setNote(q.id, text.trim()); editing = null }) { Text(stringResource(R.string.save)) } },
+            dismissButton = { TextButton({ editing = null }) { Text(stringResource(R.string.cancel)) } })
     }
 }

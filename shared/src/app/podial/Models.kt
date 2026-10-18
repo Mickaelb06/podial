@@ -27,16 +27,20 @@ data class Item(
     }
 }
 
-data class Episode(val title: String, val url: String, val date: String, val duration: String, val art: String = "")
+/** [transcript] : adresse du texte publié par le podcast (balise podcast:transcript), [transcriptType] : son type MIME. */
+data class Episode(val title: String, val url: String, val date: String, val duration: String, val art: String = "",
+                   val transcript: String = "", val transcriptType: String = "")
 
 /** Épisode téléchargé, lisible hors ligne. */
 data class Download(val episode: Episode, val podcast: Item, val file: String, val size: Long) {
     fun toJson() = JSONObject().put("title", episode.title).put("url", episode.url).put("date", episode.date)
         .put("duration", episode.duration).put("podcast", podcast.toJson()).put("file", file).put("size", size)
+        .put("art", episode.art).put("transcript", episode.transcript).put("transcriptType", episode.transcriptType)
 
     companion object {
         fun fromJson(o: JSONObject) = Download(
-            Episode(o.getString("title"), o.getString("url"), o.optString("date"), o.optString("duration")),
+            Episode(o.getString("title"), o.getString("url"), o.optString("date"), o.optString("duration"), o.optString("art"),
+                o.optString("transcript"), o.optString("transcriptType")),
             Item.fromJson(o.getJSONObject("podcast")), o.getString("file"), o.optLong("size"),
         )
     }

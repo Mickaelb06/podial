@@ -54,4 +54,26 @@
     <string name="program_today">Programme du jour</string>
     <string name="now_label">EN COURS</string>
     <string name="program_source">Source : %s</string>
+    <string name="widget_idle">Touchez pour ouvrir Podial</string>
+    <string name="widget_small_name">Podial (compact)</string>
+    <string name="widget_vinyl_name">Podial (vinyle)</string>
+    <string name="widget_small_desc">Pochette, lecture/pause, recul 15 s et avance 30 s.</string>
+    <string name="widget_vinyl_desc">Vinyle qui tourne, lecture en cours et boutons.</string>
+    <string name="widget_play">Lecture / pause</string>
+    <string name="widget_back">Reculer de 15 secondes</string>
+    <string name="widget_forward">Avancer de 30 secondes</string>
+    <string name="my_quotes">Mes citations</string>
+    <string name="quote_here">Citation</string>
+    <string name="quote_saved">Citation enregistrée à %1$s</string>
+    <string name="transcript">Transcription</string>
+    <string name="transcript_hint">Touche une ligne pour écouter à partir de là. Touche l\'icône de citation pour la surligner.</string>
+    <string name="no_transcript">Cet épisode n\'a pas de transcription publiée. Beaucoup d\'émissions n\'en proposent pas.</string>
+    <string name="no_quotes">Aucune citation. Pendant l\'écoute, touche Citation, ou ouvre la transcription et surligne une phrase.</string>
+    <string name="follow">Suivre l\'audio</string>
+    <string name="play_from_here">Écouter à partir d\'ici</string>
+    <string name="note">Note</string>
+    <string name="share">Partager</string>
+    <string name="save">Enregistrer</string>
+    <string name="cancel">Annuler</string>
+    <string name="delete">Supprimer</string>
 </resources>
