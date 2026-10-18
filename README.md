@@ -35,7 +35,23 @@ Cross-platform desktop version (Windows, macOS, Linux):
 
 Podcast data comes from the public iTunes Search API and Apple RSS charts. Nothing is sent to any server of ours: there is none.
 
-## Desktop
+## Download
+
+Installers are attached to each [release](https://github.com/Mickaelb06/podial/releases/latest).
+
+| Platform | Files |
+|---|---|
+| Linux (Debian, Ubuntu, Mint) | `podial_*_all.deb`: GTK app with the GNOME top-bar extension |
+| Linux (other distributions) | `podial-linux-*.tar.gz` (run `./install.sh`), or the cross-platform `.deb` / `.rpm` |
+| Windows | `.exe` installer (or `.msi`) |
+| macOS | `.dmg` |
+| Android | `podial-android.apk` |
+
+Building from source is explained below. Releases are marked "pre-release" until the Windows, macOS and Android builds have had more testing.
+
+On every desktop version you can turn on "Launch at login" in the settings: Podial then starts in the background (or minimized).
+
+## Desktop (Linux / GNOME)
 
 Requirements: Python 3, GTK 4, libadwaita 1.x, GStreamer (with the `good` and `bad` plugin sets).
 

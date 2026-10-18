@@ -35,6 +35,22 @@ Version de bureau multiplateforme (Windows, macOS, Linux) :
 
 Les données des podcasts viennent de l'API publique iTunes Search et des classements RSS d'Apple. Rien n'est envoyé à un serveur qui nous appartient : il n'y en a pas.
 
+## Téléchargement
+
+Les installateurs sont joints à chaque [release](https://github.com/Mickaelb06/podial/releases/latest).
+
+| Plateforme | Fichiers |
+|---|---|
+| Linux (Debian, Ubuntu, Mint) | `podial_*_all.deb` : application GTK avec l'extension GNOME |
+| Linux (autres distributions) | `podial-linux-*.tar.gz` (lance `./install.sh`), ou les `.deb` / `.rpm` multiplateformes |
+| Windows | installateur `.exe` (ou `.msi`) |
+| macOS | `.dmg` |
+| Android | `podial-android.apk` |
+
+La compilation depuis les sources est expliquée plus bas. Les releases sont marquées « pre-release » tant que les versions Windows, macOS et Android n'ont pas été davantage testées.
+
+Sur toutes les versions de bureau, tu peux activer « Lancer à l'ouverture de session » dans les réglages : Podial démarre alors en arrière-plan (ou réduit).
+
 ## Bureau Linux / GNOME
 
 Prérequis : Python 3, GTK 4, libadwaita 1.x, GStreamer (avec les greffons `good` et `bad`).
