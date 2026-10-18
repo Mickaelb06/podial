@@ -400,3 +400,22 @@ msgstr "Annuler le minuteur"
 
 msgid "End"
 msgstr "Fin"
+
+msgid "NEW"
+msgstr "NOUVEAU"
+
+msgid "Mark as played"
+msgstr "Marquer comme écouté"
+
+msgid "Mark as unplayed"
+msgstr "Marquer comme non écouté"
+
+msgid "{n} new"
+msgid_plural "{n} new"
+msgstr[0] "{n} nouveau"
+msgstr[1] "{n} nouveaux"
+
+msgid "{n} new episode: {names}"
+msgid_plural "{n} new episodes: {names}"
+msgstr[0] "{n} nouvel épisode : {names}"
+msgstr[1] "{n} nouveaux épisodes : {names}"

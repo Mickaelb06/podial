@@ -33,4 +33,10 @@
     <string name="speed">Vitesse de lecture</string>
     <string name="nothing_playing">Rien en lecture</string>
     <string name="episodes_fmt">%d épisodes</string>
+    <string name="new_episodes_title">Nouveaux épisodes</string>
+    <string name="new_episodes_fmt">%1$d nouveau(x) : %2$s</string>
+    <string name="new_badge">%d nouveau(x)</string>
+    <string name="new_chip">NOUVEAU</string>
+    <string name="mark_played">Marquer comme écouté</string>
+    <string name="mark_unplayed">Marquer comme non écouté</string>
 </resources>

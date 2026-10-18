@@ -41,11 +41,62 @@ object Store {
     val active: StateFlow<Map<String, Float>> = _active
     private val jobs = HashMap<String, Job>()
 
+    // ----- épisodes écoutés et nouveautés -----
+    private val _played = MutableStateFlow<Set<String>>(emptySet())
+    val played: StateFlow<Set<String>> = _played
+    private val _newCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val newCounts: StateFlow<Map<String, Int>> = _newCounts
+    private val known = HashMap<String, Set<String>>()   // flux -> épisodes déjà vus
+    private val fresh = HashMap<String, Int>()            // flux -> nombre de nouveaux
+
+    private fun refreshCounts() { _newCounts.value = fresh.filterValues { it > 0 } }
+
+    @Synchronized fun knownFor(feed: String): Set<String>? = known[feed]
+
+    /** L'utilisateur a vu ces épisodes (page ouverte, abonnement) : plus de nouveautés pour ce flux. */
+    @Synchronized fun markSeen(feed: String, urls: Collection<String>) {
+        known[feed] = ((known[feed] ?: emptySet()) + urls).toList().takeLast(600).toSet()
+        fresh[feed] = 0; refreshCounts(); save()
+    }
+
+    /** Compare les épisodes d'un flux à ceux déjà vus ; premier passage : on mémorise sans rien signaler. */
+    @Synchronized fun recordCheck(feed: String, eps: List<Episode>): Int {
+        val k = known[feed]
+        if (k == null) { markSeen(feed, eps.map { it.url }); return 0 }
+        val n = Updates.fresh(eps, k, _played.value).size
+        fresh[feed] = n; refreshCounts(); save()
+        return n
+    }
+
+    @Synchronized fun setPlayed(url: String, flag: Boolean) {
+        _played.value = if (flag) _played.value + url else _played.value - url
+        save()
+    }
+
+    /** Vérifie tous les podcasts suivis ; renvoie les noms de ceux qui ont du nouveau. */
+    suspend fun checkAll(): List<String> {
+        val names = mutableListOf<String>()
+        for (p in _podcasts.value) {
+            val eps = try { Api.fetchFeed(p.feed).second } catch (e: Exception) { continue }
+            if (recordCheck(p.feed, eps) > 0) names += p.name
+        }
+        return names
+    }
+
     init {
         runCatching {
             val o = org.json.JSONObject(libFile.readText())
             fun items(k: String) = o.optJSONArray(k)?.let { a -> (0 until a.length()).map { Item.fromJson(a.getJSONObject(it)) } } ?: emptyList()
             _podcasts.value = items("podcasts"); _radios.value = items("radios")
+            o.optJSONArray("played")?.let { a -> _played.value = (0 until a.length()).map { a.getString(it) }.toSet() }
+            o.optJSONObject("feeds")?.let { f ->
+                for (k in f.keys()) {
+                    val e = f.getJSONObject(k)
+                    known[k] = e.getJSONArray("known").let { a -> (0 until a.length()).map { a.getString(it) }.toSet() }
+                    fresh[k] = e.optInt("new")
+                }
+            }
+            refreshCounts()
             _downloads.value = o.optJSONArray("downloads")?.let { a ->
                 (0 until a.length()).map { Download.fromJson(a.getJSONObject(it)) }.filter { File(it.file).exists() }
             } ?: emptyList()
@@ -57,6 +108,10 @@ object Store {
             .put("podcasts", JSONArray(_podcasts.value.map { it.toJson() }))
             .put("radios", JSONArray(_radios.value.map { it.toJson() }))
             .put("downloads", JSONArray(_downloads.value.map { it.toJson() }))
+            .put("played", JSONArray(_played.value.toList().takeLast(5000)))
+            .put("feeds", org.json.JSONObject().also { f ->
+                for ((k, v) in known) f.put(k, org.json.JSONObject().put("known", JSONArray(v.toList())).put("new", fresh[k] ?: 0))
+            })
         val tmp = File(dir, "library.json.tmp")
         tmp.writeText(o.toString(1))
         tmp.renameTo(libFile)

@@ -16,11 +16,11 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Gst", "1.0")
 gi.require_version("Gdk", "4.0")
-from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gst, Gtk  # noqa: E402
+from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gst, Gtk  # noqa: E402
 
 import integration  # noqa: E402
 from catalog import (  # noqa: E402
-    COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, delete_download, download_episode, fetch_feed, fetch_youtube_feed, flag, get_country, get_setting,
+    COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, check_new_episodes, delete_download, download_episode, fetch_feed, load_played, mark_seen, new_counts, seen_urls, set_played, fetch_youtube_feed, flag, get_country, get_setting,
     http_get, item_key, radio_browse, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
     youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path)
 from filters import CountryChooser, GenreBar, RadioBar  # noqa: E402
@@ -81,6 +81,11 @@ flowboxchild:hover { background: alpha(@accent_bg_color, 0.16); }
 .ico-radio { color: #fb923c; }
 .ico-library { color: #facc15; }
 .ico-downloads { color: #34d399; }
+.new-badge { background: #e5484d; color: white; border-radius: 99px; padding: 1px 8px; margin: 8px;
+             font-weight: 800; font-size: 0.75em; }
+.new-chip { background: alpha(@accent_bg_color, 0.25); color: @accent_color; border-radius: 99px;
+            padding: 0 8px; font-weight: 700; font-size: 0.75em; }
+.ep-played { opacity: 0.55; }
 button.suggested-action { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; }
 scale highlight { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
 """
@@ -175,6 +180,8 @@ class Window(Adw.ApplicationWindow):
         super().__init__(application=app, title=APP_NAME, default_width=1180, default_height=780)
         self.section = "podcast"
         self.lists = {k: load_list(k) for k in LIB_FILES}
+        self.played = load_played()         # épisodes déjà écoutés
+        self.new_counts = new_counts()      # podcasts suivis : adresse du flux -> nombre de nouveaux épisodes
         self.downloads = load_downloads()   # épisodes disponibles hors ligne
         self.dl_cancel = {}
         self.dl_active = {}                 # épisodes en cours de téléchargement : adresse -> avancement (0..1)
@@ -230,6 +237,9 @@ class Window(Adw.ApplicationWindow):
         self.side_list.select_row(self.side_list.get_row_at_index(0))
         GLib.timeout_add(500, self.tick)
         GLib.timeout_add_seconds(5, lambda: self.run_auto_download() or False)
+        GLib.timeout_add_seconds(8, lambda: self.run_check_new() or False)
+        GLib.timeout_add_seconds(3600, lambda: self.run_check_new() or True)
+        self.refresh_library_badge()
         GLib.timeout_add_seconds(3600, lambda: self.run_auto_download() or True)
 
     def tint(self, provider, css_class, color, alpha, height):
@@ -272,7 +282,10 @@ class Window(Adw.ApplicationWindow):
         for _key, label, icon in self.sections:
             row = Gtk.Box(spacing=12, margin_top=8, margin_bottom=8, margin_start=6, margin_end=6)
             row.append(Gtk.Image(icon_name=icon, css_classes=[f"ico-{_key}"]))
-            row.append(Gtk.Label(label=label, xalign=0))
+            row.append(Gtk.Label(label=label, xalign=0, hexpand=True))
+            if _key == "library":
+                self.lib_badge = Gtk.Label(label="0", css_classes=["new-chip"], visible=False)
+                row.append(self.lib_badge)
             self.side_list.append(row)
         self.side_list.connect("row-selected", self.on_section_selected)
         self.refresh_youtube_row()
@@ -459,11 +472,15 @@ class Window(Adw.ApplicationWindow):
     def make_card(self, item, token, rank=None):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, width_request=160)
         cover = make_cover(item, 150, card=True, still_wanted=lambda: token in self.grid_items)
-        if item["kind"] == "radio" or rank:
+        new = self.new_counts.get(item.get("feed")) if item["kind"] == "podcast" else 0
+        if item["kind"] == "radio" or rank or new:
             overlay = Gtk.Overlay(child=cover, halign=Gtk.Align.CENTER)
             if item["kind"] == "radio":
                 overlay.add_overlay(Gtk.Label(label=_("● LIVE"), halign=Gtk.Align.END, valign=Gtk.Align.START,
                                               css_classes=["live-dot"]))
+            if new:
+                overlay.add_overlay(Gtk.Label(label=ngettext("{n} new", "{n} new", new).format(n=new), halign=Gtk.Align.END,
+                                              valign=Gtk.Align.START, css_classes=["new-badge"]))
             if rank:
                 overlay.add_overlay(Gtk.Label(label=str(rank), halign=Gtk.Align.START, valign=Gtk.Align.START,
                                               css_classes=["rank-badge"]))
@@ -733,6 +750,7 @@ class Window(Adw.ApplicationWindow):
 
         self.ep_icons = {}
         self.ep_dl = {}
+        self.ep_rows = {}
         self.ep_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         if radio:
             self.main_btn.connect("clicked", lambda *_: self.play(item["stream"], item["name"], item["artist"], True, item))
@@ -787,24 +805,89 @@ class Window(Adw.ApplicationWindow):
         self.ep_box.append(Gtk.Label(label=(ngettext("Latest {n} episode", "Latest {n} episodes", len(eps)) if len(eps) >= MAX_EPISODES
                                     else ngettext("{n} episode", "{n} episodes", len(eps))).format(n=len(eps)), xalign=0, css_classes=["title-3"]))
         lb = Gtk.ListBox(css_classes=["boxed-list"], selection_mode=Gtk.SelectionMode.NONE)
+        before = seen_urls(item["feed"]) if self.in_library(item) else None  # None : podcast non suivi, rien n'est « nouveau »
+        fresh = {e["url"] for e in eps} - before if before else set()
+        if self.in_library(item):
+            self.mark_seen_async(item["feed"], [e["url"] for e in eps])
         for ep in eps:
             row = Adw.ActionRow(title=GLib.markup_escape_text(ep["title"]), title_lines=2,
                                 subtitle=" · ".join(x for x in (ep["date"], ep["duration"]) if x), activatable=True)
+            if ep["url"] in fresh and ep["url"] not in self.played:
+                row.add_prefix(Gtk.Label(label=_("NEW"), css_classes=["new-chip"], valign=Gtk.Align.CENTER))
+            row.ep_url = ep["url"]
             icon = Gtk.Image(icon_name="media-playback-start-symbolic")
             row.add_prefix(icon)
             self.ep_icons[ep["url"]] = icon
             row.ep_sub = " · ".join(x for x in (ep["date"], ep["duration"]) if x)
             dl = Gtk.Button(valign=Gtk.Align.CENTER, css_classes=["flat"])
             dl.connect("clicked", lambda _b, e=ep: self.on_dl_clicked(item, e))
+            tick_btn = Gtk.Button(valign=Gtk.Align.CENTER, css_classes=["flat"])
+            tick_btn.connect("clicked", lambda _b, e=ep: self.toggle_played(e["url"]))
+            row.add_suffix(tick_btn)
             row.add_suffix(dl)
             self.ep_dl[ep["url"]] = (dl, row)
+            self.ep_rows[ep["url"]] = (row, tick_btn)
             self.dl_refresh(ep["url"])
+            self.refresh_played(ep["url"])
             lb.append(row)
         lb.connect("row-activated", lambda _l, row: self.play_episode(item, eps[row.get_index()]))
         self.ep_box.append(lb)
         self.main_btn.set_sensitive(True)
         self.main_btn.connect("clicked", lambda *_: self.play_episode(item, eps[0]))
         self.update_play_icons()
+
+    # ---------- épisodes écoutés / nouveautés ----------
+    def refresh_played(self, url):
+        if url not in self.ep_rows:
+            return
+        row, btn = self.ep_rows[url]
+        done = url in self.played
+        btn.set_child(Gtk.Image(icon_name="object-select-symbolic" if done else "radio-symbolic"))
+        btn.set_tooltip_text(_("Mark as unplayed") if done else _("Mark as played"))
+        (row.add_css_class if done else row.remove_css_class)("ep-played")
+
+    def toggle_played(self, url):
+        self.set_played(url, url not in self.played)
+
+    def set_played(self, url, flag):
+        (self.played.add if flag else self.played.discard)(url)
+        set_played(url, flag)
+        self.refresh_played(url)
+
+    def mark_seen_async(self, feed, urls):
+        def done(_r):
+            self.new_counts = new_counts()
+            self.refresh_library_badge()
+        run_async(lambda: mark_seen(feed, urls), done, lambda e: None)
+
+    def refresh_library_badge(self):
+        total = sum(self.new_counts.get(i["feed"], 0) for i in self.lists["podcast"])
+        self.lib_badge.set_label(str(total))
+        self.lib_badge.set_visible(total > 0)
+        if self.section == "library" and self.nav.get_visible_page_tag() == "browse":
+            self.show_library()
+
+    def run_check_new(self):
+        """Cherche les nouveaux épisodes des podcasts suivis (au démarrage puis toutes les heures)."""
+        if getattr(self, "check_running", False) or not self.lists["podcast"]:
+            return
+        self.check_running = True
+
+        def done(found):
+            self.check_running = False
+            before = sum(self.new_counts.values())
+            self.new_counts = new_counts()
+            self.refresh_library_badge()
+            if sum(self.new_counts.values()) > before and found:
+                names = {i["feed"]: i["name"] for i in self.lists["podcast"]}
+                total = sum(len(v) for v in found.values())
+                note = Gio.Notification.new(APP_NAME)
+                note.set_body(ngettext("{n} new episode: {names}", "{n} new episodes: {names}", total).format(
+                    n=total, names=", ".join(names.get(f, "") for f in list(found)[:3])))
+                self.get_application().send_notification("new-episodes", note)
+
+        run_async(lambda: check_new_episodes(list(self.lists["podcast"])), done,
+                  lambda e: setattr(self, "check_running", False))
 
     def play_episode(self, item, ep):
         if ep["url"] in self.downloads:
@@ -864,6 +947,8 @@ class Window(Adw.ApplicationWindow):
             self.lists[kind].append(item)
             if kind == "podcast":
                 run_async(lambda: save_cover(item.get("art")), lambda _r: None, lambda e: None)
+                if getattr(self, "ep_rows", None):  # on s'abonne depuis la page : ce qu'elle affiche est déjà vu
+                    self.mark_seen_async(item["feed"], list(self.ep_rows))
         save_list(kind, self.lists[kind])
         self.refresh_sub_button()
 
@@ -1125,6 +1210,9 @@ class Window(Adw.ApplicationWindow):
                     self.dur_lbl.set_text(fmt_time(dur))
                 if ok_p and self.duration:
                     self.scale.set_value(min(1.0, pos / self.duration))
+                    key = getattr(self, "playing_key", None)
+                    if key and pos / self.duration > 0.92 and key not in self.played:
+                        self.set_played(key, True)  # écouté à plus de 92 % : on le considère terminé
         return True
 
     def stop_playback(self, message=None):
@@ -1139,6 +1227,8 @@ class Window(Adw.ApplicationWindow):
 
     def on_bus(self, _bus, msg):
         if msg.type == Gst.MessageType.EOS:
+            if not self.live and getattr(self, "playing_key", None):
+                self.set_played(self.playing_key, True)
             if self.sleep_eop:
                 self.set_sleep()  # fin de l'épisode atteinte : le minuteur a fait son travail
             self.stop_playback()

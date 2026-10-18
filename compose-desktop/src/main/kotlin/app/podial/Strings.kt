@@ -19,6 +19,7 @@ object T {
         "two_hours" to "2 hours", "end_episode" to "End of episode", "cancel_timer" to "Cancel timer",
         "play" to "Play", "pause" to "Pause", "back" to "Back", "nothing" to "Nothing playing",
         "stream_error" to "This stream can't be played here.",
+        "new_badge" to "%d new", "new_chip" to "NEW", "mark_played" to "Mark as played", "mark_unplayed" to "Mark as unplayed",
     )
     private val frMap = mapOf(
         "library" to "Bibliothèque", "downloads" to "Téléchargements", "search_podcasts" to "Rechercher un podcast…",
@@ -32,6 +33,8 @@ object T {
         "downloaded" to "Téléchargé", "sleep" to "Minuteur de sommeil", "one_hour" to "1 heure", "two_hours" to "2 heures",
         "end_episode" to "Fin de l'épisode", "cancel_timer" to "Annuler le minuteur", "play" to "Lecture", "back" to "Retour",
         "nothing" to "Rien en lecture", "stream_error" to "Ce flux ne peut pas être lu ici.",
+        "new_badge" to "%d nouveau(x)", "new_chip" to "NOUVEAU", "mark_played" to "Marquer comme écouté",
+        "mark_unplayed" to "Marquer comme non écouté",
     )
     operator fun get(k: String): String = (if (fr) frMap[k] else null) ?: en[k] ?: k
 }

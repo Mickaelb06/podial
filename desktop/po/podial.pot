@@ -411,3 +411,22 @@ msgstr ""
 
 msgid "End"
 msgstr ""
+
+msgid "NEW"
+msgstr ""
+
+msgid "Mark as played"
+msgstr ""
+
+msgid "Mark as unplayed"
+msgstr ""
+
+msgid "{n} new"
+msgid_plural "{n} new"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{n} new episode: {names}"
+msgid_plural "{n} new episodes: {names}"
+msgstr[0] ""
+msgstr[1] ""

@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -47,6 +48,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Store.init(this)
+        CheckWorker.schedule(this)
+        if (android.os.Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         setContent {
             MaterialTheme(colorScheme = if (androidx.compose.foundation.isSystemInDarkTheme())
                 darkColorScheme(primary = Violet) else lightColorScheme(primary = Violet)) {
@@ -80,6 +83,7 @@ class PlayerState {
         duration = c.duration.coerceAtLeast(0)
         position = c.currentPosition
         speed = c.playbackParameters.speed
+        if (!live && mediaId.startsWith("ep|") && Updates.isFinished(position, duration)) Store.setPlayed(mediaId.removePrefix("ep|"), true)
     }
 
     fun play(item: MediaItem) {
@@ -109,11 +113,15 @@ fun PodialApp() {
             Column {
                 if (player.mediaId.isNotEmpty()) MiniPlayer(player) { sheet = true }
                 NavigationBar {
+                    val newTotal = Store.newCounts.collectAsState().value.values.sum()
                     listOf(Icons.Default.Podcasts to R.string.tab_podcasts, Icons.Default.Radio to R.string.tab_radios,
                         Icons.Default.Star to R.string.tab_library, Icons.Default.Download to R.string.tab_downloads)
                         .forEachIndexed { i, (icon, label) ->
                             NavigationBarItem(selected = tab == i, onClick = { tab = i; detail = null },
-                                icon = { Icon(icon, null) }, label = { Text(stringResource(label)) })
+                                icon = {
+                                    if (i == 2 && newTotal > 0) BadgedBox(badge = { Badge { Text("$newTotal") } }) { Icon(icon, null) }
+                                    else Icon(icon, null)
+                                }, label = { Text(stringResource(label)) })
                         }
                 }
             }
@@ -148,12 +156,15 @@ fun Cover(url: String?, name: String, size: Int, modifier: Modifier = Modifier) 
 
 @Composable
 fun ItemCard(item: Item, rank: Int?, onClick: () -> Unit) {
+    val newCount = if (item.kind == "podcast") Store.newCounts.collectAsState().value[item.feed] ?: 0 else 0
     Column(Modifier.clickable(onClick = onClick).padding(6.dp)) {
         Box {
             Cover(item.art, item.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
             if (rank != null) Text("$rank", color = Color.White, fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier.padding(6.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Violet, Pink)))
                     .padding(horizontal = 9.dp, vertical = 2.dp))
+            if (newCount > 0) Text(stringResource(R.string.new_badge, newCount), color = Color.White, style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).clip(CircleShape).background(Color(0xFFE5484D)).padding(horizontal = 7.dp, vertical = 1.dp))
             if (item.kind == "radio") Text(stringResource(R.string.live), color = Color.White, style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).clip(CircleShape).background(Color(0xFFE5484D)).padding(horizontal = 7.dp, vertical = 1.dp))
         }
@@ -240,6 +251,8 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
     val downloads by Store.downloads.collectAsState()
     val active by Store.active.collectAsState()
     val saved = (pods + radios).any { it.key == item.key }
+    val played by Store.played.collectAsState()
+    var fresh by remember(item.key) { mutableStateOf<Set<String>>(emptySet()) }
     var feed by remember(item.key) { mutableStateOf<Pair<String, List<Episode>>?>(null) }
     var failed by remember(item.key) { mutableStateOf(false) }
     LaunchedEffect(item.key) {
@@ -250,6 +263,14 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
                 if (mine.isEmpty()) { failed = true; null } else "" to mine
             }
         }
+    }
+    // à l'ouverture d'un podcast suivi : on repère ce qui est nouveau puis on le marque comme vu
+    LaunchedEffect(feed, saved) {
+        val eps = feed?.second ?: return@LaunchedEffect
+        if (!saved || item.kind != "podcast") return@LaunchedEffect
+        val known = Store.knownFor(item.feed)
+        if (known != null && fresh.isEmpty()) fresh = eps.map { it.url }.toSet() - known
+        Store.markSeen(item.feed, eps.map { it.url })
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
@@ -283,15 +304,24 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
             items(eps, key = { it.url }) { ep ->
                 val dl = downloads.any { it.episode.url == ep.url }
                 val progress = active[ep.url]
-                Row(Modifier.fillMaxWidth().clickable { player.play(PlaybackService.episodeItem(item, ep)) }.padding(vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
+                val done = ep.url in played
+                Row(Modifier.fillMaxWidth().clickable { player.play(PlaybackService.episodeItem(item, ep)) }.padding(vertical = 6.dp)
+                    .alpha(if (done) 0.55f else 1f), verticalAlignment = Alignment.CenterVertically) {
                     Icon(if (player.mediaId == "ep|" + ep.url) Icons.Default.GraphicEq else Icons.Default.PlayArrow, null,
                         tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                        Text(ep.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (ep.url in fresh && !done) Text(stringResource(R.string.new_chip), color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 6.dp))
+                            Text(ep.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
                         Text(listOfNotNull(if (dl) "✓ " + stringResource(R.string.downloaded) else null, ep.date, ep.duration)
                             .filter { it.isNotEmpty() }.joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { Store.setPlayed(ep.url, !done) }) {
+                        Icon(if (done) Icons.Default.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                            stringResource(if (done) R.string.mark_unplayed else R.string.mark_played))
                     }
                     when {
                         progress != null -> TextButton(onClick = { Store.cancel(ep.url) }) {

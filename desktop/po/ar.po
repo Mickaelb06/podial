@@ -408,3 +408,30 @@ msgstr "إلغاء المؤقّت"
 
 msgid "End"
 msgstr "النهاية"
+
+msgid "NEW"
+msgstr "جديد"
+
+msgid "Mark as played"
+msgstr "تحديد كمُستمَع إليه"
+
+msgid "Mark as unplayed"
+msgstr "تحديد كغير مُستمَع إليه"
+
+msgid "{n} new"
+msgid_plural "{n} new"
+msgstr[0] "لا جديد"
+msgstr[1] "{n} جديد"
+msgstr[2] "{n} جديدان"
+msgstr[3] "{n} جديدة"
+msgstr[4] "{n} جديدًا"
+msgstr[5] "{n} جديد"
+
+msgid "{n} new episode: {names}"
+msgid_plural "{n} new episodes: {names}"
+msgstr[0] "لا حلقات جديدة: {names}"
+msgstr[1] "حلقة جديدة: {names}"
+msgstr[2] "حلقتان جديدتان: {names}"
+msgstr[3] "{n} حلقات جديدة: {names}"
+msgstr[4] "{n} حلقة جديدة: {names}"
+msgstr[5] "{n} حلقة جديدة: {names}"

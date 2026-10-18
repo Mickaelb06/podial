@@ -402,3 +402,26 @@ msgstr "ביטול הטיימר"
 
 msgid "End"
 msgstr "סוף"
+
+msgid "NEW"
+msgstr "חדש"
+
+msgid "Mark as played"
+msgstr "סימון כהושמע"
+
+msgid "Mark as unplayed"
+msgstr "סימון כלא הושמע"
+
+msgid "{n} new"
+msgid_plural "{n} new"
+msgstr[0] "{n} חדש"
+msgstr[1] "{n} חדשים"
+msgstr[2] "{n} חדשים"
+msgstr[3] "{n} חדשים"
+
+msgid "{n} new episode: {names}"
+msgid_plural "{n} new episodes: {names}"
+msgstr[0] "פרק חדש: {names}"
+msgstr[1] "{n} פרקים חדשים: {names}"
+msgstr[2] "{n} פרקים חדשים: {names}"
+msgstr[3] "{n} פרקים חדשים: {names}"

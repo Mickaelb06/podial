@@ -36,4 +36,10 @@
     <string name="speed">Playback speed</string>
     <string name="nothing_playing">Nothing playing</string>
     <string name="episodes_fmt">%d episodes</string>
+    <string name="new_episodes_title">New episodes</string>
+    <string name="new_episodes_fmt">%1$d new: %2$s</string>
+    <string name="new_badge">%d new</string>
+    <string name="new_chip">NEW</string>
+    <string name="mark_played">Mark as played</string>
+    <string name="mark_unplayed">Mark as unplayed</string>
 </resources>

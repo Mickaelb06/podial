@@ -400,3 +400,22 @@ msgstr "Cancelar temporizador"
 
 msgid "End"
 msgstr "Fim"
+
+msgid "NEW"
+msgstr "NOVO"
+
+msgid "Mark as played"
+msgstr "Marcar como ouvido"
+
+msgid "Mark as unplayed"
+msgstr "Marcar como não ouvido"
+
+msgid "{n} new"
+msgid_plural "{n} new"
+msgstr[0] "{n} novo"
+msgstr[1] "{n} novos"
+
+msgid "{n} new episode: {names}"
+msgid_plural "{n} new episodes: {names}"
+msgstr[0] "{n} novo episódio: {names}"
+msgstr[1] "{n} novos episódios: {names}"

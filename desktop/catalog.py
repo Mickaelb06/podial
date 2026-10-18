@@ -34,6 +34,8 @@ DL_DIR = os.path.join(DATA_DIR, "downloads")
 DL_INDEX = os.path.join(DATA_DIR, "downloads.json")
 COVER_DIR = os.path.join(DATA_DIR, "covers")   # pochettes conservées pour l'écoute hors ligne
 AUTO_SEEN = os.path.join(DATA_DIR, "auto_seen.json")
+PLAYED_FILE = os.path.join(DATA_DIR, "played.json")   # épisodes écoutés
+FEEDS_FILE = os.path.join(DATA_DIR, "feeds.json")     # épisodes déjà vus par flux + nombre de nouveautés
 
 # Repli si le paquet « iso-codes » est absent : pays principaux, nom écrit dans la langue du pays.
 _FALLBACK_COUNTRIES = [
@@ -662,3 +664,73 @@ def auto_download(items, per_feed=3, progress=None, cancel=None):
             with open(AUTO_SEEN, "w", encoding="utf-8") as f:
                 json.dump(sorted(seen), f)
     return count
+
+
+# ---------- épisodes écoutés et nouveautés ----------
+def _read_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def _write_json(path, data):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    os.replace(tmp, path)
+
+
+def load_played():
+    return set(_read_json(PLAYED_FILE, []))
+
+
+def set_played(url, played=True):
+    data = load_played()
+    (data.add if played else data.discard)(url)
+    _write_json(PLAYED_FILE, sorted(data)[-5000:])
+
+
+def feed_state():
+    """{adresse du flux : {"known": [adresses d'épisodes vus], "new": nombre de nouveaux épisodes}}"""
+    return _read_json(FEEDS_FILE, {})
+
+
+def mark_seen(feed_url, episode_urls):
+    """L'utilisateur a vu ces épisodes (ouverture de la page ou abonnement) : plus de nouveautés pour ce flux."""
+    state = feed_state()
+    known = set(state.get(feed_url, {}).get("known", [])) | set(episode_urls)
+    state[feed_url] = {"known": sorted(known)[-600:], "new": 0}
+    _write_json(FEEDS_FILE, state)
+
+
+def seen_urls(feed_url):
+    return set(feed_state().get(feed_url, {}).get("known", []))
+
+
+def check_new_episodes(items):
+    """Compare les flux des podcasts suivis aux épisodes déjà vus. Renvoie {adresse du flux : [titres des nouveaux]}.
+    Un flux jamais vu est simplement mémorisé (pas de nouveautés fantômes à l'abonnement)."""
+    state, played, found = feed_state(), load_played(), {}
+    for item in items:
+        try:
+            eps = fetch_feed(item["feed"])["episodes"]
+        except Exception:
+            continue
+        entry = state.get(item["feed"])
+        if entry is None:
+            state[item["feed"]] = {"known": sorted(e["url"] for e in eps)[-600:], "new": 0}
+            continue
+        known = set(entry["known"])
+        fresh = [e["title"] for e in eps if e["url"] not in known and e["url"] not in played]
+        entry["new"] = len(fresh)
+        if fresh:
+            found[item["feed"]] = fresh
+    _write_json(FEEDS_FILE, state)
+    return found
+
+
+def new_counts():
+    return {k: v.get("new", 0) for k, v in feed_state().items() if v.get("new")}

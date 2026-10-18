@@ -400,3 +400,22 @@ msgstr "Timer abbrechen"
 
 msgid "End"
 msgstr "Ende"
+
+msgid "NEW"
+msgstr "NEU"
+
+msgid "Mark as played"
+msgstr "Als gehört markieren"
+
+msgid "Mark as unplayed"
+msgstr "Als ungehört markieren"
+
+msgid "{n} new"
+msgid_plural "{n} new"
+msgstr[0] "{n} neu"
+msgstr[1] "{n} neu"
+
+msgid "{n} new episode: {names}"
+msgid_plural "{n} new episodes: {names}"
+msgstr[0] "{n} neue Folge: {names}"
+msgstr[1] "{n} neue Folgen: {names}"

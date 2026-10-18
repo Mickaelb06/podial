@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -32,11 +33,54 @@ object Store {
     val active: StateFlow<Map<String, Float>> = _active
     private val jobs = HashMap<String, Job>()
 
+    // ----- épisodes écoutés et nouveautés -----
+    private val _played = MutableStateFlow<Set<String>>(emptySet())
+    val played: StateFlow<Set<String>> = _played
+    /** Podcasts suivis : adresse du flux -> nombre de nouveaux épisodes. */
+    private val _newCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val newCounts: StateFlow<Map<String, Int>> = _newCounts
+
+    private fun feeds() = JSONObject(prefs.getString("feeds", "{}") ?: "{}")
+
+    private fun refreshCounts() {
+        val f = feeds()
+        _newCounts.value = f.keys().asSequence().associateWith { f.getJSONObject(it).optInt("new") }.filterValues { it > 0 }
+    }
+
+    @Synchronized fun knownFor(feed: String): Set<String>? =
+        feeds().optJSONObject(feed)?.optJSONArray("known")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() }
+
+    /** L'utilisateur a vu ces épisodes (page ouverte, abonnement) : plus de nouveautés pour ce flux. */
+    @Synchronized fun markSeen(feed: String, urls: Collection<String>) {
+        val known = (knownFor(feed) ?: emptySet()) + urls
+        prefs.edit().putString("feeds", feeds().put(feed, JSONObject().put("known", JSONArray(known.toList().takeLast(600))).put("new", 0)).toString()).apply()
+        refreshCounts()
+    }
+
+    /** Compare les épisodes d'un flux à ceux déjà vus ; renvoie le nombre de nouveaux. Premier passage : on mémorise sans rien signaler. */
+    @Synchronized fun recordCheck(feed: String, eps: List<Episode>): Int {
+        val known = knownFor(feed)
+        if (known == null) { markSeen(feed, eps.map { it.url }); return 0 }
+        val n = Updates.fresh(eps, known, _played.value).size
+        val f = feeds()
+        f.getJSONObject(feed).put("new", n)
+        prefs.edit().putString("feeds", f.toString()).apply()
+        refreshCounts()
+        return n
+    }
+
+    @Synchronized fun setPlayed(url: String, flag: Boolean) {
+        _played.value = if (flag) _played.value + url else _played.value - url
+        prefs.edit().putString("played", JSONArray(_played.value.toList().takeLast(5000)).toString()).apply()
+    }
+
     fun init(context: Context) {
         if (::ctx.isInitialized) return
         ctx = context.applicationContext
         _podcasts.value = readItems("podcasts")
         _radios.value = readItems("radios")
+        _played.value = runCatching { JSONArray(prefs.getString("played", "[]")).let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } }.getOrDefault(emptySet())
+        refreshCounts()
         _downloads.value = runCatching {
             val a = JSONArray(prefs.getString("downloads", "[]"))
             (0 until a.length()).map { Download.fromJson(a.getJSONObject(it)) }.filter { File(it.file).exists() }
