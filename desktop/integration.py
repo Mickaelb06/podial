@@ -134,6 +134,29 @@ def cache_art(url):
     return path
 
 
+def _autostart_path():
+    return os.path.join(GLib.get_user_config_dir(), "autostart", "podial.desktop")
+
+
+def autostart_enabled():
+    return os.path.exists(_autostart_path())
+
+
+def set_autostart(enabled, script_path):
+    """Lance Podial en arrière-plan à l'ouverture de session (fichier XDG autostart, sans fenêtre au démarrage)."""
+    path = _autostart_path()
+    if not enabled:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(f"[Desktop Entry]\nType=Application\nName={APP_NAME}\nExec=python3 {script_path} --background\n"
+                "Icon=audio-headphones\nTerminal=false\nX-GNOME-Autostart-enabled=true\n")
+
+
 def install_desktop_entry(script_path):
     """Crée le lanceur du menu Applications (nécessaire à GNOME pour nommer l'appli dans ses contrôles média)."""
     apps = os.path.join(GLib.get_user_data_dir(), "applications")

@@ -11,6 +11,7 @@ import St from 'gi://St';
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Slider} from 'resource:///org/gnome/shell/ui/slider.js';
 
 const BUS_NAME = 'org.mpris.MediaPlayer2.Podial';
@@ -74,8 +75,9 @@ class PodcastsIndicator extends PanelMenu.Button {
 
         this._buildPill();
         this._buildMenu();
+        this._buildContextMenu();
         this.menu.connect('open-state-changed', (_m, open) => this._onMenuToggled(open));
-        this.connect('destroy', () => { this._cleanup(); this._destroyed = true; });
+        this.connect('destroy', () => { this._cleanup(); this._ctx?.destroy(); this._destroyed = true; });
         this.connect('scroll-event', (_a, event) => this._onScroll(event));
         this.visible = false;
     }
@@ -261,6 +263,31 @@ class PodcastsIndicator extends PanelMenu.Button {
             Shell.AppSystem.get_default().lookup_app(APP_DESKTOP_ID)?.activate();
         });
         this._content.add_child(open);
+    }
+
+    // Clic droit sur la pastille : ouvrir ou quitter l'application
+    _buildContextMenu() {
+        this._ctx = new PopupMenu.PopupMenu(this, 0.5, St.Side.TOP);
+        Main.uiGroup.add_child(this._ctx.actor);
+        this._ctx.actor.hide();
+        this._ctx.addAction(_('Open window'), () =>
+            Shell.AppSystem.get_default().lookup_app(APP_DESKTOP_ID)?.activate());
+        this._ctx.addAction(_('Quit'), () =>
+            Gio.DBus.session.call(BUS_NAME, OBJ_PATH, 'org.mpris.MediaPlayer2', 'Quit', null, null,
+                Gio.DBusCallFlags.NONE, -1, null, null));
+    }
+
+    vfunc_event(event) {
+        if (event.type() === Clutter.EventType.BUTTON_PRESS && event.get_button() === Clutter.BUTTON_SECONDARY) {
+            this.menu.close();
+            if (!this._ctxAdded) {
+                Main.panel.menuManager.addMenu(this._ctx);
+                this._ctxAdded = true;
+            }
+            this._ctx.toggle();
+            return Clutter.EVENT_STOP;
+        }
+        return super.vfunc_event(event);
     }
 
     _button(iconName, styleClass, size, onClick) {

@@ -489,3 +489,12 @@ msgstr "التحديثات"
 
 msgid "Podial {version}"
 msgstr "Podial {version}"
+
+msgid "General"
+msgstr "عام"
+
+msgid "Launch at login"
+msgstr "التشغيل عند تسجيل الدخول"
+
+msgid "Starts Podial in the background when you log in. Open it from the top bar or the Applications menu."
+msgstr "يشغّل Podial في الخلفية عند تسجيل الدخول. افتحه من الشريط العلوي أو من قائمة التطبيقات."

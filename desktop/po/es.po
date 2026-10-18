@@ -473,3 +473,12 @@ msgstr "Actualizaciones"
 
 msgid "Podial {version}"
 msgstr "Podial {version}"
+
+msgid "General"
+msgstr "General"
+
+msgid "Launch at login"
+msgstr "Iniciar al abrir sesión"
+
+msgid "Starts Podial in the background when you log in. Open it from the top bar or the Applications menu."
+msgstr "Inicia Podial en segundo plano al iniciar sesión. Ábrelo desde la barra superior o el menú Aplicaciones."

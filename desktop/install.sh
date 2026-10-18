@@ -8,7 +8,12 @@ DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 python3 tools/build_translations.py
 mkdir -p "extension/$UUID/icons" "$DATA/gnome-shell/extensions/$UUID"
 cp icons/hicolor/symbolic/apps/podial-radio-symbolic.svg "extension/$UUID/icons/"
-cp -r "extension/$UUID/." "$DATA/gnome-shell/extensions/$UUID/"
+# copie « atomique » : GNOME Shell garde les fichiers .mo en mémoire, les réécrire sur place corromprait ses traductions
+find "extension/$UUID" -type f | while read -r f; do
+  rel="${f#extension/$UUID/}"
+  mkdir -p "$DATA/gnome-shell/extensions/$UUID/$(dirname "$rel")"
+  cp "$f" "$DATA/gnome-shell/extensions/$UUID/$rel.new" && mv -f "$DATA/gnome-shell/extensions/$UUID/$rel.new" "$DATA/gnome-shell/extensions/$UUID/$rel"
+done
 
 # active l'extension (GNOME ne la chargera qu'à la prochaine ouverture de session sous Wayland)
 if command -v gsettings >/dev/null && gsettings get org.gnome.shell enabled-extensions >/dev/null 2>&1; then

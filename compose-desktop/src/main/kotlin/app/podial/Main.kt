@@ -64,17 +64,17 @@ private fun devTestPlay() {
     }.apply { isDaemon = true }.start()
 }
 
-fun main() {
+fun main(args: Array<String>) {
     devScreenshot()
     devTestPlay()
-    runApp()
+    runApp(minimized = "--minimized" in args)
 }
 
-private fun runApp() = application {
+private fun runApp(minimized: Boolean) = application {
     LaunchedEffect(Unit) {   // vérifie les nouveaux épisodes au démarrage puis toutes les heures
         while (true) { runCatching { Store.checkAll() }; delay(3_600_000) }
     }
-    Window(onCloseRequest = ::exitApplication, title = "Podial", state = rememberWindowState(width = 1100.dp, height = 760.dp)) {
+    Window(onCloseRequest = ::exitApplication, title = "Podial", state = rememberWindowState(width = 1100.dp, height = 760.dp, isMinimized = minimized)) {
         MaterialTheme(colorScheme = if (androidx.compose.foundation.isSystemInDarkTheme())
             darkColorScheme(primary = Violet) else lightColorScheme(primary = Violet)) {
             Surface(Modifier.fillMaxSize()) { PodialApp() }
@@ -87,6 +87,7 @@ fun PodialApp() {
     var tab by remember { mutableIntStateOf(0) }
     var detail by remember { mutableStateOf<Item?>(null) }
     var about by remember { mutableStateOf(false) }
+    var settings by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         while (true) {
             Player.poll()
@@ -109,6 +110,7 @@ fun PodialApp() {
                         }, label = { Text(T[label]) })
                 }
                 Spacer(Modifier.weight(1f))
+                IconButton(onClick = { settings = true }) { Icon(Icons.Default.Settings, T["settings"]) }
                 IconButton(onClick = { about = true }, modifier = Modifier.padding(bottom = 8.dp)) { Icon(Icons.Default.Info, T["about"]) }
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -124,6 +126,7 @@ fun PodialApp() {
         }
         if (Player.key.isNotEmpty()) PlayerBar()
         if (about) AboutDialog { about = false }
+        if (settings) SettingsDialog { settings = false }
     }
 }
 
@@ -437,5 +440,25 @@ fun AboutDialog(onClose: () -> Unit) {
             }) { Text(T["check_updates"]) }
         },
         dismissButton = { TextButton(onClose) { Text(T["close"]) } },
+    )
+}
+
+@Composable
+fun SettingsDialog(onClose: () -> Unit) {
+    var launch by remember { mutableStateOf(Autostart.isEnabled()) }
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(T["settings"]) },
+        text = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(T["launch_login"], fontWeight = FontWeight.SemiBold)
+                    Text(T[if (Autostart.available()) "launch_login_desc" else "launch_login_unavailable"],
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(launch, { launch = it; Autostart.set(it) }, enabled = Autostart.available())
+            }
+        },
+        confirmButton = { TextButton(onClose) { Text(T["close"]) } },
     )
 }

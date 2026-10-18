@@ -24,6 +24,9 @@ object T {
         "about_sources" to "Podcast data: public iTunes Search API and Apple RSS charts. Radio stations: radio-browser.info. Podial is not affiliated with Apple or YouTube.",
         "report_bug" to "Report a bug", "check_updates" to "Check for updates", "up_to_date" to "You're up to date (version %s).",
         "update_available" to "Version %s is available.", "update_failed" to "Couldn't check for updates.", "close" to "Close",
+        "settings" to "Settings", "launch_login" to "Launch at login",
+        "launch_login_desc" to "Starts Podial minimized when you log in.",
+        "launch_login_unavailable" to "Available in the installed app (not when run from source).",
     )
     private val frMap = mapOf(
         "library" to "Bibliothèque", "downloads" to "Téléchargements", "search_podcasts" to "Rechercher un podcast…",
@@ -43,6 +46,9 @@ object T {
         "about_sources" to "Données des podcasts : API publique iTunes Search et classements RSS d'Apple. Radios : radio-browser.info. Podial n'est affilié ni à Apple ni à YouTube.",
         "report_bug" to "Signaler un bug", "check_updates" to "Vérifier les mises à jour", "up_to_date" to "Podial est à jour (version %s).",
         "update_available" to "La version %s est disponible.", "update_failed" to "Vérification impossible.", "close" to "Fermer",
+        "settings" to "Réglages", "launch_login" to "Lancer à l'ouverture de session",
+        "launch_login_desc" to "Démarre Podial réduit à l'ouverture de session.",
+        "launch_login_unavailable" to "Disponible dans l'application installée (pas depuis les sources).",
     )
     operator fun get(k: String): String = (if (fr) frMap[k] else null) ?: en[k] ?: k
 }

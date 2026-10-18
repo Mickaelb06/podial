@@ -32,7 +32,8 @@ compose.desktop {
     application {
         mainClass = "app.podial.MainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.AppImage)
+            // .dmg (macOS), .exe et .msi (Windows), .deb et .rpm (Linux)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "Podial"
             packageVersion = "1.0.0"
             description = "Podcasts and live radio"

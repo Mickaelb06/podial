@@ -484,3 +484,12 @@ msgstr ""
 
 msgid "Podial {version}"
 msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Launch at login"
+msgstr ""
+
+msgid "Starts Podial in the background when you log in. Open it from the top bar or the Applications menu."
+msgstr ""

@@ -1,0 +1,97 @@
+name: Release
+# Se lance quand on pousse une étiquette de version (ex. v0.5.0), ou à la main pour tester les compilations.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # nécessaire pour créer la « release » et y joindre les fichiers
+
+jobs:
+  linux-gtk:
+    name: Linux (.deb and .tar.gz)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: desktop/tools/build_deb.sh "$GITHUB_WORKSPACE/dist"
+      - uses: actions/upload-artifact@v4
+        with: { name: linux-gtk, path: "dist/*" }
+
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: compose-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Linux packaging tools (.rpm)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm fakeroot
+      - name: WiX (needed for .exe and .msi)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) { choco install wixtoolset -y --no-progress }
+          echo "C:\Program Files (x86)\WiX Toolset v3.14\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - run: ./gradlew packageDistributionForCurrentOS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            compose-desktop/build/compose/binaries/main/deb/*.deb
+            compose-desktop/build/compose/binaries/main/rpm/*.rpm
+            compose-desktop/build/compose/binaries/main/exe/*.exe
+            compose-desktop/build/compose/binaries/main/msi/*.msi
+            compose-desktop/build/compose/binaries/main/dmg/*.dmg
+
+  android:
+    name: Android (.apk)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: Signing key (only if the secrets exist)
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/podial.jks"
+            printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=podial\nkeyPassword=%s\n' "$RUNNER_TEMP/podial.jks" "$PW" "$PW" > "$RUNNER_TEMP/keystore.properties"
+            echo "PODIAL_KEYSTORE_PROPS=$RUNNER_TEMP/keystore.properties" >> "$GITHUB_ENV"
+            echo "TASK=assembleRelease" >> "$GITHUB_ENV"
+          else
+            echo "TASK=assembleDebug" >> "$GITHUB_ENV"
+          fi
+      - run: ./gradlew $TASK
+      - run: mkdir -p ../apk && cp app/build/outputs/apk/*/*.apk ../apk/podial-android.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: android, path: apk/*.apk }
+
+  publish:
+    name: Publish the release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux-gtk, desktop, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: files }
+      - run: find files -type f | sort
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: files/**/*
+          prerelease: true
+          generate_release_notes: true

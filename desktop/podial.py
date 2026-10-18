@@ -328,6 +328,13 @@ class Window(Adw.ApplicationWindow):
         page = Adw.PreferencesPage()
         dlg.add(page)
 
+        gen = Adw.PreferencesGroup(title=_("General"))
+        start = Adw.SwitchRow(title=_("Launch at login"), active=integration.autostart_enabled(),
+                              subtitle=_("Starts Podial in the background when you log in. Open it from the top bar or the Applications menu."))
+        start.connect("notify::active", lambda sw, _p: integration.set_autostart(sw.get_active(), os.path.abspath(__file__)))
+        gen.add(start)
+        page.add(gen)
+
         yt = Adw.PreferencesGroup(title="YouTube")
         self.yt_switch = Adw.SwitchRow(
             title=_("YouTube audio"), active=youtube_enabled(), sensitive=ytdlp_path() is not None,
@@ -1406,7 +1413,10 @@ class App(Adw.Application):
                 or os.environ.get("LANG") or "").split(":")[0].split("_")[0].split(".")[0]
         if lang in ("he", "ar", "fa", "ur"):
             Gtk.Widget.set_default_direction(Gtk.TextDirection.RTL)
+        first = self.props.active_window is None
         win = self.props.active_window or Window(self)
+        if first and "--background" in sys.argv:
+            return  # lancement automatique à l'ouverture de session : Podial reste en arrière-plan, sans fenêtre
         win.show_window()
 
 
