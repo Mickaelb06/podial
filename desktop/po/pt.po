@@ -458,3 +458,18 @@ msgstr "O Podial está atualizado (versão {version})."
 
 msgid "Couldn't check. ({error})"
 msgstr "Não foi possível verificar. ({error})"
+
+msgid "Preferences"
+msgstr "Preferências"
+
+msgid "Main menu"
+msgstr "Menu principal"
+
+msgid "YouTube audio"
+msgstr "Áudio do YouTube"
+
+msgid "Updates"
+msgstr "Atualizações"
+
+msgid "Podial {version}"
+msgstr "Podial {version}"

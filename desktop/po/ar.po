@@ -474,3 +474,18 @@ msgstr "Podial محدّث (الإصدار {version})."
 
 msgid "Couldn't check. ({error})"
 msgstr "تعذّر التحقق. ({error})"
+
+msgid "Preferences"
+msgstr "التفضيلات"
+
+msgid "Main menu"
+msgstr "القائمة الرئيسية"
+
+msgid "YouTube audio"
+msgstr "صوت YouTube"
+
+msgid "Updates"
+msgstr "التحديثات"
+
+msgid "Podial {version}"
+msgstr "Podial {version}"

@@ -458,7 +458,7 @@ fun AboutDialog(version: String, onClose: () -> Unit) {
                 Text(stringResource(R.string.version_fmt, version), fontWeight = FontWeight.SemiBold)
                 Text(stringResource(R.string.about_text))
                 Text(stringResource(R.string.about_sources), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("MIT · © 2026 Mickael", style = MaterialTheme.typography.bodySmall)
+                Text("MIT License · © 2026 Podial contributors", style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton({ uri.openUri(Release.SITE) }) { Text("GitHub") }
                     TextButton({ uri.openUri(Release.SITE + "/issues") }) { Text(stringResource(R.string.report_bug)) }

@@ -464,3 +464,18 @@ msgstr "Podial מעודכן (גרסה {version})."
 
 msgid "Couldn't check. ({error})"
 msgstr "הבדיקה נכשלה. ({error})"
+
+msgid "Preferences"
+msgstr "העדפות"
+
+msgid "Main menu"
+msgstr "תפריט ראשי"
+
+msgid "YouTube audio"
+msgstr "שמע מ-YouTube"
+
+msgid "Updates"
+msgstr "עדכונים"
+
+msgid "Podial {version}"
+msgstr "Podial {version}"

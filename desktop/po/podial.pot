@@ -469,3 +469,18 @@ msgstr ""
 
 msgid "Couldn't check. ({error})"
 msgstr ""
+
+msgid "Preferences"
+msgstr ""
+
+msgid "Main menu"
+msgstr ""
+
+msgid "YouTube audio"
+msgstr ""
+
+msgid "Updates"
+msgstr ""
+
+msgid "Podial {version}"
+msgstr ""

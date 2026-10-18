@@ -272,6 +272,7 @@ class Window(Adw.ApplicationWindow):
     def build_sidebar(self):
         view = Adw.ToolbarView()
         header = Adw.HeaderBar(title_widget=Gtk.Label(label=_("Listen"), css_classes=["heading"]))
+        header.pack_end(self.build_main_menu())
         header.pack_end(self.build_settings_button())
         view.add_top_bar(header)
         self.side_list = Gtk.ListBox(css_classes=["navigation-sidebar"], selection_mode=Gtk.SelectionMode.SINGLE)
@@ -294,7 +295,7 @@ class Window(Adw.ApplicationWindow):
         return Adw.NavigationPage(title=_("Listen"), tag="sidebar", child=view)
 
     def build_settings_button(self):
-        """Réglages : pays (sélecteur partagé avec le filtre des radios) et interrupteur YouTube."""
+        """Bouton du drapeau : uniquement le choix du pays (partagé avec le filtre des radios)."""
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, margin_top=12, margin_bottom=12,
                       margin_start=12, margin_end=12, width_request=300)
         self.choosers, self.country_popovers = [], []
@@ -303,52 +304,69 @@ class Window(Adw.ApplicationWindow):
         box.append(chooser)
         box.append(Gtk.Label(label=_("Charts and radio stations are shown for this country"), xalign=0, wrap=True,
                              css_classes=["dim-label", "caption"]))
-        box.append(Gtk.Separator(margin_top=4, margin_bottom=4))
-        row = Gtk.Box(spacing=12)
-        row.append(Gtk.Label(label="YouTube", xalign=0, hexpand=True, css_classes=["heading"]))
-        self.yt_switch = Gtk.Switch(valign=Gtk.Align.CENTER, active=youtube_enabled(), sensitive=ytdlp_path() is not None)
-        self.yt_switch.connect("notify::active", self.on_youtube_toggled)
-        row.append(self.yt_switch)
-        box.append(row)
-        box.append(Gtk.Label(
-            label=_("Plays the audio of YouTube videos with yt-dlp, which you install yourself. This may go against "
-                    "YouTube's terms of service; use it at your own risk.") if ytdlp_path()
-            else _("yt-dlp not found. Install it to use YouTube."),
-            xalign=0, wrap=True, css_classes=["dim-label", "caption"]))
-        box.append(Gtk.Separator(margin_top=4, margin_bottom=4))
-        arow = Gtk.Box(spacing=12)
-        arow.append(Gtk.Label(label=_("Automatic downloads"), xalign=0, hexpand=True, css_classes=["heading"]))
-        self.auto_switch = Gtk.Switch(valign=Gtk.Align.CENTER, active=bool(get_setting("auto_download", False)))
-        self.auto_switch.connect("notify::active", self.on_auto_toggled)
-        arow.append(self.auto_switch)
-        box.append(arow)
-        box.append(Gtk.Label(label=_("Downloads the 3 latest episodes of the podcasts you follow, when Podial starts and "
-                                     "every hour."), xalign=0, wrap=True, css_classes=["dim-label", "caption"]))
-        box.append(Gtk.Separator(margin_top=4, margin_bottom=4))
-        urow = Gtk.Box(spacing=12)
-        urow.append(Gtk.Label(label=_("Check for updates at startup"), xalign=0, hexpand=True, css_classes=["heading"]))
-        self.update_switch = Gtk.Switch(valign=Gtk.Align.CENTER, active=bool(get_setting("update_check", False)))
-        self.update_switch.connect("notify::active", lambda s, _p: set_setting("update_check", s.get_active()))
-        urow.append(self.update_switch)
-        box.append(urow)
-        box.append(Gtk.Label(label=_("Contacts GitHub (github.com) once a day to see if a new version exists. Off by default."),
-                             xalign=0, wrap=True, css_classes=["dim-label", "caption"]))
-        self.update_lbl = Gtk.Label(label="", xalign=0, wrap=True, css_classes=["caption"], visible=False, use_markup=True)
-        buttons = Gtk.Box(spacing=8, margin_top=6)
-        check = Gtk.Button(label=_("Check for updates"), hexpand=True)
-        check.connect("clicked", lambda _b: self.on_check_update())
-        about = Gtk.Button(label=_("About Podial"), hexpand=True)
-        about.connect("clicked", lambda _b: self.show_about())
-        buttons.append(check)
-        buttons.append(about)
-        box.append(buttons)
-        box.append(self.update_lbl)
         popover = Gtk.Popover(child=box)
         popover.connect("closed", lambda _p: chooser.reset())
         self.country_popovers.append(popover)
-        self.settings_btn = Gtk.MenuButton(popover=popover, tooltip_text=_("Settings"), css_classes=["flat"])
+        self.settings_btn = Gtk.MenuButton(popover=popover, tooltip_text=_("Country"), css_classes=["flat"])
         self.refresh_country_ui()
         return self.settings_btn
+
+    def build_main_menu(self):
+        """Menu principal (≡) : préférences et à propos."""
+        for name, cb in (("preferences", self.show_preferences), ("about", self.show_about)):
+            act = Gio.SimpleAction.new(name, None)
+            act.connect("activate", lambda *_a, f=cb: f())
+            self.add_action(act)
+        menu = Gio.Menu()
+        menu.append(_("Preferences"), "win.preferences")
+        menu.append(_("About Podial"), "win.about")
+        return Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text=_("Main menu"),
+                              css_classes=["flat"], primary=True)
+
+    def show_preferences(self):
+        dlg = Adw.PreferencesDialog(title=_("Preferences"))
+        page = Adw.PreferencesPage()
+        dlg.add(page)
+
+        yt = Adw.PreferencesGroup(title="YouTube")
+        self.yt_switch = Adw.SwitchRow(
+            title=_("YouTube audio"), active=youtube_enabled(), sensitive=ytdlp_path() is not None,
+            subtitle=_("Plays the audio of YouTube videos with yt-dlp, which you install yourself. This may go against "
+                       "YouTube's terms of service; use it at your own risk.") if ytdlp_path()
+            else _("yt-dlp not found. Install it to use YouTube."))
+        self.yt_switch.connect("notify::active", self.on_youtube_toggled)
+        yt.add(self.yt_switch)
+        page.add(yt)
+
+        dl = Adw.PreferencesGroup(title=_("Downloads"))
+        self.auto_switch = Adw.SwitchRow(
+            title=_("Automatic downloads"), active=bool(get_setting("auto_download", False)),
+            subtitle=_("Downloads the 3 latest episodes of the podcasts you follow, when Podial starts and every hour."))
+        self.auto_switch.connect("notify::active", self.on_auto_toggled)
+        dl.add(self.auto_switch)
+        page.add(dl)
+
+        up = Adw.PreferencesGroup(title=_("Updates"))
+        self.update_switch = Adw.SwitchRow(
+            title=_("Check for updates at startup"), active=bool(get_setting("update_check", False)),
+            subtitle=_("Contacts GitHub (github.com) once a day to see if a new version exists. Off by default."))
+        self.update_switch.connect("notify::active", lambda s, _p: set_setting("update_check", s.get_active()))
+        up.add(self.update_switch)
+        self.update_row = Adw.ActionRow(title=_("Check for updates"), subtitle=_("Podial {version}").format(version=VERSION),
+                                        activatable=True)
+        self.update_row.add_suffix(Gtk.Image(icon_name="view-refresh-symbolic"))
+        self.update_row.connect("activated", lambda _r: self.on_check_update())
+        self.update_dl = Gtk.Button(label=_("Download"), valign=Gtk.Align.CENTER, visible=False, css_classes=["suggested-action"])
+        self.update_dl.connect("clicked", lambda _b: Gtk.UriLauncher.new(self.update_url).launch(self, None, None, None))
+        self.update_row.add_suffix(self.update_dl)
+        up.add(self.update_row)
+        page.add(up)
+        dlg.present(self)
+
+    def set_update_status(self, text):
+        row = getattr(self, "update_row", None)
+        if row is not None:
+            row.set_subtitle(GLib.markup_escape_text(text))
 
     def make_country_popover(self):
         """Second sélecteur de pays, pour la barre de filtres des radios."""
@@ -378,9 +396,9 @@ class Window(Adw.ApplicationWindow):
 
     def show_about(self):
         about = Adw.AboutDialog(
-            application_name=APP_NAME, application_icon="audio-headphones", version=VERSION, developer_name="Mickael",
+            application_name=APP_NAME, application_icon="audio-headphones", version=VERSION, developer_name="Podial contributors",
             website=f"https://github.com/{REPO}", issue_url=f"https://github.com/{REPO}/issues",
-            license_type=Gtk.License.MIT_X11, copyright="© 2026 Mickael",
+            license_type=Gtk.License.MIT_X11, copyright="© 2026 Podial contributors",
             comments=_("Podcasts and live radio in one free app. No account, no tracking."))
         about.add_link(_("Support the project"), "https://buymeacoffee.com/mickaelb06")
         about.add_legal_section(_("Data sources"), None, Gtk.License.CUSTOM,
@@ -391,25 +409,26 @@ class Window(Adw.ApplicationWindow):
     def on_check_update(self, silent=False):
         """Cherche une version plus récente sur GitHub. silent : pas de message si Podial est à jour (vérification automatique)."""
         if not silent:
-            self.update_lbl.set_visible(True)
-            self.update_lbl.set_label(_("Checking…"))
+            self.set_update_status(_("Checking…"))
 
         def done(res):
             version, url = res
             if version:
-                text = _("Version {version} is available.").format(version=version) + f' <a href="{GLib.markup_escape_text(url)}">{_("Download")}</a>'
-                self.update_lbl.set_visible(True)
-                self.update_lbl.set_markup(text)
+                msg = _("Version {version} is available.").format(version=version)
+                self.update_url = url
+                if getattr(self, "update_dl", None) is not None:
+                    self.update_dl.set_visible(True)
+                self.set_update_status(msg)
                 if silent:
                     note = Gio.Notification.new(APP_NAME)
-                    note.set_body(_("Version {version} is available.").format(version=version))
+                    note.set_body(msg)
                     self.get_application().send_notification("update", note)
             elif not silent:
-                self.update_lbl.set_label(_("You're up to date (version {version}).").format(version=VERSION))
+                self.set_update_status(_("You're up to date (version {version}).").format(version=VERSION))
 
         def failed(err):
             if not silent:
-                self.update_lbl.set_label(_("Couldn't check. ({error})").format(error=err))
+                self.set_update_status(_("Couldn't check. ({error})").format(error=err))
 
         run_async(check_update, done, failed)
 
