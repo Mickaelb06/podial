@@ -26,14 +26,17 @@ Version de bureau multiplateforme (Windows, macOS, Linux) :
 
 ## Fonctionnalités
 
-- Podcasts : Top 10 par pays et par genre, recherche, abonnements, téléchargements hors ligne (manuels ou automatiques), pochettes conservées hors ligne.
+- Podcasts : Top 10 par pays et par genre, recherche, abonnements, téléchargements hors ligne (manuels ou automatiques, annulables), pochettes conservées hors ligne.
+- Nouveaux épisodes : un badge sur les podcasts suivis, une notification (vérification toutes les heures) et une coche « écouté » sur les épisodes terminés.
 - Radios en direct du monde entier ([radio-browser.info](https://www.radio-browser.info)), parcourues par pays et par ville, doublons supprimés, favoris.
+- Les pages de radio affichent le logo, la qualité, le titre en cours (quand la station l'envoie) et, pour RTL, le programme du jour avec l'émission en cours mise en avant (Android). Il n'existe pas de source commune pour les programmes des radios : chaque station demande son propre développement.
 - Audio YouTube en option sur le bureau (nécessite `yt-dlp`, que tu installes toi-même ; cela peut aller à l'encontre des conditions d'utilisation de YouTube, à tes risques).
 - Minuteur de sommeil : en minutes, en heures ou à la fin de l'épisode, avec une baisse douce du volume.
 - Égaliseur, volume lissé, vitesse de lecture, commandes MPRIS et touches multimédia sur le bureau Linux.
+- Clic droit sur le lecteur de la barre GNOME pour ouvrir ou quitter Podial. « Lancer à l'ouverture de session » sur le bureau. Une fenêtre « À propos » et une vérification des mises à jour (releases GitHub, désactivée par défaut sous Linux).
 - Interface en anglais, français, espagnol, allemand, portugais, hébreu et arabe (écriture de droite à gauche gérée) sur le bureau Linux ; anglais et français sur Android.
 
-Les données des podcasts viennent de l'API publique iTunes Search et des classements RSS d'Apple. Rien n'est envoyé à un serveur qui nous appartient : il n'y en a pas.
+Les données des podcasts viennent de l'API publique iTunes Search et des classements RSS d'Apple. Le programme de RTL vient de la page publique de rtl.fr. Podial n'est affilié ni à Apple, ni à YouTube, ni à RTL. Rien n'est envoyé à un serveur qui nous appartient : il n'y en a pas.
 
 ## Téléchargement
 
@@ -76,6 +79,8 @@ Limites connues : pas encore de touches multimédia ni d'intégration « en lect
 
 ## Android
 
+Télécharge `podial-android.apk` depuis la [dernière release](https://github.com/Mickaelb06/podial/releases/latest) (autorise l'installation depuis ton navigateur ou ton gestionnaire de fichiers quand Android te le demande). Android 8.0 ou plus récent.
+
 ```sh
 cd android
 ./gradlew assembleDebug     # JDK 17 et SDK Android nécessaires
@@ -91,6 +96,7 @@ Version précoce. L'application Android n'a pas encore été testée sur un vrai
 
 ## Feuille de route (prévu, pas encore développé)
 
+- Programmes de radio pour d'autres stations (Radio France et d'autres, une par une).
 - Enregistrer les radios en direct, avec programmation.
 - Transcription locale et recherche dans les épisodes (tout se passe sur ton ordinateur).
 - Écouter un podcast dans une autre langue, par exemple un épisode anglais en français, grâce à des sous-titres ou une voix traduits.

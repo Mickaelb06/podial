@@ -26,14 +26,17 @@ Cross-platform desktop version (Windows, macOS, Linux):
 
 ## Features
 
-- Podcasts: top 10 by country and genre, search, subscriptions, offline downloads (manual or automatic), cover art kept offline.
+- Podcasts: top 10 by country and genre, search, subscriptions, offline downloads (manual or automatic, cancellable), cover art kept offline.
+- New episodes: a badge on the podcasts you follow, a notification (checked every hour), and a "played" mark on episodes you have finished.
 - Live radio from all countries ([radio-browser.info](https://www.radio-browser.info)), browse by country and city, duplicates removed, favorites.
+- Radio pages show the station logo, quality, the title currently playing (when the station sends it) and, for RTL, today's schedule with the current show highlighted (Android). There is no common source for radio schedules, so each station needs its own support.
 - Optional YouTube audio on desktop (requires `yt-dlp`, which you install yourself; this may go against YouTube's terms of service, use at your own risk).
 - Sleep timer: in minutes, hours, or at the end of the episode, with a gentle volume fade.
 - Equalizer, smooth volume, playback speed, MPRIS controls and media keys on desktop.
+- Right-click the GNOME top-bar player to open or quit Podial. "Launch at login" on desktop. An About dialog and an update check (GitHub releases, off by default on Linux).
 - Interface in English, French, Spanish, German, Portuguese, Hebrew and Arabic (right-to-left supported) on desktop; English and French on Android.
 
-Podcast data comes from the public iTunes Search API and Apple RSS charts. Nothing is sent to any server of ours: there is none.
+Podcast data comes from the public iTunes Search API and Apple RSS charts. RTL's schedule comes from the public page of rtl.fr. Podial is not affiliated with Apple, YouTube or RTL. Nothing is sent to any server of ours: there is none.
 
 ## Download
 
@@ -76,6 +79,8 @@ Known limits: no media keys / system "now playing" integration yet, and a few ra
 
 ## Android
 
+Download `podial-android.apk` from the [latest release](https://github.com/Mickaelb06/podial/releases/latest) (allow installs from your browser or file manager when Android asks). Requires Android 8.0 or newer.
+
 ```sh
 cd android
 ./gradlew assembleDebug     # needs JDK 17 and the Android SDK
@@ -91,6 +96,7 @@ Early version. The Android app has not yet been tested on a real device or in a 
 
 ## Roadmap (planned, not built yet)
 
+- Radio schedules for more stations (Radio France and others, one by one).
 - Record live radio, with scheduling.
 - Local transcription and search inside episodes (runs on your machine).
 - Listen to a podcast in another language, for example an English episode in French, through translated subtitles or voice.

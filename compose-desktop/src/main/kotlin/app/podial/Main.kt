@@ -400,7 +400,7 @@ fun PlayerBar() {
     }
 }
 
-const val APP_VERSION = "1.0.0"
+const val APP_VERSION = "0.5.0"
 
 @Composable
 fun AboutDialog(onClose: () -> Unit) {
