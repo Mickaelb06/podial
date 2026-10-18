@@ -98,7 +98,7 @@ La signature de la version finale utilise un keystore hors du dépôt : `~/.podi
 
 ## État du projet
 
-Version précoce. L'application Android n'a pas encore été testée sur un vrai appareil ni dans une voiture, et les versions de bureau Windows et macOS n'ont pas été testées sur ces systèmes.
+Version précoce. L'application Android a été essayée sur un seul téléphone, mais pas encore dans une voiture (Android Auto), et les versions de bureau Windows et macOS n'ont pas été testées sur ces systèmes.
 
 ## Feuille de route (prévu, pas encore développé)
 

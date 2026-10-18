@@ -98,7 +98,7 @@ Release signing uses a keystore outside the repository: `~/.podial-signing/keyst
 
 ## Status
 
-Early version. The Android app has not yet been tested on a real device or in a car, and the Windows/macOS desktop builds have not been tested on those systems.
+Early version. The Android app has been tried on one real phone but not yet in a car (Android Auto), and the Windows/macOS desktop builds have not been tested on those systems.
 
 ## Roadmap (planned, not built yet)
 
