@@ -20,6 +20,10 @@ object T {
         "play" to "Play", "pause" to "Pause", "back" to "Back", "nothing" to "Nothing playing",
         "stream_error" to "This stream can't be played here.",
         "new_badge" to "%d new", "new_chip" to "NEW", "mark_played" to "Mark as played", "mark_unplayed" to "Mark as unplayed",
+        "about" to "About", "version" to "Version %s", "about_text" to "Podcasts and live radio in one free app. No account, no tracking.",
+        "about_sources" to "Podcast data: public iTunes Search API and Apple RSS charts. Radio stations: radio-browser.info. Podial is not affiliated with Apple or YouTube.",
+        "report_bug" to "Report a bug", "check_updates" to "Check for updates", "up_to_date" to "You're up to date (version %s).",
+        "update_available" to "Version %s is available.", "update_failed" to "Couldn't check for updates.", "close" to "Close",
     )
     private val frMap = mapOf(
         "library" to "Bibliothèque", "downloads" to "Téléchargements", "search_podcasts" to "Rechercher un podcast…",
@@ -35,6 +39,10 @@ object T {
         "nothing" to "Rien en lecture", "stream_error" to "Ce flux ne peut pas être lu ici.",
         "new_badge" to "%d nouveau(x)", "new_chip" to "NOUVEAU", "mark_played" to "Marquer comme écouté",
         "mark_unplayed" to "Marquer comme non écouté",
+        "about" to "À propos", "version" to "Version %s", "about_text" to "Podcasts et radios en direct dans une seule app gratuite. Sans compte, sans pistage.",
+        "about_sources" to "Données des podcasts : API publique iTunes Search et classements RSS d'Apple. Radios : radio-browser.info. Podial n'est affilié ni à Apple ni à YouTube.",
+        "report_bug" to "Signaler un bug", "check_updates" to "Vérifier les mises à jour", "up_to_date" to "Podial est à jour (version %s).",
+        "update_available" to "La version %s est disponible.", "update_failed" to "Vérification impossible.", "close" to "Fermer",
     )
     operator fun get(k: String): String = (if (fr) frMap[k] else null) ?: en[k] ?: k
 }

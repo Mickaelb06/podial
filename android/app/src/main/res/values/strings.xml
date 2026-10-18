@@ -42,4 +42,14 @@
     <string name="new_chip">NEW</string>
     <string name="mark_played">Mark as played</string>
     <string name="mark_unplayed">Mark as unplayed</string>
+    <string name="about">About</string>
+    <string name="version_fmt">Version %s</string>
+    <string name="about_text">Podcasts and live radio in one free app. No account, no tracking.</string>
+    <string name="about_sources">Podcast data: public iTunes Search API and Apple RSS charts. Radio stations: radio-browser.info. Podial is not affiliated with Apple or YouTube.</string>
+    <string name="report_bug">Report a bug</string>
+    <string name="check_updates">Check for updates</string>
+    <string name="up_to_date">You\'re up to date (version %s).</string>
+    <string name="update_available">Version %s is available.</string>
+    <string name="update_failed">Couldn\'t check for updates.</string>
+    <string name="close">Close</string>
 </resources>

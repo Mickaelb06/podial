@@ -20,7 +20,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gst, Gtk  # noqa: E402
 
 import integration  # noqa: E402
 from catalog import (  # noqa: E402
-    COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, check_new_episodes, delete_download, download_episode, fetch_feed, load_played, mark_seen, new_counts, seen_urls, set_played, fetch_youtube_feed, flag, get_country, get_setting,
+    COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, VERSION, REPO, check_new_episodes, check_update, delete_download, download_episode, fetch_feed, load_played, mark_seen, new_counts, seen_urls, set_played, fetch_youtube_feed, flag, get_country, get_setting,
     http_get, item_key, radio_browse, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
     youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path)
 from filters import CountryChooser, GenreBar, RadioBar  # noqa: E402
@@ -238,6 +238,7 @@ class Window(Adw.ApplicationWindow):
         GLib.timeout_add(500, self.tick)
         GLib.timeout_add_seconds(5, lambda: self.run_auto_download() or False)
         GLib.timeout_add_seconds(8, lambda: self.run_check_new() or False)
+        GLib.timeout_add_seconds(15, self.startup_update_check)
         GLib.timeout_add_seconds(3600, lambda: self.run_check_new() or True)
         self.refresh_library_badge()
         GLib.timeout_add_seconds(3600, lambda: self.run_auto_download() or True)
@@ -323,6 +324,25 @@ class Window(Adw.ApplicationWindow):
         box.append(arow)
         box.append(Gtk.Label(label=_("Downloads the 3 latest episodes of the podcasts you follow, when Podial starts and "
                                      "every hour."), xalign=0, wrap=True, css_classes=["dim-label", "caption"]))
+        box.append(Gtk.Separator(margin_top=4, margin_bottom=4))
+        urow = Gtk.Box(spacing=12)
+        urow.append(Gtk.Label(label=_("Check for updates at startup"), xalign=0, hexpand=True, css_classes=["heading"]))
+        self.update_switch = Gtk.Switch(valign=Gtk.Align.CENTER, active=bool(get_setting("update_check", False)))
+        self.update_switch.connect("notify::active", lambda s, _p: set_setting("update_check", s.get_active()))
+        urow.append(self.update_switch)
+        box.append(urow)
+        box.append(Gtk.Label(label=_("Contacts GitHub (github.com) once a day to see if a new version exists. Off by default."),
+                             xalign=0, wrap=True, css_classes=["dim-label", "caption"]))
+        self.update_lbl = Gtk.Label(label="", xalign=0, wrap=True, css_classes=["caption"], visible=False, use_markup=True)
+        buttons = Gtk.Box(spacing=8, margin_top=6)
+        check = Gtk.Button(label=_("Check for updates"), hexpand=True)
+        check.connect("clicked", lambda _b: self.on_check_update())
+        about = Gtk.Button(label=_("About Podial"), hexpand=True)
+        about.connect("clicked", lambda _b: self.show_about())
+        buttons.append(check)
+        buttons.append(about)
+        box.append(buttons)
+        box.append(self.update_lbl)
         popover = Gtk.Popover(child=box)
         popover.connect("closed", lambda _p: chooser.reset())
         self.country_popovers.append(popover)
@@ -347,6 +367,51 @@ class Window(Adw.ApplicationWindow):
         self.refresh_youtube_row()
         if not switch.get_active() and self.section == "youtube":
             self.side_list.select_row(self.side_list.get_row_at_index(0))
+
+    def startup_update_check(self):
+        import time
+        last = float(get_setting("update_checked", 0) or 0)
+        if get_setting("update_check", False) and time.time() - last > 86400:
+            set_setting("update_checked", time.time())
+            self.on_check_update(silent=True)
+        return False
+
+    def show_about(self):
+        about = Adw.AboutDialog(
+            application_name=APP_NAME, application_icon="audio-headphones", version=VERSION, developer_name="Mickael",
+            website=f"https://github.com/{REPO}", issue_url=f"https://github.com/{REPO}/issues",
+            license_type=Gtk.License.MIT_X11, copyright="© 2026 Mickael",
+            comments=_("Podcasts and live radio in one free app. No account, no tracking."))
+        about.add_link(_("Support the project"), "https://buymeacoffee.com/mickaelb06")
+        about.add_legal_section(_("Data sources"), None, Gtk.License.CUSTOM,
+                                _("Podcast data: public iTunes Search API and Apple RSS charts. Radio stations: radio-browser.info. "
+                                  "Podial is not affiliated with Apple or YouTube."))
+        about.present(self)
+
+    def on_check_update(self, silent=False):
+        """Cherche une version plus récente sur GitHub. silent : pas de message si Podial est à jour (vérification automatique)."""
+        if not silent:
+            self.update_lbl.set_visible(True)
+            self.update_lbl.set_label(_("Checking…"))
+
+        def done(res):
+            version, url = res
+            if version:
+                text = _("Version {version} is available.").format(version=version) + f' <a href="{GLib.markup_escape_text(url)}">{_("Download")}</a>'
+                self.update_lbl.set_visible(True)
+                self.update_lbl.set_markup(text)
+                if silent:
+                    note = Gio.Notification.new(APP_NAME)
+                    note.set_body(_("Version {version} is available.").format(version=version))
+                    self.get_application().send_notification("update", note)
+            elif not silent:
+                self.update_lbl.set_label(_("You're up to date (version {version}).").format(version=VERSION))
+
+        def failed(err):
+            if not silent:
+                self.update_lbl.set_label(_("Couldn't check. ({error})").format(error=err))
+
+        run_async(check_update, done, failed)
 
     def on_auto_toggled(self, switch, _param):
         set_setting("auto_download", switch.get_active())

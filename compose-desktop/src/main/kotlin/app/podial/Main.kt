@@ -34,6 +34,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
@@ -85,6 +86,7 @@ private fun runApp() = application {
 fun PodialApp() {
     var tab by remember { mutableIntStateOf(0) }
     var detail by remember { mutableStateOf<Item?>(null) }
+    var about by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         while (true) {
             Player.poll()
@@ -106,6 +108,8 @@ fun PodialApp() {
                             else Icon(icon, null)
                         }, label = { Text(T[label]) })
                 }
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = { about = true }, modifier = Modifier.padding(bottom = 8.dp)) { Icon(Icons.Default.Info, T["about"]) }
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 val d = detail
@@ -119,6 +123,7 @@ fun PodialApp() {
             }
         }
         if (Player.key.isNotEmpty()) PlayerBar()
+        if (about) AboutDialog { about = false }
     }
 }
 
@@ -390,4 +395,47 @@ fun PlayerBar() {
             Slider(Player.volume, { Player.changeVolume(it) }, Modifier.width(110.dp))
         }
     }
+}
+
+const val APP_VERSION = "1.0.0"
+
+@Composable
+fun AboutDialog(onClose: () -> Unit) {
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    var status by remember { mutableStateOf<String?>(null) }
+    var link by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Podial") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(T["version"].format(APP_VERSION), fontWeight = FontWeight.SemiBold)
+                Text(T["about_text"])
+                Text(T["about_sources"], style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("MIT · © 2026 Mickael", style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton({ uri.openUri(Release.SITE) }) { Text("GitHub") }
+                    TextButton({ uri.openUri(Release.SITE + "/issues") }) { Text(T["report_bug"]) }
+                    TextButton({ uri.openUri(Release.SUPPORT) }) { Text("☕") }
+                }
+                status?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+                link?.let { TextButton({ uri.openUri(it) }) { Text(T["download"]) } }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = !busy, onClick = {
+                busy = true; status = null; link = null
+                scope.launch {
+                    try {
+                        val r = Release.check(APP_VERSION)
+                        if (r == null) status = T["up_to_date"].format(APP_VERSION) else { status = T["update_available"].format(r.first); link = r.second }
+                    } catch (e: Exception) { status = T["update_failed"] }
+                    busy = false
+                }
+            }) { Text(T["check_updates"]) }
+        },
+        dismissButton = { TextButton(onClose) { Text(T["close"]) } },
+    )
 }

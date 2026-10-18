@@ -39,4 +39,14 @@
     <string name="new_chip">NOUVEAU</string>
     <string name="mark_played">Marquer comme écouté</string>
     <string name="mark_unplayed">Marquer comme non écouté</string>
+    <string name="about">À propos</string>
+    <string name="version_fmt">Version %s</string>
+    <string name="about_text">Podcasts et radios en direct dans une seule app gratuite. Sans compte, sans pistage.</string>
+    <string name="about_sources">Données des podcasts : API publique iTunes Search et classements RSS d\'Apple. Radios : radio-browser.info. Podial n\'est affilié ni à Apple ni à YouTube.</string>
+    <string name="report_bug">Signaler un bug</string>
+    <string name="check_updates">Vérifier les mises à jour</string>
+    <string name="up_to_date">Podial est à jour (version %s).</string>
+    <string name="update_available">La version %s est disponible.</string>
+    <string name="update_failed">Vérification impossible.</string>
+    <string name="close">Fermer</string>
 </resources>

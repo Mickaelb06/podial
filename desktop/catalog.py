@@ -20,7 +20,9 @@ from email.utils import parsedate_to_datetime
 
 from i18n import _
 
-UA = "Podial/0.4 (+https://github.com/podial/podial)"
+VERSION = "0.5.0"
+REPO = "Mickaelb06/podial"
+UA = f"Podial/{VERSION} (+https://github.com/{REPO})"
 ITUNES_NS = "{http://www.itunes.com/dtds/podcast-1.0.dtd}"
 MAX_EPISODES = 200
 
@@ -734,3 +736,23 @@ def check_new_episodes(items):
 
 def new_counts():
     return {k: v.get("new", 0) for k, v in feed_state().items() if v.get("new")}
+
+
+# ---------- mises à jour ----------
+def _version_tuple(v):
+    return tuple(int(x) for x in re.findall(r"\d+", v.split("-")[0])[:4]) or (0,)
+
+
+def check_update():
+    """Interroge GitHub (dernière « release » publiée). Renvoie (version, adresse) si une version plus récente existe,
+    ("", "") si Podial est à jour ou si aucune version n'a encore été publiée."""
+    try:
+        data = json.loads(http_get(f"https://api.github.com/repos/{REPO}/releases/latest", timeout=15))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:      # aucune release publiée pour l'instant
+            return "", ""
+        raise
+    tag = data.get("tag_name", "")
+    if tag and _version_tuple(tag) > _version_tuple(VERSION):
+        return tag.lstrip("v"), data.get("html_url", f"https://github.com/{REPO}/releases")
+    return "", ""

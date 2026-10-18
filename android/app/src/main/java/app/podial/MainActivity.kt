@@ -39,6 +39,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.guava.await
 
 private val Violet = Color(0xFF8B5CF6)
@@ -106,6 +107,7 @@ fun PodialApp() {
     var tab by remember { mutableIntStateOf(0) }
     var detail by remember { mutableStateOf<Item?>(null) }
     var sheet by remember { mutableStateOf(false) }
+    var about by remember { mutableStateOf(false) }
     BackHandler(enabled = detail != null) { detail = null }
 
     Scaffold(
@@ -133,12 +135,13 @@ fun PodialApp() {
             else when (tab) {
                 0 -> BrowseScreen("podcast") { detail = it }
                 1 -> BrowseScreen("radio") { detail = it }
-                2 -> LibraryScreen { detail = it }
+                2 -> LibraryScreen(onAbout = { about = true }) { detail = it }
                 else -> DownloadsScreen(player)
             }
         }
     }
     if (sheet) PlayerSheet(player) { sheet = false }
+    if (about) AboutDialog(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0") { about = false }
 }
 
 // ---------- éléments communs ----------
@@ -226,11 +229,16 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
 }
 
 @Composable
-fun LibraryScreen(onOpen: (Item) -> Unit) {
+fun LibraryScreen(onAbout: () -> Unit, onOpen: (Item) -> Unit) {
     val pods by Store.podcasts.collectAsState()
     val radios by Store.radios.collectAsState()
-    if (pods.isEmpty() && radios.isEmpty()) { Message(stringResource(R.string.library_empty)); return }
     LazyVerticalGrid(GridCells.Adaptive(150.dp), contentPadding = PaddingValues(8.dp), modifier = Modifier.fillMaxSize()) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                IconButton(onClick = onAbout) { Icon(Icons.Default.Info, stringResource(R.string.about)) }
+            }
+        }
+        if (pods.isEmpty() && radios.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { Message(stringResource(R.string.library_empty)) }
         if (pods.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) { Text(stringResource(R.string.followed_podcasts), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(8.dp)) }
             items(pods.size) { ItemCard(pods[it], null) { onOpen(pods[it]) } }
@@ -430,4 +438,48 @@ fun PlayerSheet(p: PlayerState, onClose: () -> Unit) {
             Spacer(Modifier.height(24.dp))
         }
     }
+}
+
+@Composable
+fun AboutDialog(version: String, onClose: () -> Unit) {
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    var status by remember { mutableStateOf<String?>(null) }
+    var link by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val upToDate = stringResource(R.string.up_to_date, version)
+    val failedMsg = stringResource(R.string.update_failed)
+    val newVersionMsg = stringResource(R.string.update_available)
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Podial") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.version_fmt, version), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.about_text))
+                Text(stringResource(R.string.about_sources), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("MIT · © 2026 Mickael", style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton({ uri.openUri(Release.SITE) }) { Text("GitHub") }
+                    TextButton({ uri.openUri(Release.SITE + "/issues") }) { Text(stringResource(R.string.report_bug)) }
+                    TextButton({ uri.openUri(Release.SUPPORT) }) { Text("☕") }
+                }
+                status?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+                link?.let { TextButton({ uri.openUri(it) }) { Text(stringResource(R.string.download)) } }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = !busy, onClick = {
+                busy = true; status = null; link = null
+                scope.launch {
+                    try {
+                        val r = Release.check(version)
+                        if (r == null) status = upToDate else { status = newVersionMsg.format(r.first); link = r.second }
+                    } catch (e: Exception) { status = failedMsg }
+                    busy = false
+                }
+            }) { Text(stringResource(R.string.check_updates)) }
+        },
+        dismissButton = { TextButton(onClose) { Text(stringResource(R.string.close)) } },
+    )
 }

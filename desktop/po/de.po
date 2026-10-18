@@ -419,3 +419,42 @@ msgid "{n} new episode: {names}"
 msgid_plural "{n} new episodes: {names}"
 msgstr[0] "{n} neue Folge: {names}"
 msgstr[1] "{n} neue Folgen: {names}"
+
+msgid "Check for updates at startup"
+msgstr "Beim Start nach Updates suchen"
+
+msgid "Contacts GitHub (github.com) once a day to see if a new version exists. Off by default."
+msgstr "Kontaktiert einmal täglich GitHub (github.com), um nach einer neuen Version zu suchen. Standardmäßig aus."
+
+msgid "Check for updates"
+msgstr "Nach Updates suchen"
+
+msgid "About Podial"
+msgstr "Über Podial"
+
+msgid "Podcasts and live radio in one free app. No account, no tracking."
+msgstr "Podcasts und Live-Radio in einer kostenlosen App. Ohne Konto, ohne Tracking."
+
+msgid "Support the project"
+msgstr "Projekt unterstützen"
+
+msgid "Data sources"
+msgstr "Datenquellen"
+
+msgid "Podcast data: public iTunes Search API and Apple RSS charts. Radio stations: radio-browser.info. Podial is not affiliated with Apple or YouTube."
+msgstr "Podcast-Daten: öffentliche iTunes-Search-API und Apple-RSS-Charts. Radiosender: radio-browser.info. Podial ist weder mit Apple noch mit YouTube verbunden."
+
+msgid "Checking…"
+msgstr "Prüfe…"
+
+msgid "Version {version} is available."
+msgstr "Version {version} ist verfügbar."
+
+msgid "Download"
+msgstr "Herunterladen"
+
+msgid "You're up to date (version {version})."
+msgstr "Podial ist aktuell (Version {version})."
+
+msgid "Couldn't check. ({error})"
+msgstr "Prüfung fehlgeschlagen. ({error})"
