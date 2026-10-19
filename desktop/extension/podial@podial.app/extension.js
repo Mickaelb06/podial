@@ -76,6 +76,7 @@ class PodcastsIndicator extends PanelMenu.Button {
         this._buildPill();
         this._buildMenu();
         this._buildContextMenu();
+        this._setupClickGestures();
         this.menu.connect('open-state-changed', (_m, open) => this._onMenuToggled(open));
         this.connect('destroy', () => { this._cleanup(); this._ctx?.destroy(); this._destroyed = true; });
         this.connect('scroll-event', (_a, event) => this._onScroll(event));
@@ -292,14 +293,33 @@ class PodcastsIndicator extends PanelMenu.Button {
                 Gio.DBusCallFlags.NONE, -1, null, null));
     }
 
+    _toggleContextMenu() {
+        this.menu.close();
+        if (!this._ctxAdded) {
+            Main.panel.menuManager.addMenu(this._ctx);
+            this._ctxAdded = true;
+        }
+        this._ctx.toggle();
+    }
+
+    // GNOME 50+ : le bouton de la barre ouvre son menu avec un ClickGesture qui accepte tous les boutons
+    // de la souris (vfunc_event n'est plus appelé). On limite ce geste au clic gauche et on ajoute un
+    // second geste pour le clic droit.
+    _setupClickGestures() {
+        if (!this._clickGesture)
+            return;
+        this._clickGesture.required_button = Clutter.BUTTON_PRIMARY;
+        this._ctxGesture = new Clutter.ClickGesture({required_button: Clutter.BUTTON_SECONDARY});
+        this._ctxGesture.set_recognize_on_press(true);
+        this._ctxGesture.connect('recognize', () => this._toggleContextMenu());
+        this.add_action(this._ctxGesture);
+    }
+
+    // GNOME 48-49 : clic droit capté ici, avant le menu de lecture
     vfunc_event(event) {
-        if (event.type() === Clutter.EventType.BUTTON_PRESS && event.get_button() === Clutter.BUTTON_SECONDARY) {
-            this.menu.close();
-            if (!this._ctxAdded) {
-                Main.panel.menuManager.addMenu(this._ctx);
-                this._ctxAdded = true;
-            }
-            this._ctx.toggle();
+        if (!this._clickGesture && event.type() === Clutter.EventType.BUTTON_PRESS &&
+            event.get_button() === Clutter.BUTTON_SECONDARY) {
+            this._toggleContextMenu();
             return Clutter.EVENT_STOP;
         }
         try {
