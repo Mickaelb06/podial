@@ -231,14 +231,18 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
             else Api.radios(country, query.ifBlank { null })
         } catch (e: Exception) { failed = true; emptyList() }
     }
+    // la barre de recherche reste hors du `when` : sinon elle est recréée à chaque changement d'état
+    // (chargement → liste) et perd le focus, ce qui referme le clavier
+    val searchBar: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
+                placeholder = { Text(stringResource(if (kind == "podcast") R.string.search_podcasts else R.string.search_radios)) },
+                leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
+            if (kind == "radio" && countries.isNotEmpty()) FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, stringResource(R.string.world_map)) }
+        }
+    }
     val header: @Composable () -> Unit = {
         Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
-                    placeholder = { Text(stringResource(if (kind == "podcast") R.string.search_podcasts else R.string.search_radios)) },
-                    leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
-                if (kind == "radio" && countries.isNotEmpty()) FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, stringResource(R.string.world_map)) }
-            }
             if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                 item { FilterChip(genre == null, { genre = null }, { Text(stringResource(R.string.all)) }) }
                 items(Api.APPLE_GENRES.entries.toList()) { g -> FilterChip(genre == g.key, { genre = g.key }, { Text(g.value) }) }
@@ -250,11 +254,14 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
     if (map) WorldMapDialog(countries, country, stringResource(R.string.world_map), stringResource(R.string.show_radios), stringResource(R.string.close),
         onConfirm = { country = it; Store.radioCountry = it; map = false }, onClose = { map = false })
     val list = items
-    when {
-        list == null -> Column { header(); Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-        failed -> Column { header(); Message(stringResource(R.string.load_failed)) }
-        list.isEmpty() -> Column { header(); Message(stringResource(R.string.no_results)) }
-        else -> Grid(list, header, onOpen, ranked = query.isBlank())
+    Column {
+        searchBar()
+        when {
+            list == null -> Column { header(); Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+            failed -> Column { header(); Message(stringResource(R.string.load_failed)) }
+            list.isEmpty() -> Column { header(); Message(stringResource(R.string.no_results)) }
+            else -> Grid(list, header, onOpen, ranked = query.isBlank())
+        }
     }
 }
 

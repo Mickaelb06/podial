@@ -82,7 +82,13 @@ class PlaybackService : MediaLibraryService() {
                 val items: List<MediaItem> = when {
                     parentId == ROOT -> listOf(folder(PODCASTS, getString(R.string.tab_podcasts)),
                         folder(RADIOS, getString(R.string.tab_radios)), folder(DOWNLOADS, getString(R.string.tab_downloads)))
-                    parentId == PODCASTS -> Store.podcasts.value.map { podcastFolder(it) }
+                    parentId == PODCASTS -> {
+                        // podcasts suivis, puis le Top : on peut écouter en ligne sans rien suivre ni télécharger
+                        val followed = Store.podcasts.value
+                        val top = runCatching { Api.topPodcasts(null) }.getOrDefault(emptyList())
+                            .filter { t -> followed.none { it.feed == t.feed } }
+                        (followed + top).map { podcastFolder(it) }
+                    }
                     parentId == RADIOS -> {
                         val favs = Store.radios.value
                         val top = runCatching { Api.radios(Store.radioCountry, limit = 30) }.getOrDefault(emptyList())
@@ -92,7 +98,7 @@ class PlaybackService : MediaLibraryService() {
                     parentId == DOWNLOADS -> Store.downloads.value.map { episodeItem(it.podcast, it.episode) }
                     parentId.startsWith("pod|") -> {
                         val feed = parentId.removePrefix("pod|")
-                        val p = Store.podcasts.value.first { it.feed == feed }
+                        val p = Store.podcasts.value.firstOrNull { it.feed == feed } ?: podcastsSeen[feed] ?: return@future LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
                         Api.fetchFeed(p.feed).second.take(50).map { episodeItem(p, it) }
                     }
                     else -> emptyList()
@@ -104,7 +110,17 @@ class PlaybackService : MediaLibraryService() {
         /** Android Auto renvoie des éléments sans adresse : on les retrouve grâce à leur identifiant. */
         override fun onAddMediaItems(mediaSession: MediaSession, controller: MediaSession.ControllerInfo,
                                      mediaItems: MutableList<MediaItem>): ListenableFuture<MutableList<MediaItem>> =
-            Futures.immediateFuture(mediaItems.map { cache[it.mediaId] ?: it }.toMutableList())
+            Futures.immediateFuture(mediaItems.map { cache[it.mediaId] ?: rebuild(it) }.toMutableList())
+
+        /** Cache vide (service redémarré depuis la dernière navigation) : l'adresse audio est dans l'identifiant. */
+        private fun rebuild(it: MediaItem): MediaItem {
+            val url = when {
+                it.mediaId.startsWith("radio|") -> it.mediaId.removePrefix("radio|")
+                it.mediaId.startsWith("ep|") -> it.mediaId.removePrefix("ep|")
+                else -> return it
+            }
+            return it.buildUpon().setUri(url).build()
+        }
     }
 
     companion object {
@@ -115,6 +131,8 @@ class PlaybackService : MediaLibraryService() {
         var instance: PlaybackService? = null
         /** Identifiant -> élément déjà construit (pour retrouver l'adresse audio quand le contrôleur ne la renvoie pas). */
         private val cache = HashMap<String, MediaItem>()
+        /** Podcasts du Top affichés dans Android Auto (non suivis) : pour retrouver leur flux au moment de les ouvrir. */
+        private val podcastsSeen = HashMap<String, Item>()
 
         fun libraryChanged() {
             val s = instance?.session ?: return
@@ -127,6 +145,7 @@ class PlaybackService : MediaLibraryService() {
 
         private fun podcastFolder(p: Item): MediaItem {
             val id = "pod|" + p.feed
+            podcastsSeen[p.feed] = p
             return MediaItem.Builder().setMediaId(id).setMediaMetadata(
                 MediaMetadata.Builder().setTitle(p.name).setArtist(p.artist).setIsBrowsable(true).setIsPlayable(false)
                     .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST)
