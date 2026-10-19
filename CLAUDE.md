@@ -28,7 +28,7 @@ Podcasts (Top 10 by country/genre, search, subscribe), radios by country + city 
 
 ## Not done (ideas the owner liked)
 Radio recording with scheduling; local transcription for episodes without published transcript + search in episodes; translated subtitles for foreign-language podcasts (Whisper + translation locally, or optional Gemini API with the user's own key, which would send audio to Google); sync between devices without an account; Android/desktop translations beyond en/fr; real icons for installers; trademark/domain check for the name "Podial"; test Windows/macOS/Android on real devices and Android Auto (or the Desktop Head Unit); first release (`git tag v0.5.0 && git push origin v0.5.0`); GitHub Pages (Settings → Pages → `main` / `/docs`); GitHub Sponsors was abandoned as too complex; Buy Me a Coffee is used. Translate the French code comments to English before wider promotion. Product Hunt launch kit is in `~/podial-launch/product-hunt.md` (not in the repo).
-Versions: all apps are 0.5.3 (`catalog.VERSION`, android `versionName`, compose-desktop `APP_VERSION`/`packageVersion`); the macOS package alone uses 1.0.3 because jpackage requires a major version >= 1.
+Versions: all apps are 0.5.4 (`catalog.VERSION`, android `versionName`, compose-desktop `APP_VERSION`/`packageVersion`); the macOS package alone uses 1.0.4 because jpackage requires a major version >= 1.
 
 ## How to build and test
 - Linux app: `cd ~/podial && ./install.sh` (builds translations, installs the extension atomically) then `python3 podial.py`. `--background` starts without a window.

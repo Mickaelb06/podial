@@ -36,7 +36,7 @@ compose.desktop {
             // .dmg (macOS), .exe et .msi (Windows), .deb et .rpm (Linux)
             targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "Podial"
-            packageVersion = "0.5.3"
+            packageVersion = "0.5.4"
             description = "Podcasts and live radio"
             vendor = "Podial"
             modules("java.sql", "jdk.unsupported")
@@ -44,7 +44,7 @@ compose.desktop {
             fun icon(n: String) = project.file("icons/$n").takeIf { it.exists() }
             linux { icon("podial.png")?.let { iconFile.set(it) } }
             windows { menuGroup = "Podial"; icon("podial.ico")?.let { iconFile.set(it) } }
-            macOS { packageVersion = "1.0.3"; bundleID = "app.podial"; icon("podial.icns")?.let { iconFile.set(it) } }
+            macOS { packageVersion = "1.0.4"; bundleID = "app.podial"; icon("podial.icns")?.let { iconFile.set(it) } }
         }
     }
 }
