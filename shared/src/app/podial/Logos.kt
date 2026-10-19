@@ -20,7 +20,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object Logos {
     private const val MAX_PER_LIST = 30
-    private const val BUDGET_MS = 4000L
+    private const val BUDGET_MS = 4500L
+    private const val CHK = "chk:"   // préfixe des adresses de logo déjà vérifiées ("1" = ok, "0" = morte)
     private val found = ConcurrentHashMap<String, String>()   // adresse du site -> logo ("" = rien trouvé)
     @Volatile private var loaded = false
 
@@ -37,17 +38,56 @@ object Logos {
 
     private fun save() = runCatching { file.writeText(JSONObject(found as Map<*, *>).toString()) }
 
-    /** Complète le logo des radios qui n'en ont pas. Rend la liste telle quelle si le réseau est lent : on n'attend que quelques secondes. */
+    /**
+     * Rend à chaque radio un logo qui s'affiche : adresse Wikimedia remise à une taille acceptée, adresse morte écartée (404, 403…),
+     * puis, pour celles qui restent sans logo, icône lue sur le site de la station.
+     * On n'attend que quelques secondes : les résultats déjà obtenus sont gardés pour la prochaine fois.
+     */
     suspend fun fill(items: List<Item>): List<Item> = withContext(Dispatchers.IO) {
         load()
-        val todo = items.filter { it.art.isEmpty() && it.homepage.startsWith("http") && !found.containsKey(it.homepage) }.take(MAX_PER_LIST)
-        if (todo.isNotEmpty()) {
-            withTimeoutOrNull(BUDGET_MS) {
-                coroutineScope { todo.map { it.homepage }.distinct().map { h -> async { found[h] = runCatching { find(h) }.getOrNull().orEmpty() } }.awaitAll() }
+        val fixed = items.map { if (it.art.isEmpty()) it else it.copy(art = wikimedia(it.art)) }
+        withTimeoutOrNull(BUDGET_MS) {
+            coroutineScope {
+                fixed.map { it.art }.filter { it.isNotEmpty() && !found.containsKey(CHK + it) }.distinct().take(MAX_PER_LIST * 3)
+                    .map { u -> async { runCatching { alive(u) }.getOrNull()?.let { ok -> found[CHK + u] = if (ok) "1" else "0" } } }.awaitAll()
+                val todo = fixed.filter { (it.art.isEmpty() || found[CHK + it.art] == "0") && it.homepage.startsWith("http") && !found.containsKey(it.homepage) }
+                    .map { it.homepage }.distinct().take(MAX_PER_LIST)
+                todo.map { h -> async { found[h] = runCatching { find(h) }.getOrNull().orEmpty() } }.awaitAll()
             }
-            save()
         }
-        items.map { if (it.art.isEmpty()) found[it.homepage]?.takeIf { l -> l.isNotEmpty() }?.let { l -> it.copy(art = l) } ?: it else it }
+        save()
+        fixed.map {
+            if (it.art.isNotEmpty() && found[CHK + it.art] != "0") it
+            else it.copy(art = found[it.homepage]?.takeIf { l -> l.isNotEmpty() && found[CHK + l] != "0" }.orEmpty())
+        }
+    }
+
+    /** Wikimedia refuse les miniatures de taille quelconque (« Use thumbnail steps ») : on demande 330 px, une taille standard. */
+    internal fun wikimedia(url: String): String =
+        if ("upload.wikimedia.org" in url && "/thumb/" in url) url.replace(Regex("/((?:lang[a-z-]+-)?)\\d+px-"), "/\$1" + "330px-") else url
+
+    /** Vrai si l'adresse renvoie une image, faux si elle est définitivement cassée (404, 403, pas une image), null si on ne peut pas savoir (limite de débit, panne du serveur). */
+    internal fun alive(url: String): Boolean? {
+        var u = url
+        repeat(4) {
+            val c = open(u)
+            try {
+                c.setRequestProperty("Range", "bytes=0-31")
+                c.setRequestProperty("Accept", "image/*,*/*;q=0.5")
+                val code = c.responseCode
+                if (code in 300..399) { u = URL(URL(u), c.getHeaderField("Location") ?: return false).toString(); return@repeat }
+                if (code == 429 || code >= 500) return null
+                if (code !in 200..299) return false
+                val head = c.inputStream.use { it.readNBytes(16) }
+                return (c.contentType ?: "").startsWith("image/") || looksLikeImage(head)
+            } finally { c.disconnect() }
+        }
+        return null
+    }
+
+    private fun looksLikeImage(b: ByteArray): Boolean {
+        fun at(vararg v: Int) = b.size >= v.size && v.indices.all { (b[it].toInt() and 0xFF) == v[it] }
+        return at(0x89, 0x50, 0x4E, 0x47) || at(0xFF, 0xD8, 0xFF) || at(0x47, 0x49, 0x46) || at(0x52, 0x49, 0x46, 0x46) || at(0, 0, 1, 0)
     }
 
     private fun open(url: String): HttpURLConnection = (URL(url).openConnection() as HttpURLConnection).apply {

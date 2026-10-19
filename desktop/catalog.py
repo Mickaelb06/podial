@@ -251,6 +251,13 @@ def station_key(name):
     return re.sub(r"[^a-z0-9]+", "", s) or name.casefold()
 
 
+def fix_logo_url(url):
+    """Wikimedia refuse les miniatures de taille quelconque (« Use thumbnail steps ») : on demande 330 px, une taille standard."""
+    if url and "upload.wikimedia.org" in url and "/thumb/" in url:
+        return re.sub(r"/((?:lang[a-z-]+-)?)\d+px-", r"/\g<1>330px-", url)
+    return url
+
+
 def radio_item(s):
     codec = s.get("codec") or ""
     bitrate = s.get("bitrate") or 0
@@ -260,7 +267,7 @@ def radio_item(s):
         "kind": "radio", "id": s.get("stationuuid"), "name": s.get("name", "").strip(),
         "artist": " · ".join(x for x in (place, quality) if x),
         "stream": s.get("url_resolved") or s.get("url"), "tags": s.get("tags", ""),
-        "art": s.get("favicon", ""),
+        "art": fix_logo_url(s.get("favicon", "")),
     }
 
 
@@ -310,7 +317,7 @@ def radio_query(**params):
         known = by_key.get(key)
         if known is not None:
             if not known["art"] and s.get("favicon"):
-                known["art"] = s["favicon"]
+                known["art"] = fix_logo_url(s["favicon"])
             continue
         if not (s.get("url_resolved") or s.get("url")):
             continue

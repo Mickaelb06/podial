@@ -225,6 +225,9 @@ const EXTRA_RADIOS = [
 ];
 const stationKey = n => n.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
 
+// Wikimedia refuse les miniatures de taille quelconque (« Use thumbnail steps ») : on demande 330 px, une taille standard
+const fixLogo = u => u && u.includes("upload.wikimedia.org") && u.includes("/thumb/") ? u.replace(/\/((?:lang[a-z-]+-)?)\d+px-/, "/$1330px-") : u;
+
 const radioApi = {
   hosts: ["https://de1.api.radio-browser.info", "https://de2.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info"],
   async get(path) {
@@ -240,9 +243,9 @@ const radioApi = {
       const stream = s.url_resolved || s.url, key = s.name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
       if (!key) continue;
       const known = byKey.get(key);
-      if (known) { if (!known.art && s.favicon) known.art = s.favicon; continue; }
+      if (known) { if (!known.art && s.favicon) known.art = fixLogo(s.favicon); continue; }
       if (!stream) continue;
-      byKey.set(key, { kind: "radio", name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "), art: s.favicon || "", stream, homepage: s.homepage || "" });
+      byKey.set(key, { kind: "radio", name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "), art: fixLogo(s.favicon || ""), stream, homepage: s.homepage || "" });
     }
     const out = [...byKey.values()].slice(0, 60);
     const nq = name ? stationKey(name) : "";

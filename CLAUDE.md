@@ -32,7 +32,7 @@ Status: releases v0.5.0 to v0.5.5 are published as pre-releases (GitHub Releases
 Versions: all apps are 0.5.6 (`catalog.VERSION`, android `versionName`, compose-desktop `APP_VERSION`/`packageVersion`); the macOS package alone uses 1.0.6 because jpackage requires a major version >= 1.
 
 - Extra radios missing from radio-browser (e.g. RMC 2 = Radio Monte Carlo 2, Italy, stream read from its own site): same list in `shared/.../Extras.kt`, `desktop/catalog.py` (`EXTRA_RADIOS`) and `docs/app/index.html` (`EXTRA_RADIOS`); keep the three identical. Shown in their country's list and in any search that matches their name.
-- Radio logos: `Api.radios` merges duplicate names to keep a logo, then `Logos.fill` reads the station's own homepage (apple-touch-icon / icon) for the rest; cached in `java.io.tmpdir/podial-logos.json`.
+- Radio logos: `Api.radios` merges duplicate names to keep a logo, then `Logos.fill` fixes Wikimedia thumbnail sizes (330px), checks that each logo URL really returns an image (dead ones, 404/403, are dropped; 429/5xx are not remembered) and reads the station's own homepage (apple-touch-icon / icon) for the rest; cached in `java.io.tmpdir/podial-logos.json`. On the FR top 60: 55 logos, 0 dead (was 37). Linux and the web page only fix the Wikimedia size (`fix_logo_url` / `fixLogo`).
 
 ## How to build and test
 - Linux app: `cd ~/podial && ./install.sh` (builds translations, installs the extension atomically) then `python3 podial.py`. `--background` starts without a window.
