@@ -46,7 +46,7 @@ Versions: all apps are 0.5.4 (`catalog.VERSION`, android `versionName`, compose-
 - New UI texts: add the msgid to every `po/*.po` and `po/podial.pot`, run `tools/build_translations.py`.
 
 ## Release process (the owner runs the git commands himself)
-1. Bump the version everywhere: `desktop/catalog.py` (and the same file in `~/podial`), `android/app/build.gradle.kts` (`versionName` + `versionCode`), `compose-desktop` (`APP_VERSION`, `packageVersion`; macOS = 1.0.x), CLAUDE.md, and the download links in `README.md`, `README.fr.md`, `docs/index.html` (they point to `releases/download/vX.Y.Z/<file>`, because `releases/latest` ignores pre-releases).
+1. Bump the version everywhere: `desktop/catalog.py` (and the same file in `~/podial`), `android/app/build.gradle.kts` (`versionName` + `versionCode`), `compose-desktop` (`APP_VERSION`, `packageVersion`; macOS = 1.0.x), CLAUDE.md, and the download links in `README.md`, `README.fr.md`, `docs/index.html`, `docs/app/index.html` (`REL` + file names in the left menu) (they point to `releases/download/vX.Y.Z/<file>`, because `releases/latest` ignores pre-releases).
 2. Build the signed APK locally (`assembleRelease`), copy it to `~/podial-launch/podial-android.apk`, install it on his phone, commit locally.
 3. He runs `git push`, then `git tag vX.Y.Z && git push origin vX.Y.Z`; the `Release` workflow (15-20 min) attaches .deb, .rpm, .tar.gz, .exe, .msi, .dmg, .apk. Check with `curl https://api.github.com/repos/Mickaelb06/podial/releases`.
 4. The apps' update check reads the releases list (pre-releases included); Android also notifies once per new version (hourly `CheckWorker`).

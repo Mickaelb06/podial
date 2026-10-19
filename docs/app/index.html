@@ -29,7 +29,30 @@ header { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, v
 .tabs { display: flex; gap: 4px; margin-left: auto; }
 .tabs button { background: none; border: 0; padding: 8px 14px; border-radius: 99px; cursor: pointer; color: var(--muted); font-weight: 600; }
 .tabs button[aria-selected="true"] { background: var(--grad); color: #fff; }
-main { max-width: 1080px; margin: 0 auto; padding: 16px; }
+.layout { max-width: 1260px; margin: 0 auto; padding: 0 16px; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 24px; align-items: start; }
+main { min-width: 0; padding: 16px 0; }
+aside { position: sticky; top: 74px; margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; max-height: calc(100vh - 170px); overflow-y: auto; }
+aside h3 { margin: 0 0 6px; font-size: 1.1rem; font-weight: 900; line-height: 1.25; }
+aside h3 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+aside p { margin: 0 0 12px; color: var(--muted); font-size: .88rem; }
+aside .plat { display: block; margin-top: 12px; }
+aside .plat > b { display: flex; align-items: center; gap: 8px; font-size: .9rem; margin-bottom: 6px; }
+aside .plat > b i { font-style: normal; width: 24px; height: 24px; border-radius: 8px; background: var(--grad); display: grid; place-items: center; font-size: .8rem; }
+aside .dl { display: flex; gap: 6px; flex-wrap: wrap; }
+aside .dl a { border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; font-size: .82rem; text-decoration: none; color: inherit; background: var(--bg2); }
+aside .dl a:hover { border-color: var(--violet); }
+aside .all { display: block; margin-top: 16px; font-size: .85rem; color: var(--muted); }
+#sideclose { display: none; float: right; }
+#menubtn { white-space: nowrap; }
+#menubtn { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: .85rem; }
+@media (max-width: 900px) {
+  .layout { display: block; }
+  #menubtn { display: block; margin-left: auto; }
+  #sideclose { display: inline-block; }
+  .tabs { margin-left: 0; }
+  aside { position: fixed; z-index: 40; left: 0; top: 0; bottom: 0; width: min(320px, 88vw); max-height: none; margin: 0; border-radius: 0 18px 18px 0; transform: translateX(-105%); transition: transform .2s; }
+  body.menu aside { transform: none; box-shadow: 0 0 0 100vmax rgba(0,0,0,.5); }
+}
 .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .tools input[type=search] { flex: 1; min-width: 200px; padding: 11px 18px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); }
 .tools select { padding: 10px 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); max-width: 220px; }
@@ -77,7 +100,7 @@ h2 { margin: 18px 0 10px; font-size: 1.3rem; font-weight: 800; }
 #toast { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--line);
   padding: 10px 18px; border-radius: 12px; z-index: 30; max-width: 90vw; }
 #toast[hidden] { display: none; }
-@media (max-width: 560px) { .logo span { display: none; } .tabs button { padding: 8px 11px; } .head .cover { width: 100px; } }
+@media (max-width: 560px) { #menubtn .lbl { display: none; } .logo span { display: none; } .tabs button { padding: 8px 11px; } .head .cover { width: 100px; } }
 footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 24px 16px; }
 footer a { color: inherit; }
 </style>
@@ -86,8 +109,12 @@ footer a { color: inherit; }
 <header><div class="bar">
   <a class="logo" href="../"><i></i><span>Podial Player</span></a>
   <div class="tabs" role="tablist" id="tabs"></div>
+  <button id="menubtn" type="button" aria-controls="side"></button>
 </div></header>
+<div class="layout">
+<aside id="side" aria-label="Download"></aside>
 <main id="view"></main>
+</div>
 <footer id="foot"></footer>
 <div id="player" hidden>
   <div class="pl">
@@ -113,7 +140,9 @@ const T = {
     insecure: "This station only streams over unsecured http, which browsers block here. Open the stream in another player:",
     open_stream: "Open stream", resumed: "Resuming where you left off",
     foot: 'Free and open source · No account, no tracking: your library stays in this browser · Data: Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · The apps add downloads, transcripts, quotes and Android Auto',
-    min: "min", country: "Country" },
+    min: "min", country: "Country",
+    carry_t: "Want to take Podial <em>everywhere</em>?", carry_p: "The free apps add downloads for offline listening, transcripts, quotes, Android Auto and more. No account, no tracking.",
+    carry_btn: "📲 Get the app", carry_all: "All downloads and details →", close: "Close" },
   fr: { podcasts: "Podcasts", radios: "Radios", library: "Bibliothèque", s_pod: "Rechercher un podcast", s_rad: "Rechercher une radio",
     all: "Tous", top: "Top 10", failed: "Chargement impossible. Vérifie ta connexion.", none: "Aucun résultat.", live: "DIRECT",
     back: "← Retour", follow: "Suivre", unfollow: "Ne plus suivre", fav: "Ajouter aux favoris", unfav: "Retirer des favoris",
@@ -121,7 +150,9 @@ const T = {
     insecure: "Cette radio diffuse seulement en http non sécurisé, ce que les navigateurs bloquent ici. Ouvre le flux dans un autre lecteur :",
     open_stream: "Ouvrir le flux", resumed: "Reprise là où tu t'étais arrêté",
     foot: 'Libre et open source · Sans compte, sans pistage : ta bibliothèque reste dans ce navigateur · Données : Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · Les applications ajoutent téléchargements, transcriptions, citations et Android Auto',
-    min: "min", country: "Pays" },
+    min: "min", country: "Pays",
+    carry_t: "Envie d'emporter Podial <em>partout</em> ?", carry_p: "Les applications gratuites ajoutent les téléchargements hors ligne, les transcriptions, les citations, Android Auto et plus encore. Sans compte, sans pistage.",
+    carry_btn: "📲 Emporter Podial", carry_all: "Tous les téléchargements et détails →", close: "Fermer" },
 };
 const lang = (navigator.language || "en").toLowerCase().startsWith("fr") ? "fr" : "en";
 const t = k => T[lang][k];
@@ -332,6 +363,30 @@ function showDetail(item) {
       : [h("div", { class: "msg" }, t("none"))]));
   }).catch(() => list.replaceChildren(h("div", { class: "msg" }, t("failed"))));
 }
+
+
+// ---------- menu de gauche : télécharger les applications ----------
+const REL = "https://github.com/Mickaelb06/podial/releases/download/v0.5.4/";
+const PLATFORMS = [
+  ["🤖", "Android", [["APK", "podial-android.apk"]]],
+  ["🐧", "Linux", [[".deb", "podial_0.5.4_all.deb"], [".rpm", "podial-0.5.4-1.x86_64.rpm"], [".tar.gz", "podial-linux-0.5.4.tar.gz"]]],
+  ["🪟", "Windows", [[".exe", "Podial-0.5.4.exe"], [".msi", "Podial-0.5.4.msi"]]],
+  ["🍎", "macOS", [[".dmg", "Podial-1.0.4.dmg"]]],
+];
+(function side() {
+  const aside = $("side"), btn = $("menubtn");
+  const t_ = h("h3", {}); t_.innerHTML = t("carry_t");   // texte fixe écrit ici, sans donnée externe
+  aside.replaceChildren(
+    h("button", { class: "btn", id: "sideclose", onclick: () => document.body.classList.remove("menu") }, t("close")),
+    t_, h("p", {}, t("carry_p")),
+    ...PLATFORMS.map(([ic, name, files]) => h("div", { class: "plat" }, h("b", {}, h("i", {}, ic), name),
+      h("div", { class: "dl" }, files.map(([label, f]) => h("a", { href: REL + f, rel: "noopener" }, label))))),
+    h("a", { class: "all", href: "../#download" }, t("carry_all")));
+  btn.setAttribute("aria-label", t("carry_btn")); btn.replaceChildren("📲", h("span", { class: "lbl" }, " " + t("carry_btn").replace("📲 ", "")));
+  btn.onclick = () => document.body.classList.toggle("menu");
+  document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("menu"); });
+  aside.addEventListener("click", e => { if (e.target.closest(".dl a")) document.body.classList.remove("menu"); });
+})();
 
 $("foot").innerHTML = t("foot");   // texte fixe écrit ici, sans donnée externe
 renderTabs(); route();
