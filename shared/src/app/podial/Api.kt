@@ -152,16 +152,23 @@ object Api {
         withContext(Dispatchers.IO) {
             var q = "/json/stations/search?hidebroken=true&order=$order&reverse=true&limit=${limit * 2}&countrycode=$country"
             if (!name.isNullOrBlank()) q += "&name=${enc(name)}"
-            val seen = HashSet<String>()
-            JSONArray(radioGet(q)).objects().mapNotNull { s ->
+            // « FIP », « FIP (HD) » et « Fip 128k » sont la même radio : on garde la première, mais on lui prend le logo d'un doublon si elle n'en a pas
+            val byKey = LinkedHashMap<String, Item>()
+            for (s in JSONArray(radioGet(q)).objects()) {
                 val stream = s.optString("url_resolved").ifEmpty { s.optString("url") }
                 val n = s.optString("name").trim()
-                if (stream.isEmpty() || n.isEmpty() || !seen.add(stationKey(n))) null
-                else Item("radio", n, listOf(s.optString("state"), s.optString("country")).filter { it.isNotBlank() }.joinToString(", "),
-                    s.optString("favicon"), stream = stream, tags = s.optString("tags"), homepage = s.optString("homepage"),
+                if (n.isEmpty()) continue
+                val key = stationKey(n)
+                val icon = s.optString("favicon")
+                val known = byKey[key]
+                if (known != null) { if (known.art.isEmpty() && icon.isNotEmpty()) byKey[key] = known.copy(art = icon); continue }
+                if (stream.isEmpty()) continue
+                byKey[key] = Item("radio", n, listOf(s.optString("state"), s.optString("country")).filter { it.isNotBlank() }.joinToString(", "),
+                    icon, stream = stream, tags = s.optString("tags"), homepage = s.optString("homepage"),
                     quality = listOf(s.optString("codec").uppercase().takeIf { it.isNotBlank() && it != "UNKNOWN" },
                         s.optInt("bitrate").takeIf { it > 0 }?.let { "$it kbps" }).filterNotNull().joinToString(" · "))
-            }.take(limit)
+            }
+            Logos.fill(byKey.values.take(limit))
         }
 
     private fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { getJSONObject(it) }

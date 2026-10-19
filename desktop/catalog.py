@@ -282,14 +282,18 @@ def radio_query(**params):
     base = {"hidebroken": "true", "order": "clickcount", "reverse": "true", "limit": 48}
     base.update(params)
     data = radio_get("stations/search?" + urllib.parse.urlencode(base))
-    seen, out = set(), []
-    for s in data:  # l'annuaire contient beaucoup de doublons
+    by_key = {}
+    for s in data:  # l'annuaire contient beaucoup de doublons : on garde le premier, avec le logo d'un doublon s'il n'en a pas
         key = station_key(s.get("name", ""))
-        if key in seen or not (s.get("url_resolved") or s.get("url")):
+        known = by_key.get(key)
+        if known is not None:
+            if not known["art"] and s.get("favicon"):
+                known["art"] = s["favicon"]
             continue
-        seen.add(key)
-        out.append(radio_item(s))
-    return out
+        if not (s.get("url_resolved") or s.get("url")):
+            continue
+        by_key[key] = radio_item(s)
+    return list(by_key.values())
 
 
 def search_radios(term):

@@ -227,13 +227,17 @@ const radioApi = {
   async stations(cc, name) {
     let q = `/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=120&countrycode=${cc}`;
     if (name) q += "&name=" + encodeURIComponent(name);
-    const seen = new Set(), out = [];
+    // même radio sous plusieurs noms (« FIP », « FIP (HD) »…) : on garde la première, avec le logo d'un doublon si elle n'en a pas
+    const byKey = new Map();
     for (const s of await this.get(q)) {
-      const stream = s.url_resolved || s.url, key = s.name.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
-      if (!stream || !key || seen.has(key)) continue; seen.add(key);
-      out.push({ kind: "radio", name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "), art: s.favicon || "", stream, homepage: s.homepage || "" });
-      if (out.length >= 60) break;
+      const stream = s.url_resolved || s.url, key = s.name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
+      if (!key) continue;
+      const known = byKey.get(key);
+      if (known) { if (!known.art && s.favicon) known.art = s.favicon; continue; }
+      if (!stream) continue;
+      byKey.set(key, { kind: "radio", name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "), art: s.favicon || "", stream, homepage: s.homepage || "" });
     }
+    const out = [...byKey.values()].slice(0, 60);
     return out;
   },
   countries: () => radioApi.get("/json/countries?order=stationcount&reverse=true&hidebroken=true"),
