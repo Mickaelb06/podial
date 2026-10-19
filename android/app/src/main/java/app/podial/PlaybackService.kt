@@ -104,7 +104,17 @@ class PlaybackService : MediaLibraryService() {
         /** Android Auto renvoie des éléments sans adresse : on les retrouve grâce à leur identifiant. */
         override fun onAddMediaItems(mediaSession: MediaSession, controller: MediaSession.ControllerInfo,
                                      mediaItems: MutableList<MediaItem>): ListenableFuture<MutableList<MediaItem>> =
-            Futures.immediateFuture(mediaItems.map { cache[it.mediaId] ?: it }.toMutableList())
+            Futures.immediateFuture(mediaItems.map { cache[it.mediaId] ?: rebuild(it) }.toMutableList())
+
+        /** Cache vide (service redémarré depuis la dernière navigation) : l'adresse audio est dans l'identifiant. */
+        private fun rebuild(it: MediaItem): MediaItem {
+            val url = when {
+                it.mediaId.startsWith("radio|") -> it.mediaId.removePrefix("radio|")
+                it.mediaId.startsWith("ep|") -> it.mediaId.removePrefix("ep|")
+                else -> return it
+            }
+            return it.buildUpon().setUri(url).build()
+        }
     }
 
     companion object {
