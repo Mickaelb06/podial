@@ -140,7 +140,7 @@ const T = {
     insecure: "This station only streams over unsecured http, which browsers block here. Open the stream in another player:",
     open_stream: "Open stream", resumed: "Resuming where you left off",
     foot: 'Free and open source · No account, no tracking: your library stays in this browser · Data: Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · The apps add downloads, transcripts, quotes and Android Auto',
-    min: "min", country: "Country",
+    min: "min", country: "Country", surprise: "Surprise me", surprise_none: "Couldn't find a radio. Try again.", share: "Share", copied: "Link copied", bad_link: "This link no longer works.",
     carry_t: "Want to take Podial <em>everywhere</em>?", carry_p: "The free apps add downloads for offline listening, transcripts, quotes, Android Auto and more. No account, no tracking.",
     carry_btn: "📲 Get the app", carry_all: "All downloads and details →", close: "Close" },
   fr: { podcasts: "Podcasts", radios: "Radios", library: "Bibliothèque", s_pod: "Rechercher un podcast", s_rad: "Rechercher une radio",
@@ -150,7 +150,7 @@ const T = {
     insecure: "Cette radio diffuse seulement en http non sécurisé, ce que les navigateurs bloquent ici. Ouvre le flux dans un autre lecteur :",
     open_stream: "Ouvrir le flux", resumed: "Reprise là où tu t'étais arrêté",
     foot: 'Libre et open source · Sans compte, sans pistage : ta bibliothèque reste dans ce navigateur · Données : Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · Les applications ajoutent téléchargements, transcriptions, citations et Android Auto',
-    min: "min", country: "Pays",
+    min: "min", country: "Pays", surprise: "Surprends-moi", surprise_none: "Aucune radio trouvée. Réessaie.", share: "Partager", copied: "Lien copié", bad_link: "Ce lien ne fonctionne plus.",
     carry_t: "Envie d'emporter Podial <em>partout</em> ?", carry_p: "Les applications gratuites ajoutent les téléchargements hors ligne, les transcriptions, les citations, Android Auto et plus encore. Sans compte, sans pistage.",
     carry_btn: "📲 Emporter Podial", carry_all: "Tous les téléchargements et détails →", close: "Fermer" },
 };
@@ -204,6 +204,13 @@ const itunes = {
     return (r.feed.entry || []).map(e => ({ kind: "podcast", id: e.id.attributes["im:id"], name: e["im:name"].label,
       artist: e["im:artist"]?.label || "", art: e["im:image"].at(-1).label.replace(/\/\d+x\d+bb/, "/600x600bb") }));
   },
+  async byId(id) {
+    for (const c of [`&country=${country}`, ""]) {
+      const x = (await getJson(`https://itunes.apple.com/lookup?id=${encodeURIComponent(id)}${c}`)).results.find(r => r.collectionId && r.collectionName);
+      if (x) return podcast(x);
+    }
+    return null;
+  },
   async episodes(id) {
     // certains podcasts n'existent que dans le catalogue de leur pays : on essaie le nôtre, puis le catalogue par défaut
     for (const c of [`&country=${country}`, ""]) {
@@ -220,13 +227,16 @@ const podcast = x => ({ kind: "podcast", id: String(x.collectionId), name: x.col
 
 // Radios absentes de l'annuaire, avec le flux publié par la station. Même liste que Extras.kt et catalog.py : à garder identique.
 const EXTRA_RADIOS = [
-  { kind: "radio", name: "RMC 2", artist: "Italia", art: "https://www.rmc2.net/wp-content/themes/rmc2-child/apple-icon-180x180.png",
+  { kind: "radio", id: "extra-rmc2", name: "RMC 2", artist: "Italia", art: "https://www.rmc2.net/wp-content/themes/rmc2-child/apple-icon-180x180.png",
     stream: "https://stream.rcs.revma.com/txdn8d324ucwv", homepage: "https://www.rmc2.net", country: "IT" },
 ];
 const stationKey = n => n.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
 
 // Wikimedia refuse les miniatures de taille quelconque (« Use thumbnail steps ») : on demande 330 px, une taille standard
 const fixLogo = u => u && u.includes("upload.wikimedia.org") && u.includes("/thumb/") ? u.replace(/\/((?:lang[a-z-]+-)?)\d+px-/, "/$1330px-") : u;
+
+const stationItem = (s, stream) => ({ kind: "radio", id: s.stationuuid, name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "),
+  art: fixLogo(s.favicon || ""), stream, homepage: s.homepage || "" });
 
 const radioApi = {
   hosts: ["https://de1.api.radio-browser.info", "https://de2.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info"],
@@ -245,7 +255,7 @@ const radioApi = {
       const known = byKey.get(key);
       if (known) { if (!known.art && s.favicon) known.art = fixLogo(s.favicon); continue; }
       if (!stream) continue;
-      byKey.set(key, { kind: "radio", name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "), art: fixLogo(s.favicon || ""), stream, homepage: s.homepage || "" });
+      byKey.set(key, stationItem(s, stream));
     }
     const out = [...byKey.values()].slice(0, 60);
     const nq = name ? stationKey(name) : "";
@@ -255,7 +265,24 @@ const radioApi = {
     }
     return out;
   },
-  countries: () => radioApi.get("/json/countries?order=stationcount&reverse=true&hidebroken=true"),
+  countries() { return this._countries ||= this.get("/json/countries?order=stationcount&reverse=true&hidebroken=true"); },
+  // radio d'un lien partagé : les radios fournies d'abord, puis l'annuaire (par identifiant)
+  async byId(id) {
+    const extra = EXTRA_RADIOS.find(r => r.id === id);
+    if (extra) { const { country: _c, ...r } = extra; return r; }
+    const s = (await this.get("/json/stations/byuuid/" + encodeURIComponent(id)))[0];
+    return s && (s.url_resolved || s.url) ? stationItem(s, s.url_resolved || s.url) : null;
+  },
+  // « Surprends-moi » : un pays au hasard (parmi ceux qui ont des radios), puis une radio au hasard
+  async surprise() {
+    const cs = (await this.countries()).filter(c => c.iso_3166_1 && c.stationcount >= 5);
+    for (let i = 0; i < 6 && cs.length; i++) {
+      const c = cs.splice(Math.floor(Math.random() * cs.length), 1)[0];
+      const list = await this.stations(c.iso_3166_1).catch(() => []);
+      if (list.length) return list[Math.floor(Math.random() * list.length)];
+    }
+    return null;
+  },
 };
 
 // ---------- bibliothèque (dans ce navigateur) ----------
@@ -316,7 +343,11 @@ function renderTabs() {
   const tabs = $("tabs"); tabs.replaceChildren(...["podcasts", "radios", "library"].map((k, i) =>
     h("button", { role: "tab", "aria-selected": String(tab === i), onclick: () => { tab = i; detail = null; store.set("tab", i); renderTabs(); route(); } }, t(k))));
 }
-function route() { detail ? showDetail(detail) : tab === 2 ? showLibrary() : showBrowse(tab === 0 ? "podcast" : "radio"); window.scrollTo(0, 0); }
+function syncHash() {
+  const want = detail?.id ? "#" + (detail.kind === "radio" ? "r" : "p") + "=" + encodeURIComponent(detail.id) : "";
+  if (location.hash !== want) history.replaceState(null, "", location.pathname + location.search + want);
+}
+function route() { syncHash(); detail ? showDetail(detail) : tab === 2 ? showLibrary() : showBrowse(tab === 0 ? "podcast" : "radio"); window.scrollTo(0, 0); }
 function open(item) { detail = item; route(); }
 
 function grid(items, ranked) {
@@ -332,7 +363,14 @@ function showBrowse(kind) {
   const tools = h("div", { class: "tools" }, input);
   if (kind === "radio") {
     const sel = h("select", { "aria-label": t("country"), onchange: e => { state.cc = e.target.value; store.set("cc", state.cc); load(); } }, h("option", { value: state.cc }, state.cc));
-    tools.append(sel);
+    tools.append(sel, h("button", { class: "btn", onclick: async e => {
+      const b = e.currentTarget; b.disabled = true;
+      try {
+        const r = await radioApi.surprise();
+        if (!r) return toast(t("surprise_none"));
+        open(r); playRadio(r);
+      } catch { toast(t("surprise_none")); } finally { b.disabled = false; }
+    } }, "🎲 " + t("surprise")));
     radioApi.countries().then(cs => sel.replaceChildren(...cs.filter(c => c.iso_3166_1).map(c =>
       h("option", { value: c.iso_3166_1, selected: c.iso_3166_1 === state.cc }, `${c.name} (${c.stationcount})`)))).catch(() => {});
   }
@@ -360,19 +398,36 @@ function showLibrary() {
     : [h("div", { class: "msg" }, t("empty"))]));
 }
 
+const playRadio = item => play({ url: item.stream, raw: item.stream, title: item.name, sub: item.artist, art: item.art, live: true });
+
+// lien partagé : #r=<identifiant de radio> ou #p=<identifiant de podcast>
+async function loadFromHash(hash = location.hash) {
+  const m = hash.match(/^#([rp])=(.+)$/);
+  if (!m) return;
+  try {
+    const item = m[1] === "r" ? await radioApi.byId(decodeURIComponent(m[2])) : await itunes.byId(decodeURIComponent(m[2]));
+    if (item) { tab = m[1] === "r" ? 1 : 0; renderTabs(); open(item); } else toast(t("bad_link"));
+  } catch { toast(t("bad_link")); }
+}
+
 function showDetail(item) {
   const star = h("button", { class: "btn" }), update = () => star.textContent = (lib.has(item) ? "★ " : "☆ ") + t(item.kind === "radio" ? (lib.has(item) ? "unfav" : "fav") : (lib.has(item) ? "unfollow" : "follow"));
   star.onclick = () => { lib.toggle(item); update(); }; update();
+  const shareBtn = item.id ? h("button", { class: "btn", onclick: async () => {
+    const url = location.origin + location.pathname + "#" + (item.kind === "radio" ? "r" : "p") + "=" + encodeURIComponent(item.id);
+    if (navigator.share) { try { await navigator.share({ title: item.name, url }); return; } catch (e) { if (e.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(url); toast(t("copied")); } catch { toast(url); }
+  } }, "🔗 " + t("share")) : null;
   const actions = h("div", { style: "display:flex;gap:8px;flex-wrap:wrap" });
   const head = h("div", { class: "head" }, cover(item, item.kind === "radio" ? "logo-box" : ""), h("div", {}, h("h1", {}, item.name), h("p", {}, item.artist), actions));
   const list = h("div");
   view.replaceChildren(h("button", { class: "btn back", onclick: () => { detail = null; route(); } }, t("back")), head, list);
   if (item.kind === "radio") {
-    actions.append(h("button", { class: "btn primary", onclick: () => play({ url: item.stream, raw: item.stream, title: item.name, sub: item.artist, art: item.art, live: true }) }, "▶ " + t("play_live")), star);
+    actions.append(h("button", { class: "btn primary", onclick: () => playRadio(item) }, "▶ " + t("play_live")), star, shareBtn);
     if (item.homepage) actions.append(h("a", { class: "btn", href: item.homepage, target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none" }, "↗"));
     return;
   }
-  actions.append(star);
+  actions.append(star, shareBtn);
   list.append(h("div", { class: "msg" }, "…"));
   itunes.episodes(item.id).then(eps => {
     const done = store.get("done", {});
@@ -408,7 +463,11 @@ const PLATFORMS = [
 })();
 
 $("foot").innerHTML = t("foot");   // texte fixe écrit ici, sans donnée externe
-renderTabs(); route();
+const firstHash = location.hash;   // à lire avant le premier affichage, qui remet l'adresse à zéro
+renderTabs(); route(); loadFromHash(firstHash);
+addEventListener("hashchange", () => {
+  if (!detail || location.hash !== "#" + (detail.kind === "radio" ? "r" : "p") + "=" + encodeURIComponent(detail.id)) loadFromHash();
+});
 </script>
 </body>
 </html>

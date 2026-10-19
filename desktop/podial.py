@@ -509,6 +509,31 @@ class Window(Adw.ApplicationWindow):
         view.set_content(box)
         dlg.present(self)
 
+    def surprise_radio(self, button):
+        """« Surprends-moi » : une radio au hasard dans un pays au hasard, ouverte et lancée."""
+        import random
+        from catalog import COUNTRY_CODES, radio_query
+
+        def find():
+            codes = list(COUNTRY_CODES)
+            random.shuffle(codes)
+            for code in codes[:8]:  # beaucoup de petits pays n'ont aucune radio
+                try:
+                    found = [r for r in radio_query(countrycode=code) if r.get("stream")]
+                except OSError:
+                    continue
+                if found:
+                    return random.choice(found)
+            return None
+
+        def done(item):
+            button.set_sensitive(True)
+            if item:
+                self.open_item(item)
+
+        button.set_sensitive(False)
+        run_async(find, done, lambda _e: button.set_sensitive(True))
+
     def on_country_changed(self, code):
         for popover in self.country_popovers:
             popover.popdown()
@@ -551,7 +576,7 @@ class Window(Adw.ApplicationWindow):
 
         # filtres : genres de podcasts, ou pays / région / ville / tri pour les radios
         self.genre_bar = GenreBar(self.show_home)
-        self.radio_bar = RadioBar(self.show_home, self.make_country_popover(), self.show_world_map if WORLD_MAP else None)
+        self.radio_bar = RadioBar(self.show_home, self.make_country_popover(), self.show_world_map if WORLD_MAP else None, self.surprise_radio)
         self.filter_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, vhomogeneous=False,
                                       valign=Gtk.Align.START)
         self.filter_stack.add_named(Gtk.Box(), "none")

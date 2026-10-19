@@ -32,7 +32,7 @@ object T {
         "no_transcript" to "This episode has no published transcript. Many shows do not provide one.",
         "no_quotes" to "No quotes yet. While listening, press Quote, or open the transcript and highlight a sentence.",
         "play_here" to "Play from here", "note" to "Note", "copy" to "Copy to share", "delete" to "Delete", "save" to "Save", "cancel" to "Cancel",
-        "quote_saved" to "Quote saved at %s", "world_map" to "Radios around the world", "show_radios" to "Show radios",
+        "quote_saved" to "Quote saved at %s", "surprise" to "Surprise me", "world_map" to "Radios around the world", "show_radios" to "Show radios",
     )
     private val frMap = mapOf(
         "library" to "Bibliothèque", "downloads" to "Téléchargements", "search_podcasts" to "Rechercher un podcast…",
@@ -60,7 +60,7 @@ object T {
         "no_transcript" to "Cet épisode n'a pas de transcription publiée. Beaucoup d'émissions n'en proposent pas.",
         "no_quotes" to "Aucune citation. Pendant l'écoute, appuie sur Citation, ou ouvre la transcription et surligne une phrase.",
         "play_here" to "Écouter à partir d'ici", "note" to "Note", "copy" to "Copier pour partager", "delete" to "Supprimer", "save" to "Enregistrer", "cancel" to "Annuler",
-        "quote_saved" to "Citation enregistrée à %s", "world_map" to "Radios du monde entier", "show_radios" to "Voir les radios",
+        "quote_saved" to "Citation enregistrée à %s", "surprise" to "Surprends-moi", "world_map" to "Radios du monde entier", "show_radios" to "Voir les radios",
     )
     operator fun get(k: String): String = (if (fr) frMap[k] else null) ?: en[k] ?: k
 }

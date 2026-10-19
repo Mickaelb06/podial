@@ -533,3 +533,6 @@ msgstr "מפת העולם"
 
 msgid "Show radios"
 msgstr "הצגת תחנות רדיו"
+
+msgid "Surprise me"
+msgstr "הפתיעו אותי"

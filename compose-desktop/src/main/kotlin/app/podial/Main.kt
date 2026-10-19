@@ -123,7 +123,7 @@ fun PodialApp() {
                 if (d != null) DetailScreen(d) { detail = null }
                 else when (tab) {
                     0 -> BrowseScreen("podcast") { detail = it }
-                    1 -> BrowseScreen("radio") { detail = it }
+                    1 -> BrowseScreen("radio", onSurprise = { Player.play(it, null); detail = it }) { detail = it }
                     2 -> LibraryScreen { detail = it }
                     else -> DownloadsScreen()
                 }
@@ -198,13 +198,15 @@ fun SectionTitle(text: String) = Text(text, style = MaterialTheme.typography.tit
 
 // ---------- parcourir ----------
 @Composable
-fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
+fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -> Unit) {
     var query by remember(kind) { mutableStateOf("") }
     var genre by remember { mutableStateOf<Int?>(null) }
     var items by remember(kind) { mutableStateOf<List<Item>?>(null) }
     var failed by remember(kind) { mutableStateOf(false) }
     var country by remember { mutableStateOf(Store.radioCountry) }
     var map by remember { mutableStateOf(false) }
+    var surprising by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val countries = remember { runCatching { World.parse(object {}.javaClass.getResourceAsStream("/world.json")!!.bufferedReader().use { it.readText() }) }.getOrDefault(emptyList()) }
     LaunchedEffect(kind, query, genre, country) {
         if (query.isNotBlank()) delay(500)
@@ -224,7 +226,14 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
                     OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
                         placeholder = { Text(T[if (kind == "podcast") "search_podcasts" else "search_radios"]) },
                         leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
-                    if (kind == "radio" && countries.isNotEmpty()) FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, T["world_map"]) }
+                    if (kind == "radio" && countries.isNotEmpty()) {
+                        FilledTonalIconButton({
+                            if (surprising) return@FilledTonalIconButton
+                            surprising = true
+                            scope.launch { Surprise.radio(countries.map { it.code }).also { surprising = false }?.let { onSurprise(it.second) } }
+                        }) { if (surprising) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Icon(Icons.Default.Casino, T["surprise"]) }
+                        FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, T["world_map"]) }
+                    }
                 }
                 if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                     item { FilterChip(genre == null, { genre = null }, { Text(T["all"]) }) }

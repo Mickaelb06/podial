@@ -543,3 +543,6 @@ msgstr "خريطة العالم"
 
 msgid "Show radios"
 msgstr "عرض الإذاعات"
+
+msgid "Surprise me"
+msgstr "فاجئني"

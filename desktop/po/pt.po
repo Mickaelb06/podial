@@ -527,3 +527,6 @@ msgstr "Mapa-múndi"
 
 msgid "Show radios"
 msgstr "Ver rádios"
+
+msgid "Surprise me"
+msgstr "Surpreenda-me"
