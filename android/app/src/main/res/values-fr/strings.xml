@@ -88,4 +88,8 @@
     <string name="clear_cache_info">Supprime les pochettes et les transcriptions en cache. Ta bibliothèque, tes citations et tes épisodes téléchargés sont conservés. Les pochettes et transcriptions seront retéléchargées au besoin.</string>
     <string name="clear">Effacer</string>
     <string name="about_short">Version, licence et sources</string>
+    <string name="surprise">Surprends-moi</string>
+    <string name="surprise_none">Aucune radio trouvée. Réessaie.</string>
+    <string name="share_image">Partager en image</string>
+    <string name="share_image_failed">Impossible de créer l\'image.</string>
 </resources>

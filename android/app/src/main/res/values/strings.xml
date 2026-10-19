@@ -91,4 +91,8 @@
     <string name="clear_cache_info">Deletes the cached cover images and transcripts. Your library, quotes and downloaded episodes are kept. Covers and transcripts are fetched again when needed.</string>
     <string name="clear">Clear</string>
     <string name="about_short">Version, licence and sources</string>
+    <string name="surprise">Surprise me</string>
+    <string name="surprise_none">Couldn\'t find a radio. Try again.</string>
+    <string name="share_image">Share as image</string>
+    <string name="share_image_failed">Couldn\'t create the image.</string>
 </resources>

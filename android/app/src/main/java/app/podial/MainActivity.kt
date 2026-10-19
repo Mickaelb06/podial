@@ -154,7 +154,7 @@ fun PodialApp() {
             if (d != null) DetailScreen(d, player) { detail = null }
             else when (tab) {
                 0 -> BrowseScreen("podcast") { detail = it }
-                1 -> BrowseScreen("radio") { detail = it }
+                1 -> BrowseScreen("radio", onSurprise = { player.play(PlaybackService.radioItem(it)); detail = it }) { detail = it }
                 2 -> LibraryScreen(onMenu = { menu = true }) { detail = it }
                 else -> DownloadsScreen(player)
             }
@@ -217,13 +217,15 @@ fun Message(text: String) = Box(Modifier.fillMaxSize().padding(32.dp), contentAl
 
 // ---------- parcourir ----------
 @Composable
-fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
+fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -> Unit) {
     var query by remember(kind) { mutableStateOf("") }
     var genre by remember { mutableStateOf<Int?>(null) }
     var items by remember(kind) { mutableStateOf<List<Item>?>(null) }
     var failed by remember(kind) { mutableStateOf(false) }
     var country by remember { mutableStateOf(Store.radioCountry) }
     var map by remember { mutableStateOf(false) }
+    var surprising by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val countries = remember { runCatching { World.parse(ctx.assets.open("world.json").bufferedReader().use { it.readText() }) }.getOrDefault(emptyList()) }
     LaunchedEffect(kind, query, genre, country) {
@@ -241,7 +243,22 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
             OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
                 placeholder = { Text(stringResource(if (kind == "podcast") R.string.search_podcasts else R.string.search_radios)) },
                 leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
-            if (kind == "radio" && countries.isNotEmpty()) FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, stringResource(R.string.world_map)) }
+            if (kind == "radio" && countries.isNotEmpty()) {
+                FilledTonalIconButton({
+                    if (surprising) return@FilledTonalIconButton
+                    surprising = true
+                    scope.launch {
+                        val r = Surprise.radio(countries.map { it.code })
+                        surprising = false
+                        if (r == null) android.widget.Toast.makeText(ctx, R.string.surprise_none, android.widget.Toast.LENGTH_SHORT).show()
+                        else {
+                            android.widget.Toast.makeText(ctx, "🎲 ${r.second.name} · ${World.flag(r.first)} ${World.name(r.first)}", android.widget.Toast.LENGTH_LONG).show()
+                            onSurprise(r.second)
+                        }
+                    }
+                }) { if (surprising) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Icon(Icons.Default.Casino, stringResource(R.string.surprise)) }
+                FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, stringResource(R.string.world_map)) }
+            }
         }
     }
     val header: @Composable () -> Unit = {
@@ -833,6 +850,7 @@ fun QuotesScreen(p: PlayerState, onClose: () -> Unit) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val quotes by Store.quotes.collectAsState()
     var editing by remember { mutableStateOf<Quote?>(null) }
+    val scope = rememberCoroutineScope()
     androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().systemBarsPadding()) {
@@ -861,6 +879,13 @@ fun QuotesScreen(p: PlayerState, onClose: () -> Unit) {
                                         ctx.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND)
                                             .setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT, Quote.shareText(q)), null))
                                     }) { Icon(Icons.Default.Share, stringResource(R.string.share)) }
+                                    IconButton({
+                                        scope.launch {
+                                            runCatching { QuoteCard.share(ctx, q) }.onFailure {
+                                                android.widget.Toast.makeText(ctx, R.string.share_image_failed, android.widget.Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    }) { Icon(Icons.Default.Image, stringResource(R.string.share_image)) }
                                     Spacer(Modifier.weight(1f))
                                     IconButton({ Store.removeQuote(q.id) }) { Icon(Icons.Default.Delete, stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error) }
                                 }

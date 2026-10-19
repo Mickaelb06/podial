@@ -148,7 +148,7 @@ object Api {
         return s.replace(Regex("[^a-z0-9]+"), "")
     }
 
-    suspend fun radios(country: String, name: String? = null, order: String = "clickcount", limit: Int = 60): List<Item> =
+    suspend fun radios(country: String, name: String? = null, order: String = "clickcount", limit: Int = 60, withLogos: Boolean = true): List<Item> =
         withContext(Dispatchers.IO) {
             var q = "/json/stations/search?hidebroken=true&order=$order&reverse=true&limit=${limit * 2}&countrycode=$country"
             if (!name.isNullOrBlank()) q += "&name=${enc(name)}"
@@ -169,7 +169,7 @@ object Api {
                         s.optInt("bitrate").takeIf { it > 0 }?.let { "$it kbps" }).filterNotNull().joinToString(" · "))
             }
             val extras = Extras.matching(country, name).filter { it.key !in byKey.values.map { r -> r.key } && stationKey(it.name) !in byKey }
-            Logos.fill(byKey.values.take(limit) + extras)
+            (byKey.values.take(limit) + extras).let { if (withLogos) Logos.fill(it) else it }
         }
 
     private fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { getJSONObject(it) }
