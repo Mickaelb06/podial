@@ -124,6 +124,7 @@ fun PodialApp() {
     var tab by remember { mutableIntStateOf(0) }
     var detail by remember { mutableStateOf<Item?>(null) }
     var sheet by remember { mutableStateOf(false) }
+    var menu by remember { mutableStateOf(false) }
     var about by remember { mutableStateOf(false) }
     var quotes by remember { mutableStateOf(false) }
     var transcript by remember { mutableStateOf(false) }
@@ -154,7 +155,7 @@ fun PodialApp() {
             else when (tab) {
                 0 -> BrowseScreen("podcast") { detail = it }
                 1 -> BrowseScreen("radio") { detail = it }
-                2 -> LibraryScreen(onAbout = { about = true }, onQuotes = { quotes = true }) { detail = it }
+                2 -> LibraryScreen(onMenu = { menu = true }) { detail = it }
                 else -> DownloadsScreen(player)
             }
         }
@@ -162,6 +163,8 @@ fun PodialApp() {
     if (sheet) PlayerSheet(player, onTranscript = { sheet = false; transcript = true }) { sheet = false }
     if (transcript) TranscriptScreen(player) { transcript = false }
     if (quotes) QuotesScreen(player) { quotes = false }
+    if (menu) MenuSheet(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0",
+        onQuotes = { menu = false; quotes = true }, onAbout = { menu = false; about = true }) { menu = false }
     if (about) AboutDialog(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0") { about = false }
 }
 
@@ -266,14 +269,13 @@ fun BrowseScreen(kind: String, onOpen: (Item) -> Unit) {
 }
 
 @Composable
-fun LibraryScreen(onAbout: () -> Unit, onQuotes: () -> Unit, onOpen: (Item) -> Unit) {
+fun LibraryScreen(onMenu: () -> Unit, onOpen: (Item) -> Unit) {
     val pods by Store.podcasts.collectAsState()
     val radios by Store.radios.collectAsState()
     LazyVerticalGrid(GridCells.Adaptive(150.dp), contentPadding = PaddingValues(8.dp), modifier = Modifier.fillMaxSize()) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick = onQuotes) { Icon(Icons.Default.FormatQuote, stringResource(R.string.my_quotes)) }
-                IconButton(onClick = onAbout) { Icon(Icons.Default.Info, stringResource(R.string.about)) }
+                IconButton(onClick = onMenu) { Icon(Icons.Default.Menu, stringResource(R.string.menu)) }
             }
         }
         if (pods.isEmpty() && radios.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { Message(stringResource(R.string.library_empty)) }
@@ -488,6 +490,73 @@ fun PlayerSheet(p: PlayerState, onTranscript: () -> Unit, onClose: () -> Unit) {
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+// ---------- menu ----------
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MenuSheet(version: String, onQuotes: () -> Unit, onAbout: () -> Unit, onClose: () -> Unit) {
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    var update by remember { mutableStateOf<String?>(null) }
+    var link by remember { mutableStateOf<String?>(null) }
+    var checking by remember { mutableStateOf(false) }
+    var cache by remember { mutableStateOf<Long?>(null) }
+    var confirm by remember { mutableStateOf(false) }
+    val upToDate = stringResource(R.string.up_to_date, version)
+    val failedMsg = stringResource(R.string.update_failed)
+    val newVersionMsg = stringResource(R.string.update_available)
+    fun refreshCache() { scope.launch(kotlinx.coroutines.Dispatchers.IO) { cache = Store.cacheSize() } }
+    LaunchedEffect(Unit) { refreshCache() }
+    ModalBottomSheet(onDismissRequest = onClose) {
+        Column(Modifier.padding(bottom = 24.dp)) {
+            Text(stringResource(R.string.menu), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(start = 24.dp, bottom = 8.dp))
+            MenuRow(Icons.Default.FormatQuote, stringResource(R.string.my_quotes),
+                stringResource(R.string.quotes_count, Store.quotes.collectAsState().value.size), onClick = onQuotes)
+            MenuRow(Icons.Default.SystemUpdate, stringResource(R.string.check_updates),
+                if (checking) stringResource(R.string.checking) else update ?: stringResource(R.string.version_fmt, version),
+                trailing = link?.let { l -> { TextButton({ uri.openUri(l) }) { Text(stringResource(R.string.download)) } } },
+                onClick = {
+                    if (checking) return@MenuRow
+                    checking = true; update = null; link = null
+                    scope.launch {
+                        try {
+                            val r = Release.check(version)
+                            if (r == null) update = upToDate else { update = newVersionMsg.format(r.first); link = r.second }
+                        } catch (e: Exception) { update = failedMsg }
+                        checking = false
+                    }
+                })
+            MenuRow(Icons.Default.CleaningServices, stringResource(R.string.clear_cache),
+                cache?.let { stringResource(R.string.cache_size, android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, it)) } ?: "…",
+                onClick = { confirm = true })
+            MenuRow(Icons.Default.Info, stringResource(R.string.about), stringResource(R.string.about_short), onClick = onAbout)
+        }
+    }
+    if (confirm) AlertDialog(
+        onDismissRequest = { confirm = false },
+        title = { Text(stringResource(R.string.clear_cache)) },
+        text = { Text(stringResource(R.string.clear_cache_info)) },
+        confirmButton = { TextButton({ confirm = false; scope.launch(kotlinx.coroutines.Dispatchers.IO) { Store.clearCache(); cache = Store.cacheSize() } }) { Text(stringResource(R.string.clear)) } },
+        dismissButton = { TextButton({ confirm = false }) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+@Composable
+private fun MenuRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String,
+                    trailing: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        trailing?.invoke()
     }
 }
 

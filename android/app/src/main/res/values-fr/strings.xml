@@ -80,4 +80,12 @@
     <string name="update_fmt">La version %1$s est disponible. Touche pour la télécharger.</string>
     <string name="world_map">Radios du monde entier</string>
     <string name="show_radios">Voir les radios</string>
+    <string name="menu">Menu</string>
+    <string name="quotes_count">%d enregistrée(s)</string>
+    <string name="checking">Vérification…</string>
+    <string name="clear_cache">Effacer le cache</string>
+    <string name="cache_size">%s d\'images et de transcriptions</string>
+    <string name="clear_cache_info">Supprime les pochettes et les transcriptions en cache. Ta bibliothèque, tes citations et tes épisodes téléchargés sont conservés. Les pochettes et transcriptions seront retéléchargées au besoin.</string>
+    <string name="clear">Effacer</string>
+    <string name="about_short">Version, licence et sources</string>
 </resources>

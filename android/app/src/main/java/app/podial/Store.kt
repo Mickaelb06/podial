@@ -66,6 +66,16 @@ object Store {
         return Transcripts.parse(body, type)
     }
 
+    private fun cacheDirs() = listOf(ctx.cacheDir, File(ctx.filesDir, "transcripts"))
+    /** Octets occupés par le cache (images, transcriptions). Les téléchargements, la bibliothèque et les citations n'en font pas partie. */
+    fun cacheSize(): Long = cacheDirs().sumOf { d -> d.walkTopDown().filter { it.isFile }.sumOf { it.length() } }
+    fun clearCache() {
+        val loader = coil.Coil.imageLoader(ctx)
+        loader.memoryCache?.clear()
+        loader.diskCache?.clear()
+        cacheDirs().forEach { d -> d.listFiles()?.forEach { it.deleteRecursively() } }
+    }
+
     private fun feeds() = JSONObject(prefs.getString("feeds", "{}") ?: "{}")
 
     private fun refreshCounts() {
