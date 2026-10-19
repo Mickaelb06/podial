@@ -26,7 +26,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.9.0")
     implementation("org.json:json:20240303")
     // Lecture audio : JavaFX Media (MP3, AAC, HLS ; aucune installation supplémentaire pour l'utilisateur)
-    for (m in listOf("base", "graphics", "media")) implementation("org.openjfx:javafx-$m:21.0.6:$fxPlatform")
+    for (m in listOf("base", "graphics", "media")) implementation("org.openjfx:javafx-$m:21.0.7:$fxPlatform")
 }
 
 compose.desktop {
@@ -36,7 +36,7 @@ compose.desktop {
             // .dmg (macOS), .exe et .msi (Windows), .deb et .rpm (Linux)
             targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "Podial"
-            packageVersion = "0.5.6"
+            packageVersion = "0.5.7"
             description = "Podcasts and live radio"
             vendor = "Podial"
             modules("java.sql", "jdk.unsupported")
@@ -44,7 +44,7 @@ compose.desktop {
             fun icon(n: String) = project.file("icons/$n").takeIf { it.exists() }
             linux { icon("podial.png")?.let { iconFile.set(it) } }
             windows { menuGroup = "Podial"; icon("podial.ico")?.let { iconFile.set(it) } }
-            macOS { packageVersion = "1.0.6"; bundleID = "app.podial"; icon("podial.icns")?.let { iconFile.set(it) } }
+            macOS { packageVersion = "1.0.7"; bundleID = "app.podial"; icon("podial.icns")?.let { iconFile.set(it) } }
         }
     }
 }

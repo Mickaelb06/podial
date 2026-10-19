@@ -50,11 +50,11 @@ Les installateurs sont joints à chaque [release](https://github.com/Mickaelb06/
 
 | Plateforme | Fichiers |
 |---|---|
-| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.6_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.6/podial_0.5.6_all.deb) : application GTK avec l'extension GNOME |
-| Linux (autres distributions) | [`podial-linux-0.5.6.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.6/podial-linux-0.5.6.tar.gz) (lance `./install.sh`), ou les `.deb` / `.rpm` multiplateformes |
-| Windows | installateur [`Podial-0.5.6.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.6/Podial-0.5.6.exe) (ou `.msi`) |
-| macOS | [`Podial-1.0.6.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.6/Podial-1.0.6.dmg) |
-| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.6/podial-android.apk) |
+| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.7_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.7/podial_0.5.7_all.deb) : application GTK avec l'extension GNOME |
+| Linux (autres distributions) | [`podial-linux-0.5.7.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.7/podial-linux-0.5.7.tar.gz) (lance `./install.sh`), ou les `.deb` / `.rpm` multiplateformes |
+| Windows | installateur [`Podial-0.5.7.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.7/Podial-0.5.7.exe) (ou `.msi`) |
+| macOS | [`Podial-1.0.7.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.7/Podial-1.0.7.dmg) |
+| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.7/podial-android.apk) |
 
 La compilation depuis les sources est expliquée plus bas. Les releases sont marquées « pre-release » tant que les versions Windows, macOS et Android n'ont pas été davantage testées.
 
@@ -85,7 +85,7 @@ Limites connues : pas encore de touches multimédia ni d'intégration « en lect
 
 ## Android
 
-Télécharge [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.6/podial-android.apk) depuis la [dernière release](https://github.com/Mickaelb06/podial/releases) (autorise l'installation depuis ton navigateur ou ton gestionnaire de fichiers quand Android te le demande). Android 8.0 ou plus récent.
+Télécharge [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.7/podial-android.apk) depuis la [dernière release](https://github.com/Mickaelb06/podial/releases) (autorise l'installation depuis ton navigateur ou ton gestionnaire de fichiers quand Android te le demande). Android 8.0 ou plus récent.
 
 ```sh
 cd android
