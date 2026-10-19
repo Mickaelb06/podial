@@ -168,7 +168,8 @@ object Api {
                     quality = listOf(s.optString("codec").uppercase().takeIf { it.isNotBlank() && it != "UNKNOWN" },
                         s.optInt("bitrate").takeIf { it > 0 }?.let { "$it kbps" }).filterNotNull().joinToString(" · "))
             }
-            Logos.fill(byKey.values.take(limit))
+            val extras = Extras.matching(country, name).filter { it.key !in byKey.values.map { r -> r.key } && stationKey(it.name) !in byKey }
+            Logos.fill(byKey.values.take(limit) + extras)
         }
 
     private fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { getJSONObject(it) }

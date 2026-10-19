@@ -218,6 +218,13 @@ const itunes = {
 };
 const podcast = x => ({ kind: "podcast", id: String(x.collectionId), name: x.collectionName, artist: x.artistName, art: x.artworkUrl600 || x.artworkUrl100 || "" });
 
+// Radios absentes de l'annuaire, avec le flux publié par la station. Même liste que Extras.kt et catalog.py : à garder identique.
+const EXTRA_RADIOS = [
+  { kind: "radio", name: "RMC 2", artist: "Italia", art: "https://www.rmc2.net/wp-content/themes/rmc2-child/apple-icon-180x180.png",
+    stream: "https://stream.rcs.revma.com/txdn8d324ucwv", homepage: "https://www.rmc2.net", country: "IT" },
+];
+const stationKey = n => n.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
+
 const radioApi = {
   hosts: ["https://de1.api.radio-browser.info", "https://de2.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info"],
   async get(path) {
@@ -238,6 +245,11 @@ const radioApi = {
       byKey.set(key, { kind: "radio", name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "), art: s.favicon || "", stream, homepage: s.homepage || "" });
     }
     const out = [...byKey.values()].slice(0, 60);
+    const nq = name ? stationKey(name) : "";
+    for (const { country: c, ...r } of EXTRA_RADIOS) {
+      if (byKey.has(stationKey(r.name)) || out.some(o => o.stream === r.stream)) continue;
+      if (nq ? stationKey(r.name).includes(nq) : c === cc) out.push(r);
+    }
     return out;
   },
   countries: () => radioApi.get("/json/countries?order=stationcount&reverse=true&hidebroken=true"),

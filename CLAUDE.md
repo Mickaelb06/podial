@@ -31,6 +31,9 @@ Radio recording with scheduling; local transcription for episodes without publis
 Status: releases v0.5.0 to v0.5.4 are published as pre-releases (GitHub Releases, installers attached); GitHub Pages is live at https://mickaelb06.github.io/podial/ (`main` / `/docs`).
 Versions: all apps are 0.5.5 (`catalog.VERSION`, android `versionName`, compose-desktop `APP_VERSION`/`packageVersion`); the macOS package alone uses 1.0.5 because jpackage requires a major version >= 1.
 
+- Extra radios missing from radio-browser (e.g. RMC 2 = Radio Monte Carlo 2, Italy, stream read from its own site): same list in `shared/.../Extras.kt`, `desktop/catalog.py` (`EXTRA_RADIOS`) and `docs/app/index.html` (`EXTRA_RADIOS`); keep the three identical. Shown in their country's list and in any search that matches their name.
+- Radio logos: `Api.radios` merges duplicate names to keep a logo, then `Logos.fill` reads the station's own homepage (apple-touch-icon / icon) for the rest; cached in `java.io.tmpdir/podial-logos.json`.
+
 ## How to build and test
 - Linux app: `cd ~/podial && ./install.sh` (builds translations, installs the extension atomically) then `python3 podial.py`. `--background` starts without a window.
 - **Tool/OS pitfalls on this machine (7 GB RAM)**: run Gradle in the background and poll (`setsid nohup … &`), never two builds at once, `--no-daemon`; a foreground build can get the shell OOM-killed (exit 137). Gradle: `~/Android/gradle-8.10.2/bin/gradle` or each project's `./gradlew`, `ANDROID_HOME=~/Android`, JDK 17 (sdkman).

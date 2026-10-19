@@ -278,6 +278,28 @@ def radio_get(path):
     raise OSError(last_error or "No radio server available")
 
 
+# Radios absentes de l'annuaire, avec l'adresse de flux publiée par la station elle-même.
+# Même liste dans shared/src/app/podial/Extras.kt et docs/app/index.html : à garder identique.
+EXTRA_RADIOS = [
+    {"kind": "radio", "id": "extra-rmc2", "name": "RMC 2", "artist": "Italia · MP3 128 kbit/s", "tags": "",
+     "stream": "https://stream.rcs.revma.com/txdn8d324ucwv",
+     "art": "https://www.rmc2.net/wp-content/themes/rmc2-child/apple-icon-180x180.png", "country": "IT"},
+]
+
+
+def extra_radios(params, known):
+    """Radios fournies à ajouter : celles du pays affiché, et celles dont le nom correspond à la recherche (tous pays)."""
+    q = station_key(params.get("name", "")) if params.get("name") else ""
+    out = []
+    for r in EXTRA_RADIOS:
+        key = station_key(r["name"])
+        if key in known or r["stream"] in {k["stream"] for k in known.values()}:
+            continue
+        if (q in key) if q else (r["country"] == params.get("countrycode")):
+            out.append({k: v for k, v in r.items() if k != "country"})
+    return out
+
+
 def radio_query(**params):
     base = {"hidebroken": "true", "order": "clickcount", "reverse": "true", "limit": 48}
     base.update(params)
@@ -293,7 +315,7 @@ def radio_query(**params):
         if not (s.get("url_resolved") or s.get("url")):
             continue
         by_key[key] = radio_item(s)
-    return list(by_key.values())
+    return list(by_key.values()) + extra_radios(params, by_key)
 
 
 def search_radios(term):
