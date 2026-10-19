@@ -20,7 +20,7 @@ from email.utils import parsedate_to_datetime
 
 from i18n import _
 
-VERSION = "0.5.3"
+VERSION = "0.5.4"
 REPO = "Mickaelb06/podial"
 UA = f"Podial/{VERSION} (+https://github.com/{REPO})"
 ITUNES_NS = "{http://www.itunes.com/dtds/podcast-1.0.dtd}"

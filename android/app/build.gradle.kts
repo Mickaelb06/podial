@@ -14,8 +14,8 @@ android {
         applicationId = "app.podial"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.5.3"
+        versionCode = 9
+        versionName = "0.5.4"
     }
     // Clé de signature hors du dépôt : ~/.podial-signing/keystore.properties (ou variable PODIAL_KEYSTORE_PROPS)
     val keyProps = Properties().apply {
