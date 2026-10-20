@@ -492,6 +492,20 @@ def resolve_feed(pending):
     return _RESOLVED_FEEDS[pid]
 
 
+def filter_episodes(eps, newest_first, flt, downloaded, played):
+    """Épisodes à montrer : tous, téléchargés (adresses dans downloaded) ou pas encore terminés (adresses absentes de played),
+    triés par date de publication ; si une date manque on garde l'ordre du flux (récents d'abord, comme la plupart des flux)."""
+    if flt == "downloaded":
+        kept = [e for e in eps if e["url"] in downloaded]
+    elif flt == "unfinished":
+        kept = [e for e in eps if e["url"] not in played]
+    else:
+        kept = list(eps)
+    if all(e.get("ts") is not None for e in kept):
+        kept.sort(key=lambda e: -e["ts"])  # tri stable : à date égale, ordre du flux
+    return kept if newest_first else kept[::-1]
+
+
 def fetch_feed(feed_url, untitled="Untitled"):
     if feed_url.startswith(PENDING_FEED):
         feed_url = resolve_feed(feed_url)
@@ -503,11 +517,12 @@ def fetch_feed(feed_url, untitled="Untitled"):
         enc = item.find("enclosure")
         if enc is None or not enc.get("url"):
             continue
-        date = ""
+        date, ts = "", None  # ts : date de publication en secondes, pour trier
         pub = item.findtext("pubDate")
         if pub:
             try:
-                date = parsedate_to_datetime(pub).strftime("%x")  # format de date de la langue du système
+                published = parsedate_to_datetime(pub)
+                date, ts = published.strftime("%x"), published.timestamp()  # affichage dans le format de la langue du système
             except (TypeError, ValueError):
                 date = pub[:16]
         tr_url, tr_type = "", ""
@@ -518,7 +533,7 @@ def fetch_feed(feed_url, untitled="Untitled"):
                     tr_url, tr_type = child.get("url"), t
         eps.append({
             "title": (item.findtext("title") or untitled).strip(),
-            "url": enc.get("url"), "date": date,
+            "url": enc.get("url"), "date": date, "ts": ts,
             "duration": parse_duration(item.findtext(ITUNES_NS + "duration")),
             "transcript": tr_url, "transcript_type": tr_type,
         })

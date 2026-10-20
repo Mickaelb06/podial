@@ -561,3 +561,21 @@ msgstr "أخبار التقنية"
 
 msgid "Local news"
 msgstr "أخبار محلية"
+
+msgid "Newest first"
+msgstr "الأحدث أولا"
+
+msgid "Oldest first"
+msgstr "الأقدم أولا"
+
+msgid "All episodes"
+msgstr "كل الحلقات"
+
+msgid "Unfinished"
+msgstr "غير المكتملة"
+
+msgid "No episode matches this filter."
+msgstr "لا توجد حلقة تطابق هذا المرشح."
+
+msgid "Downloaded episodes"
+msgstr "تم تنزيلها"

@@ -373,6 +373,8 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
     var fresh by remember(item.key) { mutableStateOf<Set<String>>(emptySet()) }
     var feed by remember(item.key) { mutableStateOf<Pair<String, List<Episode>>?>(null) }
     var failed by remember(item.key) { mutableStateOf(false) }
+    var sort by remember(item.key) { mutableStateOf(EpSort.NEWEST) }
+    var epFilter by remember(item.key) { mutableStateOf(EpFilter.ALL) }
     LaunchedEffect(item.key) {
         if (item.kind == "podcast") {
             feed = try { Api.fetchFeed(item.feed) } catch (e: Exception) {
@@ -418,7 +420,23 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
             if (item.kind == "podcast" && feed == null && !failed) Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             if (failed) Message(stringResource(R.string.load_failed))
         }
-        feed?.second?.let { eps ->
+        feed?.second?.let { allEps ->
+            item {
+                // tri par date et filtres : tous, téléchargés, pas encore terminés
+                Column(Modifier.padding(top = 4.dp)) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item { FilterChip(sort == EpSort.NEWEST, { sort = EpSort.NEWEST }, { Text(stringResource(R.string.ep_newest)) }) }
+                        item { FilterChip(sort == EpSort.OLDEST, { sort = EpSort.OLDEST }, { Text(stringResource(R.string.ep_oldest)) }) }
+                    }
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        item { FilterChip(epFilter == EpFilter.ALL, { epFilter = EpFilter.ALL }, { Text(stringResource(R.string.ep_all)) }) }
+                        item { FilterChip(epFilter == EpFilter.DOWNLOADED, { epFilter = EpFilter.DOWNLOADED }, { Text(stringResource(R.string.ep_downloaded)) }) }
+                        item { FilterChip(epFilter == EpFilter.UNFINISHED, { epFilter = EpFilter.UNFINISHED }, { Text(stringResource(R.string.ep_unfinished)) }) }
+                    }
+                }
+            }
+            val eps = EpisodeList.apply(allEps, sort, epFilter, downloads.mapTo(HashSet()) { it.episode.url }, played)
+            if (eps.isEmpty() && allEps.isNotEmpty()) item { Message(stringResource(R.string.ep_none_filtered)) }
             items(eps, key = { it.url }) { ep ->
                 val dl = downloads.any { it.episode.url == ep.url }
                 val progress = active[ep.url]

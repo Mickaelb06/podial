@@ -94,4 +94,10 @@
     <string name="share_image_failed">Impossible de créer l\'image.</string>
     <string name="panel_radios">Radios</string>
     <string name="panel_local">Infos locales</string>
+    <string name="ep_newest">Plus récents</string>
+    <string name="ep_oldest">Plus anciens</string>
+    <string name="ep_all">Tous les épisodes</string>
+    <string name="ep_downloaded">Téléchargés</string>
+    <string name="ep_unfinished">Non terminés</string>
+    <string name="ep_none_filtered">Aucun épisode ne correspond à ce filtre.</string>
 </resources>

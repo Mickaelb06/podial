@@ -545,3 +545,21 @@ msgstr "Technik-Nachrichten"
 
 msgid "Local news"
 msgstr "Lokale Nachrichten"
+
+msgid "Newest first"
+msgstr "Neueste zuerst"
+
+msgid "Oldest first"
+msgstr "Älteste zuerst"
+
+msgid "All episodes"
+msgstr "Alle Folgen"
+
+msgid "Unfinished"
+msgstr "Nicht beendet"
+
+msgid "No episode matches this filter."
+msgstr "Keine Folge passt zu diesem Filter."
+
+msgid "Downloaded episodes"
+msgstr "Heruntergeladen"

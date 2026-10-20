@@ -24,7 +24,7 @@ from catalog import (  # noqa: E402
     http_get, item_key, radio_browse, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
     add_quote, cue_index, fmt_clock, load_quotes, load_transcript, quote_id, remove_quote, set_quote_note, share_text,
     youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path,
-    COUNTRY_NAMES, local_flashes, source_groups, source_item, source_podcasts)
+    COUNTRY_NAMES, filter_episodes, local_flashes, source_groups, source_item, source_podcasts)
 from worldmap import AVAILABLE as WORLD_MAP, WorldMap
 from filters import CountryChooser, GenreBar, RadioBar  # noqa: E402
 from i18n import _, ngettext  # noqa: E402
@@ -991,32 +991,72 @@ class Window(Adw.ApplicationWindow):
         fresh = {e["url"] for e in eps} - before if before else set()
         if self.in_library(item):
             self.mark_seen_async(item["feed"], [e["url"] for e in eps])
-        for ep in eps:
-            row = Adw.ActionRow(title=GLib.markup_escape_text(ep["title"]), title_lines=2,
-                                subtitle=" · ".join(x for x in (ep["date"], ep["duration"]) if x), activatable=True)
-            if ep["url"] in fresh and ep["url"] not in self.played:
-                row.add_prefix(Gtk.Label(label=_("NEW"), css_classes=["new-chip"], valign=Gtk.Align.CENTER))
-            row.ep_url = ep["url"]
-            icon = Gtk.Image(icon_name="media-playback-start-symbolic")
-            row.add_prefix(icon)
-            self.ep_icons[ep["url"]] = icon
-            row.ep_sub = " · ".join(x for x in (ep["date"], ep["duration"]) if x)
-            dl = Gtk.Button(valign=Gtk.Align.CENTER, css_classes=["flat"])
-            dl.connect("clicked", lambda _b, e=ep: self.on_dl_clicked(item, e))
-            tick_btn = Gtk.Button(valign=Gtk.Align.CENTER, css_classes=["flat"])
-            tick_btn.connect("clicked", lambda _b, e=ep: self.toggle_played(e["url"]))
-            row.add_suffix(tick_btn)
-            row.add_suffix(dl)
-            self.ep_dl[ep["url"]] = (dl, row)
-            self.ep_rows[ep["url"]] = (row, tick_btn)
-            self.dl_refresh(ep["url"])
-            self.refresh_played(ep["url"])
-            lb.append(row)
-        lb.connect("row-activated", lambda _l, row: self.play_episode(item, eps[row.get_index()]))
+        self.ep_all_urls = [e["url"] for e in eps]  # tous les épisodes du flux, même si le filtre en cache
+        state = {"newest": True, "filter": "all"}  # tri et filtre de la liste
+
+        def chips(entries, current, on_pick):
+            row, first = Gtk.Box(spacing=6, margin_bottom=6), None
+            for label, value in entries:
+                btn = Gtk.ToggleButton(label=label, css_classes=["chip-btn"], active=value == current)
+                if first is None:
+                    first = btn
+                else:
+                    btn.set_group(first)
+                btn.connect("toggled", lambda b, v=value: b.get_active() and on_pick(v))
+                row.append(btn)
+            return row
+
+        def fill_rows():
+            while (old := lb.get_first_child()) is not None:
+                lb.remove(old)
+            self.ep_icons, self.ep_dl, self.ep_rows = {}, {}, {}
+            shown = filter_episodes(eps, state["newest"], state["filter"], set(self.downloads), self.played)
+            empty.set_visible(not shown)
+            for ep in shown:
+                lb.append(self.episode_row(item, ep, fresh))
+            self.update_play_icons()
+
+        def set_sort(newest):
+            state["newest"] = newest
+            fill_rows()
+
+        def set_filter(flt):
+            state["filter"] = flt
+            fill_rows()
+
+        self.ep_box.append(chips([(_("Newest first"), True), (_("Oldest first"), False)], True, set_sort))
+        self.ep_box.append(chips([(_("All episodes"), "all"), (_("Downloaded episodes"), "downloaded"), (_("Unfinished"), "unfinished")], "all", set_filter))
+        empty = Gtk.Label(label=_("No episode matches this filter."), css_classes=["dim-label"], margin_top=12, margin_bottom=12, visible=False)
+        self.ep_box.append(empty)
+        lb.connect("row-activated", lambda _l, row: self.play_episode(item, row.ep_data))
         self.ep_box.append(lb)
+        fill_rows()
         self.main_btn.set_sensitive(True)
         self.main_btn.connect("clicked", lambda *_: self.play_episode(item, eps[0]))
-        self.update_play_icons()
+
+    def episode_row(self, item, ep, fresh):
+        """Ligne d'un épisode : titre, date, durée, coche « écouté » et téléchargement."""
+        row = Adw.ActionRow(title=GLib.markup_escape_text(ep["title"]), title_lines=2,
+                            subtitle=" · ".join(x for x in (ep["date"], ep["duration"]) if x), activatable=True)
+        if ep["url"] in fresh and ep["url"] not in self.played:
+            row.add_prefix(Gtk.Label(label=_("NEW"), css_classes=["new-chip"], valign=Gtk.Align.CENTER))
+        row.ep_url = ep["url"]
+        row.ep_data = ep
+        icon = Gtk.Image(icon_name="media-playback-start-symbolic")
+        row.add_prefix(icon)
+        self.ep_icons[ep["url"]] = icon
+        row.ep_sub = " · ".join(x for x in (ep["date"], ep["duration"]) if x)
+        dl = Gtk.Button(valign=Gtk.Align.CENTER, css_classes=["flat"])
+        dl.connect("clicked", lambda _b, e=ep: self.on_dl_clicked(item, e))
+        tick_btn = Gtk.Button(valign=Gtk.Align.CENTER, css_classes=["flat"])
+        tick_btn.connect("clicked", lambda _b, e=ep: self.toggle_played(e["url"]))
+        row.add_suffix(tick_btn)
+        row.add_suffix(dl)
+        self.ep_dl[ep["url"]] = (dl, row)
+        self.ep_rows[ep["url"]] = (row, tick_btn)
+        self.dl_refresh(ep["url"])
+        self.refresh_played(ep["url"])
+        return row
 
     # ---------- épisodes écoutés / nouveautés ----------
     def refresh_played(self, url):
@@ -1133,8 +1173,8 @@ class Window(Adw.ApplicationWindow):
             self.lists[kind].append(item)
             if kind == "podcast":
                 run_async(lambda: save_cover(item.get("art")), lambda _r: None, lambda e: None)
-                if getattr(self, "ep_rows", None):  # on s'abonne depuis la page : ce qu'elle affiche est déjà vu
-                    self.mark_seen_async(item["feed"], list(self.ep_rows))
+                if getattr(self, "ep_all_urls", None):  # on s'abonne depuis la page : ce qu'elle affiche est déjà vu
+                    self.mark_seen_async(item["feed"], list(self.ep_all_urls))
         save_list(kind, self.lists[kind])
         self.refresh_sub_button()
 

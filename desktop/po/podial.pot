@@ -556,3 +556,21 @@ msgstr ""
 
 msgid "Local news"
 msgstr ""
+
+msgid "Newest first"
+msgstr ""
+
+msgid "Oldest first"
+msgstr ""
+
+msgid "All episodes"
+msgstr ""
+
+msgid "Unfinished"
+msgstr ""
+
+msgid "No episode matches this filter."
+msgstr ""
+
+msgid "Downloaded episodes"
+msgstr ""

@@ -97,4 +97,10 @@
     <string name="share_image_failed">Couldn\'t create the image.</string>
     <string name="panel_radios">Radios</string>
     <string name="panel_local">Local news</string>
+    <string name="ep_newest">Newest first</string>
+    <string name="ep_oldest">Oldest first</string>
+    <string name="ep_all">All episodes</string>
+    <string name="ep_downloaded">Downloaded</string>
+    <string name="ep_unfinished">Unfinished</string>
+    <string name="ep_none_filtered">No episode matches this filter.</string>
 </resources>

@@ -551,3 +551,21 @@ msgstr "חדשות טכנולוגיה"
 
 msgid "Local news"
 msgstr "חדשות מקומיות"
+
+msgid "Newest first"
+msgstr "החדשים ראשון"
+
+msgid "Oldest first"
+msgstr "הישנים ראשון"
+
+msgid "All episodes"
+msgstr "כל הפרקים"
+
+msgid "Unfinished"
+msgstr "לא הסתיימו"
+
+msgid "No episode matches this filter."
+msgstr "אין פרק התואם לסינון זה."
+
+msgid "Downloaded episodes"
+msgstr "הורדו"
