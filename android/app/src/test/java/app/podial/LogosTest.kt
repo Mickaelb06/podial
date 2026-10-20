@@ -35,4 +35,10 @@ class LogosTest {
         assertEquals("https://www.fip.fr/logo-120.png", Logos.wikimedia("https://www.fip.fr/logo-120.png"))
         assertEquals("https://upload.wikimedia.org/wikipedia/commons/a/a0/Original.png", Logos.wikimedia("https://upload.wikimedia.org/wikipedia/commons/a/a0/Original.png"))
     }
+
+    @Test fun fallsBackToShareImageAndRootIcons() {
+        val g = Logos.guesses("""<meta property="og:image" content="/img/share.jpg">""", "https://r.fr/accueil")
+        assertEquals(listOf("https://r.fr/img/share.jpg", "https://r.fr/apple-touch-icon.png", "https://r.fr/favicon.ico"), g)
+        assertEquals(listOf("https://r.fr/apple-touch-icon.png", "https://r.fr/favicon.ico"), Logos.guesses("<html></html>", "https://r.fr/"))
+    }
 }

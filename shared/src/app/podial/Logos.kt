@@ -124,10 +124,20 @@ object Logos {
                 }
                 if (code !in 200..299) return null
                 val html = c.inputStream.use { it.readNBytes(300_000) }.toString(Charsets.UTF_8)
-                return pick(html, url)
+                return pick(html, url) ?: guesses(html, url).firstOrNull { runCatching { alive(it) }.getOrNull() == true }
             } finally { c.disconnect() }
         }
         return null
+    }
+
+    /** Pistes de repli quand la page ne déclare pas d'icône : image de partage (og:image), puis adresses usuelles à la racine du site. */
+    internal fun guesses(html: String, base: String): List<String> {
+        val og = Regex("<meta\\b[^>]*>", RegexOption.IGNORE_CASE).findAll(html).map { it.value }
+            .firstOrNull { Regex("(property|name)\\s*=\\s*[\"']og:image[\"']", RegexOption.IGNORE_CASE).containsMatchIn(it) }
+            ?.let { Regex("content\\s*=\\s*[\"']([^\"']+)[\"']", RegexOption.IGNORE_CASE).find(it)?.groupValues?.get(1) }
+        val root = runCatching { URL(base).let { "${it.protocol}://${it.host}" } }.getOrNull() ?: return emptyList()
+        return listOfNotNull(og?.let { runCatching { URL(URL(base), it).toString() }.getOrNull() }, "$root/apple-touch-icon.png", "$root/favicon.ico")
+            .filter { it.startsWith("http") && !it.endsWith(".svg", true) }
     }
 
     /** Choisit l'icône déclarée par la page : apple-touch-icon (la plus grande) d'abord, puis icon. */

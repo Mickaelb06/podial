@@ -52,12 +52,41 @@ def pick(html, base):
     return u if u.startswith("http") and not u.lower().endswith(".svg") else None
 
 
+def extra(html, base):
+    """Autres logos déclarés par la page : manifeste web, image de partage (og:image), puis adresses usuelles."""
+    out = []
+    m = re.search(r"<link\b[^>]*rel=[\"']manifest[\"'][^>]*>", html, re.I)
+    h = re.search(r"href=[\"']([^\"']+)", m.group(0), re.I) if m else None
+    if h:
+        try:
+            man = json.loads(get(urllib.parse.urljoin(base, h.group(1)), 200_000)[1].decode("utf-8", "replace"))
+            icons = sorted(man.get("icons", []), key=lambda i: -int((re.match(r"\d+", i.get("sizes", "0") or "0") or [0])[0] or 0))
+            out += [urllib.parse.urljoin(urllib.parse.urljoin(base, h.group(1)), i["src"]) for i in icons if i.get("src")]
+        except Exception:
+            pass
+    for tag in re.findall(r"<meta\b[^>]*>", html, re.I):
+        if re.search(r"(property|name)=[\"']og:image[\"']", tag, re.I):
+            c = re.search(r"content=[\"']([^\"']+)", tag, re.I)
+            if c:
+                out.append(urllib.parse.urljoin(base, c.group(1)))
+    root = "{0.scheme}://{0.netloc}".format(urllib.parse.urlparse(base))
+    return out + [root + "/apple-touch-icon.png", root + "/favicon.ico"]
+
+
 def find(home):
+    """Logo d'un site : icône déclarée dans la page, sinon les autres pistes de extra() (la première qui est bien une image)."""
     try:
         ct, b = get(home)
-        return pick(b.decode("utf-8", "replace"), home)
+        html = b.decode("utf-8", "replace")
     except Exception:
         return None
+    first = pick(html, home)
+    if first and alive(first):
+        return first
+    for u in extra(html, home):
+        if u.startswith("http") and not u.lower().endswith(".svg") and alive(u):
+            return u
+    return None
 
 
 def work(s):
@@ -68,7 +97,7 @@ def work(s):
     if not home.startswith("http"):
         return None
     logo = find(home)
-    if logo and alive(logo):
+    if logo:
         return catalog.station_key(s["name"]), logo
     return None
 
@@ -78,7 +107,7 @@ def main():
     for cc in (sys.argv[1:] or COUNTRIES):
         try:
             data = catalog.radio_get("stations/search?" + urllib.parse.urlencode(
-                {"hidebroken": "true", "order": "clickcount", "reverse": "true", "limit": 200, "countrycode": cc}))
+                {"hidebroken": "true", "order": "clickcount", "reverse": "true", "limit": 300, "countrycode": cc}))
         except OSError as e:
             print(cc, "erreur", e)
             continue
@@ -89,10 +118,12 @@ def main():
                 continue
             seen.add(k)
             todo.append(s)
-        with cf.ThreadPoolExecutor(24) as ex:
+        with cf.ThreadPoolExecutor(48) as ex:
             res = [r for r in ex.map(work, todo) if r]
         out.update(dict(res))
         print(cc, len(todo), "stations,", len(res), "logos trouvés", flush=True)
+        with open(OUT, "w") as f:
+            json.dump(dict(sorted(out.items())), f, ensure_ascii=False, separators=(",", ":"))
     with open(OUT, "w") as f:
         json.dump(dict(sorted(out.items())), f, ensure_ascii=False, separators=(",", ":"))
     print(len(out), "logos au total")
