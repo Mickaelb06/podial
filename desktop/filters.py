@@ -6,7 +6,8 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk  # noqa: E402
 
-from catalog import APPLE_GENRES, COUNTRIES, country_label, flag, get_country  # noqa: E402
+from catalog import (APPLE_GENRES, COUNTRIES, PODCAST_SOURCES, country_label, flag, genre_label, get_country,  # noqa: E402
+                     source_genre, source_genres)
 from i18n import _  # noqa: E402
 
 RADIO_SORTS = [("clickcount", "Most popular"), ("votes", "Top rated"), ("name", "A–Z"),
@@ -61,33 +62,100 @@ class CountryChooser(Gtk.Box):
         self.entry.set_text("")
 
 
-class GenreBar(Gtk.ScrolledWindow):
-    """Pastilles de genres (Tous, Histoire, Sciences…) sur une ligne qui défile : un clic choisit le classement du genre."""
+class GenreBar(Gtk.Box):
+    """Pastilles : Tous, Radios, Infos locales, puis les genres Apple ; une seconde ligne montre les sous-genres du genre choisi."""
 
     def __init__(self, on_change):
-        super().__init__(hscrollbar_policy=Gtk.PolicyType.AUTOMATIC, vscrollbar_policy=Gtk.PolicyType.NEVER,
-                         propagate_natural_height=True, valign=Gtk.Align.START)
-        self.genre = None  # identifiant Apple du genre, None = classement général
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.START)
+        self.genre = None   # identifiant Apple (genre ou sous-genre), None = classement général
+        self.panel = None   # None, "radios" (podcasts par radio) ou "local" (flashs d'info locaux)
+        self.source = None  # radio ou éditeur ouvert dans « Radios » (carte), None = liste des radios
         self.on_change = on_change
+        self.row1 = self._scroller()
+        self.row2 = self._scroller()
+        self.row2.set_visible(False)
+        self.append(self.row1)
+        self.append(self.row2)
+        self._build_row1()
+
+    @staticmethod
+    def _scroller():
+        return Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.AUTOMATIC, vscrollbar_policy=Gtk.PolicyType.NEVER,
+                                  propagate_natural_height=True, valign=Gtk.Align.START)
+
+    def _chips(self, entries, active):
+        """entries : liste de (libellé, valeur) ; rend la boîte de pastilles et appelle self._picked(valeur, ligne)."""
         row = Gtk.Box(spacing=6, margin_bottom=8)
         first = None
-        for gid, name in [(None, "All")] + list(APPLE_GENRES):
-            btn = Gtk.ToggleButton(label=_(name), css_classes=["chip-btn"], active=gid is None)
+        for label, value in entries:
+            btn = Gtk.ToggleButton(label=label, css_classes=["chip-btn"], active=value == active)
             if first is None:
                 first = btn
             else:
                 btn.set_group(first)
-            btn.connect("toggled", self._toggled, gid, name)
             row.append(btn)
-        self.set_child(row)
+            btn.connect("toggled", self._toggled, value, row)
+        return row
+
+    def _top_entries(self):
+        entries = [(_("All"), ("all", None))]
+        if PODCAST_SOURCES:
+            entries += [("📻 " + _("Radios"), ("panel", "radios")), ("🗞 " + _("Local news"), ("panel", "local"))]
+            entries += [(genre_label(g), ("genre", g["id"])) for g in source_genres(0)]
+        else:
+            entries += [(_(name), ("genre", gid)) for gid, name in APPLE_GENRES]
+        return entries
+
+    def _parent(self):
+        g = source_genre(self.genre) if self.genre else None
+        return (g.get("parent") or g["id"]) if g else self.genre
+
+    def _build_row1(self):
+        active = ("panel", self.panel) if self.panel else ("genre", self._parent()) if self.genre else ("all", None)
+        self.row1.set_child(self._chips(self._top_entries(), active))
+        self._build_row2()
+
+    def _build_row2(self):
+        parent = self._parent() if not self.panel else None
+        kids = source_genres(parent) if parent else []
+        self.row2.set_visible(bool(kids))
+        if kids:
+            entries = [(genre_label(source_genre(parent)), ("genre", parent))] + [(genre_label(g), ("genre", g["id"])) for g in kids]
+            self.row2.set_child(self._chips(entries, ("genre", self.genre)))
 
     def genre_name(self):
-        return next((_(n) for g, n in APPLE_GENRES if g == self.genre), None)
+        g = source_genre(self.genre)
+        if g:
+            return genre_label(g)
+        return next((_(n) for gid, n in APPLE_GENRES if gid == self.genre), None)
 
-    def _toggled(self, btn, gid, _name):
-        if btn.get_active() and gid != self.genre:
-            self.genre = gid
-            self.on_change()
+    def _toggled(self, btn, value, row):
+        if not btn.get_active():
+            return
+        kind, v = value
+        in_row2 = row.get_parent() is not None and row.get_parent().get_parent() is self.row2
+        if kind == "all":
+            changed = self.genre is not None or self.panel is not None or self.source is not None
+            self.genre = self.panel = self.source = None
+        elif kind == "panel":
+            changed = self.panel != v or self.source is not None
+            self.panel, self.genre, self.source = v, None, None
+        else:
+            changed = self.genre != v or self.panel is not None
+            self.genre, self.panel, self.source = v, None, None
+        if not changed:
+            return
+        if not in_row2:
+            self._build_row2()
+        self.on_change()
+
+    def open_source(self, card):
+        self.source = card
+        self.on_change()
+
+    def close_source(self):
+        self.source = None
+        self.on_change()
 
 
 class RadioBar(Gtk.Box):

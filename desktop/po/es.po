@@ -542,3 +542,6 @@ msgstr "Noticias de economía"
 
 msgid "Tech News"
 msgstr "Noticias de tecnología"
+
+msgid "Local news"
+msgstr "Noticias locales"

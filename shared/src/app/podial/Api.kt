@@ -39,11 +39,42 @@ object Api {
         } finally { c.disconnect() }
     }
 
+    /**
+     * Apple n'indique plus l'adresse du flux RSS de certains podcasts (France Inter, Radio France…) : on les garde quand même,
+     * avec l'identifiant provisoire « itunes:<id> » que fetchFeed() transforme en vraie adresse à l'ouverture du podcast.
+     */
+    internal const val PENDING = "itunes:"
+
     private fun podcast(o: JSONObject): Item? {
-        val feed = o.optString("feedUrl")
-        if (feed.isEmpty()) return null
+        val id = o.optLong("collectionId")
+        val feed = o.optString("feedUrl").ifEmpty { if (id > 0 && o.optString("kind", "podcast") == "podcast") "$PENDING$id" else return null }
         return Item("podcast", o.optString("collectionName"), o.optString("artistName"),
             o.optString("artworkUrl600").ifEmpty { o.optString("artworkUrl100") }, feed = feed)
+    }
+
+    private val resolvedFeeds = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private val feedsFile get() = java.io.File(System.getProperty("java.io.tmpdir") ?: ".", "podial-feeds.json")
+
+    /** Adresse du flux lue dans la page web d'Apple du podcast (champ « feedUrl » de ses données), gardée pour la prochaine fois. */
+    internal fun resolveFeed(id: String): String {
+        resolvedFeeds[id]?.let { return it }
+        if (resolvedFeeds.isEmpty()) runCatching { JSONObject(feedsFile.readText()).let { o -> o.keys().forEach { resolvedFeeds.putIfAbsent(it, o.getString(it)) } } }
+        resolvedFeeds[id]?.let { return it }
+        val c = URL("https://podcasts.apple.com/${country().lowercase()}/podcast/id$id").openConnection() as HttpURLConnection
+        c.connectTimeout = 20000; c.readTimeout = 30000
+        c.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Podial)")
+        val html = try { c.inputStream.use { it.readNBytes(3_000_000) }.toString(Charsets.UTF_8) } finally { c.disconnect() }
+        val url = feedUrlIn(html) ?: throw java.io.IOException("feed not found for $id")
+        resolvedFeeds[id] = url
+        runCatching { feedsFile.writeText(JSONObject(resolvedFeeds as Map<*, *>).toString()) }
+        return url
+    }
+
+    internal fun feedUrlIn(html: String): String? {
+        val key = "\"feedUrl\":\""
+        val i = html.indexOf(key).takeIf { it >= 0 } ?: return null
+        val j = html.indexOf('"', i + key.length).takeIf { it > 0 } ?: return null
+        return html.substring(i + key.length, j).replace("\\/", "/").replace("\\u0026", "&").takeIf { it.startsWith("http") }
     }
 
     suspend fun searchPodcasts(term: String): List<Item> = withContext(Dispatchers.IO) {
@@ -69,12 +100,40 @@ object Api {
         ids.mapNotNull { found[it] }
     }
 
+    /** Résultats iTunes d'une radio ou d'un éditeur : par identifiant d'éditeur (jusqu'à 200), sinon par son nom exact (jusqu'à 100). */
+    private fun sourceResults(s: Source): List<JSONObject> {
+        val cc = country().uppercase()
+        return if (s.artistId > 0)
+            JSONObject(get("https://itunes.apple.com/lookup?id=${s.artistId}&entity=podcast&limit=200&country=$cc"))
+                .getJSONArray("results").objects().filter { it.optString("kind") == "podcast" }
+        else {
+            val key = stationKey(s.name)
+            JSONObject(get("https://itunes.apple.com/search?media=podcast&attribute=artistTerm&limit=100&country=$cc&term=${enc(s.name)}"))
+                .getJSONArray("results").objects().filter { stationKey(it.optString("artistName")) == key }
+        }
+    }
+
+    /** Tous les podcasts d'une radio ou d'un éditeur. */
+    suspend fun sourcePodcasts(s: Source): List<Item> = withContext(Dispatchers.IO) { sourceResults(s).mapNotNull(::podcast).distinctBy { it.feed } }
+
+    /** Flashs d'info et journaux locaux : les podcasts « Actus du jour » des radios locales (ICI, Alouette, K6FM…). */
+    suspend fun localFlashes(all: List<Source>, local: Local): List<Item> = withContext(Dispatchers.IO) {
+        local.sources.mapNotNull { n -> all.firstOrNull { it.name == n } }.flatMap { s ->
+            runCatching { sourceResults(s) }.getOrDefault(emptyList()).filter { o ->
+                // « Actus du jour », ou un nom de flash / journal / infos (certaines radios rangent leurs flashs dans « Actualités »)
+                o.optJSONArray("genreIds")?.let { g -> (0 until g.length()).any { g.optString(it) == local.genre.toString() } } == true ||
+                    Regex("(?i)flash|journal|journaux|\\binfos?\\b").containsMatchIn(o.optString("collectionName"))
+            }
+        }.distinctBy { it.optLong("collectionId") }.mapNotNull(::podcast)
+    }
+
     private fun chartIds(url: String): List<String> =
         JSONObject(get(url)).getJSONObject("feed").getJSONArray("entry").objects()
             .map { it.getJSONObject("id").getJSONObject("attributes").getString("im:id") }
 
     suspend fun fetchFeed(feed: String): Pair<String, List<Episode>> = withContext(Dispatchers.IO) {
-        val c = URL(feed).openConnection() as HttpURLConnection
+        val real = if (feed.startsWith(PENDING)) resolveFeed(feed.removePrefix(PENDING)) else feed
+        val c = URL(real).openConnection() as HttpURLConnection
         c.connectTimeout = 20000; c.readTimeout = 30000
         c.setRequestProperty("User-Agent", UA)
         c.inputStream.use { parseFeed(it) }

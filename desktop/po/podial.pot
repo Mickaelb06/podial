@@ -553,3 +553,6 @@ msgstr ""
 
 msgid "Tech News"
 msgstr ""
+
+msgid "Local news"
+msgstr ""

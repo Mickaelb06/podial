@@ -201,6 +201,8 @@ fun SectionTitle(text: String) = Text(text, style = MaterialTheme.typography.tit
 fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -> Unit) {
     var query by remember(kind) { mutableStateOf("") }
     var genre by remember { mutableStateOf<Int?>(null) }
+    var panel by remember { mutableStateOf<String?>(null) }      // null, "radios" (podcasts par radio) ou "local" (flashs d'info locaux)
+    var source by remember { mutableStateOf<Source?>(null) }     // radio ou éditeur ouvert dans « radios »
     var items by remember(kind) { mutableStateOf<List<Item>?>(null) }
     var failed by remember(kind) { mutableStateOf(false) }
     var country by remember { mutableStateOf(Store.radioCountry) }
@@ -208,22 +210,31 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     var surprising by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val countries = remember { runCatching { World.parse(object {}.javaClass.getResourceAsStream("/world.json")!!.bufferedReader().use { it.readText() }) }.getOrDefault(emptyList()) }
-    LaunchedEffect(kind, query, genre, country) {
+    val catalog = remember { runCatching { SourceCatalog.parse(object {}.javaClass.getResourceAsStream("/podcast_sources.json")!!.bufferedReader().use { it.readText() }) }.getOrNull() }
+    LaunchedEffect(kind, query, genre, country, panel, source) {
+        val src = source
+        if (kind == "podcast" && query.isBlank() && panel == "radios" && src == null) { items = emptyList(); failed = false; return@LaunchedEffect }   // liste fixe : rien à charger
         if (query.isNotBlank()) delay(500)
         items = null; failed = false
         items = try {
-            if (kind == "podcast") { if (query.isBlank()) Api.topPodcasts(genre) else Api.searchPodcasts(query) }
+            if (kind == "podcast") when {
+                query.isNotBlank() -> Api.searchPodcasts(query)
+                src != null -> Api.sourcePodcasts(src)
+                panel == "local" && catalog != null -> Api.localFlashes(catalog.sources, catalog.local)
+                else -> Api.topPodcasts(genre)
+            }
             else Api.radios(country, query.ifBlank { null })
         } catch (e: Exception) { failed = true; emptyList() }
     }
     if (map) WorldMapDialog(countries, country, T["world_map"], T["show_radios"], T["close"],
         onConfirm = { country = it; Store.radioCountry = it; map = false }, onClose = { map = false })
     val list = items
+    val sourceGroups = remember(catalog) { catalog?.byCountry(Api.country()).orEmpty() }
     LazyVerticalGrid(GridCells.Adaptive(170.dp), contentPadding = PaddingValues(12.dp), modifier = Modifier.fillMaxSize()) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
+                    OutlinedTextField(query, { query = it; if (it.isNotBlank()) { panel = null; source = null } }, singleLine = true, shape = RoundedCornerShape(24.dp),
                         placeholder = { Text(T[if (kind == "podcast") "search_podcasts" else "search_radios"]) },
                         leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
                     if (kind == "radio" && countries.isNotEmpty()) {
@@ -235,18 +246,48 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
                         FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, T["world_map"]) }
                     }
                 }
-                if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+                if (kind == "podcast" && query.isBlank() && source != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton({ source = null }) { Icon(Icons.Default.ArrowBack, T["back"]) }
+                    Text(source!!.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                }
+                else if (kind == "podcast" && query.isBlank() && catalog != null) {
+                    val parent = genre?.let { g -> catalog.genre(g)?.let { if (it.parent == 0) it.id else it.parent } }
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+                        item { FilterChip(genre == null && panel == null, { genre = null; panel = null }, { Text(T["all"]) }) }
+                        item { FilterChip(panel == "radios", { panel = "radios"; genre = null }, { Text("📻 " + T["panel_radios"]) }) }
+                        item { FilterChip(panel == "local", { panel = "local"; genre = null }, { Text("🗞 " + T["panel_local"]) }) }
+                        items(catalog.topLevel()) { g -> FilterChip(panel == null && parent == g.id, { genre = g.id; panel = null }, { Text(g.name()) }) }
+                    }
+                    val children = if (panel == null && parent != null) catalog.children(parent) else emptyList()
+                    if (children.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+                        item { FilterChip(genre == parent, { genre = parent }, { Text(catalog.genre(parent!!)?.name() ?: "") }) }
+                        items(children) { g -> FilterChip(genre == g.id, { genre = g.id }, { Text(g.name()) }) }
+                    }
+                }
+                else if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                     item { FilterChip(genre == null, { genre = null }, { Text(T["all"]) }) }
                     items(Api.APPLE_GENRES.entries.toList()) { g -> FilterChip(genre == g.key, { genre = g.key }, { Text(g.value) }) }
                 }
-                if (query.isBlank() && list?.isNotEmpty() == true) SectionTitle(if (kind == "radio") World.name(country) + " · " + T["top10"] else T["top10"])
+                if (query.isBlank() && panel == null && list?.isNotEmpty() == true) SectionTitle(if (kind == "radio") World.name(country) + " · " + T["top10"] else T["top10"])
             }
         }
         when {
+            kind == "podcast" && query.isBlank() && panel == "radios" && source == null && catalog != null ->
+                for ((cc, group) in sourceGroups) {
+                    item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle(World.flag(cc) + " " + World.name(cc)) }
+                    items(group.size) { i ->
+                        val src = group[i]
+                        Column(Modifier.clickable { source = src }.padding(6.dp)) {
+                            Cover(null, src.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
+                            Text(src.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                        }
+                    }
+                }
             list == null -> item(span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
             failed -> item(span = { GridItemSpan(maxLineSpan) }) { Message(T["load_failed"]) }
             list.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) { Message(T["no_results"]) }
-            else -> items(list.size) { i -> ItemCard(list[i], if (query.isBlank() && i < 10) i + 1 else null) { onOpen(list[i]) } }
+            else -> items(list.size) { i -> ItemCard(list[i], if (query.isBlank() && panel == null && i < 10) i + 1 else null) { onOpen(list[i]) } }
         }
     }
 }

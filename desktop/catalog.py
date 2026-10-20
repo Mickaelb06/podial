@@ -175,10 +175,18 @@ def http_get(url, timeout=20):
         return r.read()
 
 
+PENDING_FEED = "itunes:"  # Apple n'indique plus l'adresse du flux de certains podcasts (France Inter, Radio France…) : identifiant provisoire
+
+
+def is_podcast(r):
+    """Un résultat iTunes qui est un podcast, avec ou sans adresse de flux."""
+    return bool(r.get("feedUrl") or (r.get("collectionId") and r.get("kind", "podcast") == "podcast"))
+
+
 def podcast_item(r):
     return {
         "kind": "podcast", "id": r.get("collectionId"), "name": r.get("collectionName", ""),
-        "artist": r.get("artistName", ""), "feed": r["feedUrl"],
+        "artist": r.get("artistName", ""), "feed": r.get("feedUrl") or f"{PENDING_FEED}{r['collectionId']}",
         "art": r.get("artworkUrl600") or r.get("artworkUrl100", ""),
     }
 
@@ -186,7 +194,7 @@ def podcast_item(r):
 def search_podcasts(term):
     q = urllib.parse.urlencode({"term": term, "media": "podcast", "limit": 36, "country": get_country()})
     data = json.loads(http_get("https://itunes.apple.com/search?" + q))
-    return [podcast_item(r) for r in data.get("results", []) if r.get("feedUrl")]
+    return [podcast_item(r) for r in data.get("results", []) if is_podcast(r)]
 
 
 # Genres du classement Apple Podcasts (identifiants vérifiés ; les noms sont traduits à l'affichage)
@@ -223,8 +231,100 @@ def top_podcasts(limit=40, genre=None):
     if ids is None:
         raise OSError("Podcast charts unavailable")
     data = json.loads(http_get(f"https://itunes.apple.com/lookup?entity=podcast&country={country}&id=" + ",".join(ids)))
-    by_id = {str(r.get("collectionId")): r for r in data.get("results", []) if r.get("feedUrl")}
+    by_id = {str(r.get("collectionId")): r for r in data.get("results", []) if is_podcast(r)}
     return [podcast_item(by_id[i]) for i in ids if i in by_id]
+
+
+# ---------- catalogue : genres, radios et éditeurs (même fichier que les applications) ----------
+def _load_sources():
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "podcast_sources.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None  # fichier absent : on garde la liste de genres intégrée
+
+
+PODCAST_SOURCES = _load_sources()
+
+
+def ui_lang():
+    for var in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+        value = os.environ.get(var)
+        if value:
+            return value.split(":")[0].split("_")[0].split(".")[0].lower() or "en"
+    return "en"
+
+
+def genre_label(g):
+    """Nom d'un genre Apple dans la langue de l'interface, sinon en anglais."""
+    return g.get(ui_lang()) or g.get("en") or str(g["id"])
+
+
+def source_genres(parent=0):
+    """Genres de premier niveau (parent=0) ou sous-genres d'un genre ; liste vide sans fichier."""
+    if not PODCAST_SOURCES:
+        return []
+    return [g for g in PODCAST_SOURCES["genres"] if g.get("parent", 0) == parent]
+
+
+def source_genre(gid):
+    return next((g for g in (PODCAST_SOURCES or {}).get("genres", []) if g["id"] == gid), None)
+
+
+def source_groups():
+    """Radios et éditeurs groupés par pays : celui de l'utilisateur d'abord, puis les autres par ordre alphabétique."""
+    groups = {}
+    for s in (PODCAST_SOURCES or {}).get("sources", []):
+        groups.setdefault(s["country"], []).append(s)
+    mine = get_country()
+    return sorted(groups.items(), key=lambda kv: (kv[0] != mine, COUNTRY_NAMES.get(kv[0], kv[0]).lower()))
+
+
+def source_item(s):
+    """Une radio ou un éditeur sous forme de carte (sans pochette : tuile colorée avec initiale)."""
+    return {"kind": "source", "name": s["name"], "artist": COUNTRY_NAMES.get(s["country"], s["country"]),
+            "art": "", "artist_id": s.get("artistId", 0)}
+
+
+def _source_results(artist_id, name):
+    """Résultats iTunes d'une radio ou d'un éditeur : par identifiant d'éditeur (jusqu'à 200), sinon par son nom exact (jusqu'à 100)."""
+    if artist_id:
+        data = json.loads(http_get(f"https://itunes.apple.com/lookup?id={int(artist_id)}&entity=podcast&limit=200&country={get_country()}"))
+        return [r for r in data.get("results", []) if r.get("kind") == "podcast"]
+    q = urllib.parse.urlencode({"term": name, "media": "podcast", "attribute": "artistTerm", "limit": 100, "country": get_country()})
+    data = json.loads(http_get("https://itunes.apple.com/search?" + q))
+    return [r for r in data.get("results", []) if station_key(r.get("artistName", "")) == station_key(name)]
+
+
+def _distinct_items(results):
+    seen, out = set(), []
+    for r in results:
+        if r.get("collectionId") not in seen:
+            seen.add(r.get("collectionId"))
+            out.append(podcast_item(r))
+    return out
+
+
+def source_podcasts(artist_id, name=""):
+    """Tous les podcasts d'une radio ou d'un éditeur."""
+    return _distinct_items(_source_results(artist_id, name))
+
+
+def local_flashes():
+    """Flashs d'info et journaux locaux : les podcasts « Actus du jour » des radios locales (ICI, Alouette, K6FM…)."""
+    spec = (PODCAST_SOURCES or {}).get("local") or {"sources": [], "genre": 1526}
+    by_name = {s["name"]: s for s in (PODCAST_SOURCES or {}).get("sources", [])}
+    results = []
+    for n in spec["sources"]:
+        if n in by_name:
+            try:
+                # « Actus du jour », ou un nom de flash / journal / infos (certaines radios rangent leurs flashs dans « Actualités »)
+                results += [r for r in _source_results(by_name[n].get("artistId", 0), n)
+                            if str(spec["genre"]) in [str(x) for x in r.get("genreIds", [])]
+                            or re.search(r"(?i)flash|journal|journaux|\binfos?\b", r.get("collectionName", ""))]
+            except (OSError, ValueError):
+                continue
+    return _distinct_items(results)
 
 
 # annuaire de radios : on découvre les serveurs disponibles au lieu d'en figer un seul
@@ -364,7 +464,37 @@ def clean_text(raw):
     return html.unescape(re.sub(r"<[^>]+>", " ", raw or "")).replace("\xa0", " ").strip()
 
 
+_RESOLVED_FEEDS = {}
+
+
+def resolve_feed(pending):
+    """Adresse du flux lue dans la page web d'Apple du podcast (champ « feedUrl » de ses données), gardée pour la prochaine fois."""
+    pid = pending[len(PENDING_FEED):]
+    if pid in _RESOLVED_FEEDS:
+        return _RESOLVED_FEEDS[pid]
+    cache = os.path.join(DATA_DIR, "feeds_resolved.json")
+    try:
+        with open(cache, encoding="utf-8") as f:
+            _RESOLVED_FEEDS.update(json.load(f))
+    except (OSError, ValueError):
+        pass
+    if pid not in _RESOLVED_FEEDS:
+        html = http_get(f"https://podcasts.apple.com/{get_country().lower()}/podcast/id{int(pid)}", timeout=30).decode("utf-8", "ignore")
+        m = re.search(r'"feedUrl":"(https?:[^"]+)"', html)
+        if not m:
+            raise OSError(f"feed not found for {pid}")
+        _RESOLVED_FEEDS[pid] = m.group(1).replace("\\/", "/").replace("\\u0026", "&")
+        try:
+            with open(cache, "w", encoding="utf-8") as f:
+                json.dump(_RESOLVED_FEEDS, f)
+        except OSError:
+            pass
+    return _RESOLVED_FEEDS[pid]
+
+
 def fetch_feed(feed_url, untitled="Untitled"):
+    if feed_url.startswith(PENDING_FEED):
+        feed_url = resolve_feed(feed_url)
     root = ET.fromstring(http_get(feed_url, timeout=30))
     channel = root.find("channel")
     desc = re.sub(r"\s+", " ", clean_text(channel.findtext("description")))

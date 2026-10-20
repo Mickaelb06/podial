@@ -558,3 +558,6 @@ msgstr "أخبار الأعمال"
 
 msgid "Tech News"
 msgstr "أخبار التقنية"
+
+msgid "Local news"
+msgstr "أخبار محلية"

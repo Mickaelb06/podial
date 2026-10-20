@@ -95,4 +95,6 @@
     <string name="surprise_none">Couldn\'t find a radio. Try again.</string>
     <string name="share_image">Share as image</string>
     <string name="share_image_failed">Couldn\'t create the image.</string>
+    <string name="panel_radios">Radios</string>
+    <string name="panel_local">Local news</string>
 </resources>

@@ -92,4 +92,6 @@
     <string name="surprise_none">Aucune radio trouvée. Réessaie.</string>
     <string name="share_image">Partager en image</string>
     <string name="share_image_failed">Impossible de créer l\'image.</string>
+    <string name="panel_radios">Radios</string>
+    <string name="panel_local">Infos locales</string>
 </resources>

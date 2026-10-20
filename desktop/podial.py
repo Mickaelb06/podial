@@ -23,7 +23,8 @@ from catalog import (  # noqa: E402
     COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, VERSION, REPO, check_new_episodes, check_update, delete_download, download_episode, fetch_feed, load_played, mark_seen, new_counts, seen_urls, set_played, fetch_youtube_feed, flag, get_country, get_setting,
     http_get, item_key, radio_browse, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
     add_quote, cue_index, fmt_clock, load_quotes, load_transcript, quote_id, remove_quote, set_quote_note, share_text,
-    youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path)
+    youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path,
+    COUNTRY_NAMES, local_flashes, source_groups, source_item, source_podcasts)
 from worldmap import AVAILABLE as WORLD_MAP, WorldMap
 from filters import CountryChooser, GenreBar, RadioBar  # noqa: E402
 from i18n import _, ngettext  # noqa: E402
@@ -663,11 +664,23 @@ class Window(Adw.ApplicationWindow):
             self.show_youtube_home()
             return
         self.show_loading()
+        plain_title = source_open = None  # liste simple, sans « Top 10 » : radio ouverte ou flashs locaux
         if section == "podcast":
-            genre, genre_name = self.genre_bar.genre, self.genre_bar.genre_name()
+            gb = self.genre_bar
+            genre, genre_name = gb.genre, gb.genre_name()
             load = lambda: top_podcasts(40, genre)  # noqa: E731
             top_title = _("Top 10 · {name}").format(name=genre_name) if genre else _("Top 10")
             more_title = _("More in {genre}").format(genre=genre_name) if genre else _("More popular podcasts")
+            if gb.panel == "radios" and gb.source is None:
+                # liste fixe des radios et éditeurs, pays de l'utilisateur d'abord : rien à charger
+                blocks = [(f"{flag(cc)} {COUNTRY_NAMES.get(cc, cc)}", [source_item(s) for s in srcs]) for cc, srcs in source_groups()]
+                self.show_sections(blocks) if blocks else self.show_status("system-search-symbolic", _("No results"))
+                return
+            if gb.source is not None:
+                artist_id, source_open, plain_title = gb.source["artist_id"], True, gb.source["name"]
+                load = lambda: source_podcasts(artist_id, plain_title)  # noqa: E731
+            elif gb.panel == "local":
+                load, plain_title = local_flashes, _("Local news")
         else:
             rb = self.radio_bar
             filters = (rb.state, rb.city_text(), rb.order)
@@ -680,6 +693,13 @@ class Window(Adw.ApplicationWindow):
                 return
             if not items:
                 self.show_status("system-search-symbolic", _("No results"))
+                return
+            if plain_title:
+                self.show_sections([(plain_title, items)])
+                if source_open:
+                    back = Gtk.Button(label="← " + _("Radios"), css_classes=["flat"], halign=Gtk.Align.START)
+                    back.connect("clicked", lambda *_a: self.genre_bar.close_source())
+                    self.content_box.prepend(back)
                 return
             if section == "radio" and not self.radio_bar.is_default():
                 title = self.radio_bar.place_name()
@@ -860,6 +880,9 @@ class Window(Adw.ApplicationWindow):
 
     # ---------- page de détail ----------
     def open_item(self, item):
+        if item.get("kind") == "source":  # radio ou éditeur de la liste « Radios » : on affiche ses podcasts
+            self.genre_bar.open_source(item)
+            return
         self.detail_item = item
         radio = item["kind"] == "radio"
         video = item["kind"] == "video"

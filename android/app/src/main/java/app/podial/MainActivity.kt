@@ -220,6 +220,8 @@ fun Message(text: String) = Box(Modifier.fillMaxSize().padding(32.dp), contentAl
 fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -> Unit) {
     var query by remember(kind) { mutableStateOf("") }
     var genre by remember { mutableStateOf<Int?>(null) }
+    var panel by remember { mutableStateOf<String?>(null) }      // null, "radios" (podcasts par radio) ou "local" (flashs d'info locaux)
+    var source by remember { mutableStateOf<Source?>(null) }     // radio ou éditeur ouvert dans « radios »
     var items by remember(kind) { mutableStateOf<List<Item>?>(null) }
     var failed by remember(kind) { mutableStateOf(false) }
     var country by remember { mutableStateOf(Store.radioCountry) }
@@ -228,11 +230,20 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     val scope = rememberCoroutineScope()
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val countries = remember { runCatching { World.parse(ctx.assets.open("world.json").bufferedReader().use { it.readText() }) }.getOrDefault(emptyList()) }
-    LaunchedEffect(kind, query, genre, country) {
+    val catalog = remember { runCatching { SourceCatalog.parse(ctx.assets.open("podcast_sources.json").bufferedReader().use { it.readText() }) }.getOrNull() }
+    BackHandler(enabled = kind == "podcast" && (source != null || panel != null)) { if (source != null) source = null else panel = null }
+    LaunchedEffect(kind, query, genre, country, panel, source) {
+        val src = source
+        if (kind == "podcast" && query.isBlank() && panel == "radios" && src == null) { items = emptyList(); failed = false; return@LaunchedEffect }   // liste fixe : rien à charger
         if (query.isNotBlank()) delay(500)   // on attend la fin de la frappe
         items = null; failed = false
         items = try {
-            if (kind == "podcast") { if (query.isBlank()) Api.topPodcasts(genre) else Api.searchPodcasts(query) }
+            if (kind == "podcast") when {
+                query.isNotBlank() -> Api.searchPodcasts(query)
+                src != null -> Api.sourcePodcasts(src)
+                panel == "local" && catalog != null -> Api.localFlashes(catalog.sources, catalog.local)
+                else -> Api.topPodcasts(genre)
+            }
             else Api.radios(country, query.ifBlank { null })
         } catch (e: Exception) { failed = true; emptyList() }
     }
@@ -240,7 +251,7 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     // (chargement → liste) et perd le focus, ce qui referme le clavier
     val searchBar: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(query, { query = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
+            OutlinedTextField(query, { query = it; if (it.isNotBlank()) { panel = null; source = null } }, singleLine = true, shape = RoundedCornerShape(24.dp),
                 placeholder = { Text(stringResource(if (kind == "podcast") R.string.search_podcasts else R.string.search_radios)) },
                 leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
             if (kind == "radio" && countries.isNotEmpty()) {
@@ -263,11 +274,29 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     }
     val header: @Composable () -> Unit = {
         Column {
-            if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+            if (kind == "podcast" && query.isBlank() && source != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton({ source = null }) { Icon(Icons.Default.ArrowBack, stringResource(R.string.back)) }
+                Text(source!!.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+            }
+            else if (kind == "podcast" && query.isBlank() && catalog != null) {
+                val parent = genre?.let { g -> catalog.genre(g)?.let { if (it.parent == 0) it.id else it.parent } }
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+                    item { FilterChip(genre == null && panel == null, { genre = null; panel = null }, { Text(stringResource(R.string.all)) }) }
+                    item { FilterChip(panel == "radios", { panel = "radios"; genre = null }, { Text("📻 " + stringResource(R.string.panel_radios)) }) }
+                    item { FilterChip(panel == "local", { panel = "local"; genre = null }, { Text("🗞 " + stringResource(R.string.panel_local)) }) }
+                    items(catalog.topLevel()) { g -> FilterChip(panel == null && parent == g.id, { genre = g.id; panel = null }, { Text(g.name()) }) }
+                }
+                val children = if (panel == null && parent != null) catalog.children(parent) else emptyList()
+                if (children.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+                    item { FilterChip(genre == parent, { genre = parent }, { Text(catalog.genre(parent!!)?.name() ?: "") }) }
+                    items(children) { g -> FilterChip(genre == g.id, { genre = g.id }, { Text(g.name()) }) }
+                }
+            }
+            else if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                 item { FilterChip(genre == null, { genre = null }, { Text(stringResource(R.string.all)) }) }
                 items(Api.APPLE_GENRES.entries.toList()) { g -> FilterChip(genre == g.key, { genre = g.key }, { Text(g.value) }) }
             }
-            if (query.isBlank() && items?.isNotEmpty() == true) Text(if (kind == "radio") World.flag(country) + " " + World.name(country) + " · " + stringResource(R.string.top10) else stringResource(R.string.top10), style = MaterialTheme.typography.titleLarge,
+            if (query.isBlank() && panel == null && items?.isNotEmpty() == true) Text(if (kind == "radio") World.flag(country) + " " + World.name(country) + " · " + stringResource(R.string.top10) else stringResource(R.string.top10), style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(8.dp))
         }
     }
@@ -277,10 +306,33 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     Column {
         searchBar()
         when {
+            kind == "podcast" && query.isBlank() && panel == "radios" && source == null && catalog != null -> SourcesList(catalog, header) { source = it }
             list == null -> Column { header(); Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
             failed -> Column { header(); Message(stringResource(R.string.load_failed)) }
             list.isEmpty() -> Column { header(); Message(stringResource(R.string.no_results)) }
-            else -> Grid(list, header, onOpen, ranked = query.isBlank())
+            else -> Grid(list, header, onOpen, ranked = query.isBlank() && panel == null)
+        }
+    }
+}
+
+/** Radios et éditeurs dont on liste tous les podcasts, pays de l'utilisateur d'abord. */
+@Composable
+fun SourcesList(catalog: SourceCatalog, header: @Composable () -> Unit, onPick: (Source) -> Unit) {
+    val groups = remember(catalog) { catalog.byCountry(Api.country()) }
+    LazyVerticalGrid(GridCells.Adaptive(150.dp), contentPadding = PaddingValues(8.dp), modifier = Modifier.fillMaxSize()) {
+        item(span = { GridItemSpan(maxLineSpan) }) { header() }
+        for ((cc, list) in groups) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(World.flag(cc) + " " + World.name(cc), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(8.dp))
+            }
+            items(list.size) { i ->
+                val src = list[i]
+                Column(Modifier.clickable { onPick(src) }.padding(6.dp)) {
+                    Cover(null, src.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
+                    Text(src.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                }
+            }
         }
     }
 }

@@ -140,7 +140,7 @@ const T = {
     insecure: "This station only streams over unsecured http, which browsers block here. Open the stream in another player:",
     open_stream: "Open stream", resumed: "Resuming where you left off",
     foot: 'Free and open source · No account, no tracking: your library stays in this browser · Data: Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · The apps add downloads, transcripts, quotes and Android Auto',
-    min: "min", country: "Country", surprise: "Surprise me", surprise_none: "Couldn't find a radio. Try again.", share: "Share", copied: "Link copied", bad_link: "This link no longer works.",
+    min: "min", country: "Country", panel_radios: "Radios", panel_local: "Local news", surprise: "Surprise me", surprise_none: "Couldn't find a radio. Try again.", share: "Share", copied: "Link copied", bad_link: "This link no longer works.", no_eps: "This podcast's episodes can't be listed in the web version. Open it in the Podial app.", get_app: "Get the app",
     carry_t: "Want to take Podial <em>everywhere</em>?", carry_p: "The free apps add downloads for offline listening, transcripts, quotes, Android Auto and more. No account, no tracking.",
     carry_btn: "📲 Get the app", carry_all: "All downloads and details →", close: "Close" },
   fr: { podcasts: "Podcasts", radios: "Radios", library: "Bibliothèque", s_pod: "Rechercher un podcast", s_rad: "Rechercher une radio",
@@ -150,7 +150,7 @@ const T = {
     insecure: "Cette radio diffuse seulement en http non sécurisé, ce que les navigateurs bloquent ici. Ouvre le flux dans un autre lecteur :",
     open_stream: "Ouvrir le flux", resumed: "Reprise là où tu t'étais arrêté",
     foot: 'Libre et open source · Sans compte, sans pistage : ta bibliothèque reste dans ce navigateur · Données : Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · Les applications ajoutent téléchargements, transcriptions, citations et Android Auto',
-    min: "min", country: "Pays", surprise: "Surprends-moi", surprise_none: "Aucune radio trouvée. Réessaie.", share: "Partager", copied: "Lien copié", bad_link: "Ce lien ne fonctionne plus.",
+    min: "min", country: "Pays", panel_radios: "Radios", panel_local: "Infos locales", surprise: "Surprends-moi", surprise_none: "Aucune radio trouvée. Réessaie.", share: "Partager", copied: "Lien copié", bad_link: "Ce lien ne fonctionne plus.", no_eps: "Les épisodes de ce podcast ne peuvent pas être listés dans la version web. Ouvre-le dans l'application Podial.", get_app: "Télécharger l'application",
     carry_t: "Envie d'emporter Podial <em>partout</em> ?", carry_p: "Les applications gratuites ajoutent les téléchargements hors ligne, les transcriptions, les citations, Android Auto et plus encore. Sans compte, sans pistage.",
     carry_btn: "📲 Emporter Podial", carry_all: "Tous les téléchargements et détails →", close: "Fermer" },
 };
@@ -192,6 +192,13 @@ function cover(item, cls = "") {
   return box;
 }
 
+// ---------- catalogue : genres, radios et éditeurs (même fichier que les applications) ----------
+const catalogP = fetch("podcast_sources.json").then(r => r.ok ? r.json() : null).catch(() => null);
+const UL = (navigator.language || "en").slice(0, 2);
+const gName = g => g[UL] || g.en;
+const regionName = cc => { try { return new Intl.DisplayNames([UL], { type: "region" }).of(cc) || cc; } catch { return cc; } };
+const flagOf = cc => String.fromCodePoint(...[...cc.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+
 // ---------- accès réseau ----------
 const country = (navigator.language.split("-")[1] || "US").toUpperCase();
 const itunes = {
@@ -203,6 +210,29 @@ const itunes = {
     const r = await getJson(`https://itunes.apple.com/${country.toLowerCase()}/rss/toppodcasts/limit=${genre ? 100 : 40}${genre ? "/genre=" + genre : ""}/json`);
     return (r.feed.entry || []).map(e => ({ kind: "podcast", id: e.id.attributes["im:id"], name: e["im:name"].label,
       artist: e["im:artist"]?.label || "", art: e["im:image"].at(-1).label.replace(/\/\d+x\d+bb/, "/600x600bb") }));
+  },
+  // tous les podcasts d'une radio ou d'un éditeur (identifiant d'éditeur iTunes), jusqu'à 200
+  // résultats iTunes d'une radio ou d'un éditeur : par identifiant d'éditeur quand Apple en donne un (jusqu'à 200), sinon par le nom exact (jusqu'à 100)
+  async sourceResults(src) {
+    const r = src.artistId
+      ? await getJson(`https://itunes.apple.com/lookup?id=${src.artistId}&entity=podcast&limit=200&country=${country}`)
+      : await getJson(`https://itunes.apple.com/search?media=podcast&attribute=artistTerm&limit=100&country=${country}&term=${encodeURIComponent(src.name)}`);
+    return r.results.filter(x => x.collectionId && x.kind === "podcast" && (src.artistId || stationKey(x.artistName || "") === stationKey(src.name)));
+  },
+  async bySource(src) {
+    const seen = new Set();
+    return (await itunes.sourceResults(src)).map(podcast).filter(p => !seen.has(p.id) && seen.add(p.id));
+  },
+  // flashs d'info et journaux locaux : les podcasts « Actus du jour » des radios locales (ICI, Alouette, K6FM…)
+  async local(cat) {
+    const seen = new Set(), out = [];
+    for (const name of cat.local.sources) {
+      const src = cat.sources.find(s => s.name === name);
+      if (!src) continue;
+      const r = await itunes.sourceResults(src).catch(() => []);
+      for (const x of r) if (((x.genreIds || []).map(String).includes(String(cat.local.genre)) || /flash|journal|journaux|\binfos?\b/i.test(x.collectionName || "")) && !seen.has(x.collectionId)) { seen.add(x.collectionId); out.push(podcast(x)); }
+    }
+    return out;
   },
   async byId(id) {
     for (const c of [`&country=${country}`, ""]) {
@@ -336,7 +366,7 @@ audio.addEventListener("error", () => {
 // ---------- écrans ----------
 const view = $("view");
 let tab = store.get("tab", 0), detail = null;
-const state = { q: ["", ""], genre: null, cc: store.get("cc", country) };
+const state = { q: ["", ""], genre: null, panel: null, source: null, cc: store.get("cc", country) };
 let seq = 0;
 
 function renderTabs() {
@@ -375,18 +405,55 @@ function showBrowse(kind) {
       h("option", { value: c.iso_3166_1, selected: c.iso_3166_1 === state.cc }, `${c.name} (${c.stationcount})`)))).catch(() => {});
   }
   view.replaceChildren(tools);
-  if (kind === "podcast") view.append(h("div", { class: "chips" }, [null, ...Object.keys(GENRES)].map(g =>
-    h("button", { class: "chip", "aria-pressed": String(state.genre === (g && +g)), onclick: () => { state.genre = g && +g; showBrowse(kind); } }, g ? GENRES[g] : t("all")))));
+  const chips = h("div");
+  if (kind === "podcast") {
+    const chip = (label, on, fn) => h("button", { class: "chip", "aria-pressed": String(on), onclick: () => { fn(); showBrowse(kind); } }, label);
+    const staticChips = () => h("div", { class: "chips" }, [null, ...Object.keys(GENRES)].map(g => chip(g ? GENRES[g] : t("all"), state.genre === (g && +g), () => { state.genre = g && +g; })));
+    chips.replaceChildren(staticChips());
+    catalogP.then(cat => {
+      if (!cat || state.source) return;
+      const parentOf = id => { const g = cat.genres.find(x => x.id === id); return g ? (g.parent || g.id) : null; };
+      const parent = state.genre ? parentOf(state.genre) : null;
+      const row1 = h("div", { class: "chips" },
+        chip(t("all"), !state.genre && !state.panel, () => { state.genre = null; state.panel = null; }),
+        chip("📻 " + t("panel_radios"), state.panel === "radios", () => { state.panel = "radios"; state.genre = null; }),
+        chip("🗞 " + t("panel_local"), state.panel === "local", () => { state.panel = "local"; state.genre = null; }),
+        ...cat.genres.filter(g => !g.parent).map(g => chip(gName(g), !state.panel && parent === g.id, () => { state.genre = g.id; state.panel = null; })));
+      const kids = !state.panel && parent ? cat.genres.filter(g => g.parent === parent) : [];
+      chips.replaceChildren(row1, ...(kids.length ? [h("div", { class: "chips" },
+        chip(gName(cat.genres.find(g => g.id === parent)), state.genre === parent, () => { state.genre = parent; }),
+        ...kids.map(g => chip(gName(g), state.genre === g.id, () => { state.genre = g.id; })))] : []));
+    });
+    if (state.source) view.append(h("button", { class: "btn back", onclick: () => { state.source = null; showBrowse(kind); } }, t("back") + " · " + state.source.name));
+    else view.append(chips);
+  }
   view.append(results);
   let timer;
-  input.addEventListener("input", () => { state.q[idx] = input.value; clearTimeout(timer); timer = setTimeout(load, 450); });
+  input.addEventListener("input", () => { state.q[idx] = input.value; if (input.value.trim()) { state.panel = null; state.source = null; } clearTimeout(timer); timer = setTimeout(load, 450); });
   async function load() {
     const id = ++seq, q = state.q[idx].trim();
     results.replaceChildren(h("div", { class: "msg" }, "…"));
     try {
-      const items = kind === "podcast" ? (q ? await itunes.search(q) : await itunes.top(state.genre)) : await radioApi.stations(state.cc, q);
+      const cat = kind === "podcast" ? await catalogP : null;
+      if (kind === "podcast" && !q && state.panel === "radios" && !state.source && cat) {
+        // liste fixe : les radios et éditeurs du pays de l'utilisateur d'abord, puis les autres pays
+        const groups = new Map();
+        for (const src of cat.sources) groups.set(src.country, [...(groups.get(src.country) || []), src]);
+        const first = country.toUpperCase();
+        const order = [...groups.keys()].sort((a, b) => (a === first ? 0 : 1) - (b === first ? 0 : 1) || regionName(a).localeCompare(regionName(b), UL));
+        results.replaceChildren(...order.flatMap(cc => [h("h2", {}, flagOf(cc) + " " + regionName(cc)),
+          h("div", { class: "grid" }, groups.get(cc).map(src => h("button", { class: "card", onclick: () => { state.source = src; showBrowse(kind); } },
+            cover({ name: src.name, art: "" }), h("div", { class: "n" }, src.name))))]));
+        return;
+      }
+      const items = kind !== "podcast" ? await radioApi.stations(state.cc, q)
+        : q ? await itunes.search(q)
+        : state.source ? await itunes.bySource(state.source)
+        : state.panel === "local" && cat ? await itunes.local(cat)
+        : await itunes.top(state.genre);
       if (id !== seq) return;
-      results.replaceChildren(...(items.length ? [!q ? h("h2", {}, kind === "radio" ? t("top") + " · " + state.cc : t("top")) : null, grid(items, !q)] : [h("div", { class: "msg" }, t("none"))]));
+      const plain = !q && !state.panel && !state.source;
+      results.replaceChildren(...(items.length ? [plain ? h("h2", {}, kind === "radio" ? t("top") + " · " + state.cc : t("top")) : null, grid(items, plain)].filter(Boolean) : [h("div", { class: "msg" }, t("none"))]));
     } catch { if (id === seq) results.replaceChildren(h("div", { class: "msg" }, t("failed"))); }
   }
   load();
@@ -434,7 +501,7 @@ function showDetail(item) {
     list.replaceChildren(h("h2", {}, t("episodes")), ...(eps.length ? eps.map(e => h("div", { class: "ep" + (done[e.url] ? " done" : "") },
       h("div", { class: "t" }, h("b", {}, e.title), h("small", {}, e.date + (e.secs ? " · " + Math.round(e.secs / 60) + " " + t("min") : ""))),
       h("button", { class: "go", "aria-label": "Play", onclick: () => play({ url: e.url, raw: e.url, title: e.title, sub: item.name, art: e.art || item.art }, pos.get(e.url)) }, "▶")))
-      : [h("div", { class: "msg" }, t("none"))]));
+      : [h("div", { class: "msg" }, t("no_eps"), " ", h("a", { href: "../#download" }, t("get_app")))]));
   }).catch(() => list.replaceChildren(h("div", { class: "msg" }, t("failed"))));
 }
 

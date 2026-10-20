@@ -542,3 +542,6 @@ msgstr "Notícias de negócios"
 
 msgid "Tech News"
 msgstr "Notícias de tecnologia"
+
+msgid "Local news"
+msgstr "Notícias locais"

@@ -548,3 +548,6 @@ msgstr "חדשות עסקים"
 
 msgid "Tech News"
 msgstr "חדשות טכנולוגיה"
+
+msgid "Local news"
+msgstr "חדשות מקומיות"
