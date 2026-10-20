@@ -17,7 +17,7 @@ Owner: Mickael (French speaker; answer in French, keep replies short and plain).
 | `compose-desktop/` | Cross-platform desktop (Windows/macOS/Linux): Kotlin + Compose Desktop, audio via JavaFX Media. Packages: dmg, exe, msi, deb, rpm |
 | `android/` | Android app: Kotlin + Compose + Media3 (MediaLibraryService → Android Auto), WorkManager hourly new-episode check, no Google dependency (F-Droid friendly) |
 | `shared/src/app/podial/` | Kotlin code shared by Android and compose-desktop: `Models.kt`, `Api.kt` (iTunes, RSS via SAX, radio-browser), `Updates.kt`, `Release.kt` (GitHub update check). Included via `srcDir` in both builds |
-| `shared/data/` | `world.json` (map) and `podcast_sources.json` (genres, radios/publishers, local-flash radios), read as assets/resources by Android and Compose |
+| `shared/data/` | `world.json` (map), `radio_logos.json` (verified radio logos keyed by normalized station name, built by `desktop/tools/build_logos.py`, rebuild before a release; copied by `sync_sources.sh`) and `podcast_sources.json` (genres, radios/publishers, local-flash radios), read as assets/resources by Android and Compose |
 | `docs/` | GitHub Pages landing page (`index.html`, EN/FR, no external resources) + `screenshots/` + `app/index.html` (web player: one static page, vanilla JS, iTunes + radio-browser APIs which allow CORS; episodes via iTunes lookup, library in localStorage; no transcripts/downloads; http-only radio streams are blocked on https) |
 | `.github/` | `FUNDING.yml` (Buy Me a Coffee: mickaelb06), `workflows/release.yml` (builds all installers, publishes a pre-release on `v*` tags), `workflows/android.yml` |
 | `README.md`, `README.fr.md` | Keep both in sync |
