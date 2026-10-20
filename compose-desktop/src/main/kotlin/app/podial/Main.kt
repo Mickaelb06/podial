@@ -488,7 +488,7 @@ fun PlayerBar(onTranscript: () -> Unit) {
     }
 }
 
-const val APP_VERSION = "0.5.8"
+const val APP_VERSION = "0.5.9"
 
 @Composable
 fun AboutDialog(onClose: () -> Unit) {
