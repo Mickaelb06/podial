@@ -194,6 +194,9 @@ function cover(item, cls = "") {
 
 // ---------- catalogue : genres, radios et éditeurs (même fichier que les applications) ----------
 const catalogP = fetch("podcast_sources.json").then(r => r.ok ? r.json() : null).catch(() => null);
+// logos fournis pour les radios dont l'annuaire n'a rien ou une adresse morte (nom normalisé -> logo)
+let radioLogos = {};
+const logosP = fetch("radio_logos.json").then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => { radioLogos = j; });
 const UL = (navigator.language || "en").slice(0, 2);
 const gName = g => g[UL] || g.en;
 const regionName = cc => { try { return new Intl.DisplayNames([UL], { type: "region" }).of(cc) || cc; } catch { return cc; } };
@@ -266,7 +269,7 @@ const stationKey = n => n.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLo
 const fixLogo = u => u && u.includes("upload.wikimedia.org") && u.includes("/thumb/") ? u.replace(/\/((?:lang[a-z-]+-)?)\d+px-/, "/$1330px-") : u;
 
 const stationItem = (s, stream) => ({ kind: "radio", id: s.stationuuid, name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "),
-  art: fixLogo(s.favicon || ""), stream, homepage: s.homepage || "" });
+  art: radioLogos[stationKey(s.name)] || fixLogo(s.favicon || ""), stream, homepage: s.homepage || "" });
 
 const radioApi = {
   hosts: ["https://de1.api.radio-browser.info", "https://de2.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info"],
@@ -275,6 +278,7 @@ const radioApi = {
     throw last;
   },
   async stations(cc, name) {
+    await logosP;
     let q = `/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=120&countrycode=${cc}`;
     if (name) q += "&name=" + encodeURIComponent(name);
     // même radio sous plusieurs noms (« FIP », « FIP (HD) »…) : on garde la première, avec le logo d'un doublon si elle n'en a pas
@@ -283,7 +287,7 @@ const radioApi = {
       const stream = s.url_resolved || s.url, key = s.name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
       if (!key) continue;
       const known = byKey.get(key);
-      if (known) { if (!known.art && s.favicon) known.art = fixLogo(s.favicon); continue; }
+      if (known) { if (!known.art && s.favicon && !radioLogos[key]) known.art = fixLogo(s.favicon); continue; }
       if (!stream) continue;
       byKey.set(key, stationItem(s, stream));
     }

@@ -364,6 +364,21 @@ def fix_logo_url(url):
     return url
 
 
+_radio_logos = None
+
+
+def radio_logo(name):
+    """Logo fourni pour une radio (radio_logos.json : stations dont l'annuaire n'a pas de logo ou une adresse morte), sinon None."""
+    global _radio_logos
+    if _radio_logos is None:
+        try:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "radio_logos.json"), encoding="utf-8") as f:
+                _radio_logos = json.load(f)
+        except (OSError, ValueError):
+            _radio_logos = {}
+    return _radio_logos.get(station_key(name))
+
+
 def radio_item(s):
     codec = s.get("codec") or ""
     bitrate = s.get("bitrate") or 0
@@ -373,7 +388,7 @@ def radio_item(s):
         "kind": "radio", "id": s.get("stationuuid"), "name": s.get("name", "").strip(),
         "artist": " · ".join(x for x in (place, quality) if x),
         "stream": s.get("url_resolved") or s.get("url"), "tags": s.get("tags", ""),
-        "art": fix_logo_url(s.get("favicon", "")),
+        "art": radio_logo(s.get("name", "")) or fix_logo_url(s.get("favicon", "")),
     }
 
 
@@ -422,7 +437,7 @@ def radio_query(**params):
         key = station_key(s.get("name", ""))
         known = by_key.get(key)
         if known is not None:
-            if not known["art"] and s.get("favicon"):
+            if not known["art"] and s.get("favicon") and not radio_logo(s.get("name", "")):
                 known["art"] = fix_logo_url(s["favicon"])
             continue
         if not (s.get("url_resolved") or s.get("url")):

@@ -67,6 +67,7 @@ private fun devTestPlay() {
 }
 
 fun main(args: Array<String>) {
+    runCatching { Logos.loadTable(object {}.javaClass.getResourceAsStream("/radio_logos.json")!!.bufferedReader().use { it.readText() }) }
     devScreenshot()
     devTestPlay()
     runApp(minimized = "--minimized" in args)

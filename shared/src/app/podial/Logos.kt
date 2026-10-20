@@ -25,6 +25,13 @@ object Logos {
     private val found = ConcurrentHashMap<String, String>()   // adresse du site -> logo ("" = rien trouvé)
     @Volatile private var loaded = false
 
+    /** Logos fournis (shared/data/radio_logos.json) : nom de radio normalisé -> logo, pour les stations dont l'annuaire n'a rien ou une adresse morte. */
+    @Volatile private var table: Map<String, String> = emptyMap()
+
+    fun loadTable(json: String) {
+        table = runCatching { JSONObject(json).let { o -> o.keys().asSequence().associateWith { o.getString(it) } } }.getOrDefault(emptyMap())
+    }
+
     private val file get() = File(System.getProperty("java.io.tmpdir") ?: ".", "podial-logos.json")
 
     private fun load() {
@@ -45,7 +52,14 @@ object Logos {
      */
     suspend fun fill(items: List<Item>): List<Item> = withContext(Dispatchers.IO) {
         load()
-        val fixed = items.map { if (it.art.isEmpty()) it else it.copy(art = wikimedia(it.art)) }
+        val fixed = items.map { r ->
+            val given = if (r.kind == "radio") table[Api.stationKey(r.name)] else null
+            when {
+                given != null -> r.copy(art = given)
+                r.art.isEmpty() -> r
+                else -> r.copy(art = wikimedia(r.art))
+            }
+        }
         withTimeoutOrNull(BUDGET_MS) {
             coroutineScope {
                 fixed.map { it.art }.filter { it.isNotEmpty() && !found.containsKey(CHK + it) }.distinct().take(MAX_PER_LIST * 3)
