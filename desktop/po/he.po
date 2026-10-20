@@ -536,3 +536,15 @@ msgstr "הצגת תחנות רדיו"
 
 msgid "Surprise me"
 msgstr "הפתיעו אותי"
+
+msgid "Daily News"
+msgstr "חדשות היום"
+
+msgid "Politics"
+msgstr "פוליטיקה"
+
+msgid "Business News"
+msgstr "חדשות עסקים"
+
+msgid "Tech News"
+msgstr "חדשות טכנולוגיה"

@@ -546,3 +546,15 @@ msgstr "عرض الإذاعات"
 
 msgid "Surprise me"
 msgstr "فاجئني"
+
+msgid "Daily News"
+msgstr "أخبار اليوم"
+
+msgid "Politics"
+msgstr "سياسة"
+
+msgid "Business News"
+msgstr "أخبار الأعمال"
+
+msgid "Tech News"
+msgstr "أخبار التقنية"

@@ -530,3 +530,15 @@ msgstr "Ver rádios"
 
 msgid "Surprise me"
 msgstr "Surpreenda-me"
+
+msgid "Daily News"
+msgstr "Notícias do dia"
+
+msgid "Politics"
+msgstr "Política"
+
+msgid "Business News"
+msgstr "Notícias de negócios"
+
+msgid "Tech News"
+msgstr "Notícias de tecnologia"

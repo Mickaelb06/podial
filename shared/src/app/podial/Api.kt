@@ -20,7 +20,7 @@ object Api {
     val APPLE_GENRES = linkedMapOf(
         1301 to "Arts", 1321 to "Business", 1303 to "Comedy", 1304 to "Education", 1483 to "Fiction",
         1511 to "Government", 1487 to "History", 1512 to "Health & Fitness", 1305 to "Kids & Family",
-        1502 to "Leisure", 1310 to "Music", 1489 to "News", 1314 to "Religion & Spirituality", 1533 to "Science",
+        1502 to "Leisure", 1310 to "Music", 1489 to "News", 1526 to "Daily News", 1527 to "Politics", 1490 to "Business News", 1528 to "Tech News", 1314 to "Religion & Spirituality", 1533 to "Science",
         1324 to "Society & Culture", 1545 to "Sports", 1318 to "Technology", 1488 to "True Crime", 1309 to "TV & Film",
     )
 
@@ -54,18 +54,24 @@ object Api {
     /** Classement du pays, éventuellement par genre. Le flux du classement ne donne pas l'adresse RSS : on la demande ensuite. */
     suspend fun topPodcasts(genre: Int?, limit: Int = 40): List<Item> = withContext(Dispatchers.IO) {
         val cc = country().lowercase()
-        val ids = if (genre == null) {
+        val n = if (genre == null) limit else maxOf(limit, 100)   // un genre est plus étroit : on en montre davantage (les journaux des radios sont loin dans le classement)
+        // service des classements iTunes (rapide, avec ou sans genre) ; pour le classement général, l'ancien service Apple en secours
+        val ids = try {
+            chartIds("https://itunes.apple.com/$cc/rss/toppodcasts/limit=$n${genre?.let { "/genre=$it" }.orEmpty()}/json")
+        } catch (e: Exception) {
+            if (genre != null) throw e
             JSONObject(get("https://rss.marketingtools.apple.com/api/v2/$cc/podcasts/top/$limit/podcasts.json"))
                 .getJSONObject("feed").getJSONArray("results").objects().map { it.getString("id") }
-        } else {
-            JSONObject(get("https://itunes.apple.com/$cc/rss/toppodcasts/limit=$limit/genre=$genre/json"))
-                .getJSONObject("feed").getJSONArray("entry").objects()
-                .map { it.getJSONObject("id").getJSONObject("attributes").getString("im:id") }
         }
-        val found = JSONObject(get("https://itunes.apple.com/lookup?entity=podcast&id=${ids.joinToString(",")}"))
+        // le pays est nécessaire : un podcast qui n'existe que dans le catalogue français est introuvable sans lui
+        val found = JSONObject(get("https://itunes.apple.com/lookup?entity=podcast&country=${cc.uppercase()}&id=${ids.joinToString(",")}"))
             .getJSONArray("results").objects().mapNotNull { podcast(it)?.let { p -> it.optLong("collectionId").toString() to p } }.toMap()
         ids.mapNotNull { found[it] }
     }
+
+    private fun chartIds(url: String): List<String> =
+        JSONObject(get(url)).getJSONObject("feed").getJSONArray("entry").objects()
+            .map { it.getJSONObject("id").getJSONObject("attributes").getString("im:id") }
 
     suspend fun fetchFeed(feed: String): Pair<String, List<Episode>> = withContext(Dispatchers.IO) {
         val c = URL(feed).openConnection() as HttpURLConnection

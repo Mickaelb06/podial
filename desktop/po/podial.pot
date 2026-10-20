@@ -541,3 +541,15 @@ msgstr ""
 
 msgid "Surprise me"
 msgstr ""
+
+msgid "Daily News"
+msgstr ""
+
+msgid "Politics"
+msgstr ""
+
+msgid "Business News"
+msgstr ""
+
+msgid "Tech News"
+msgstr ""

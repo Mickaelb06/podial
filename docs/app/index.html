@@ -159,7 +159,7 @@ const t = k => T[lang][k];
 document.documentElement.lang = lang;
 
 const GENRES = { 1301: "Arts", 1321: "Business", 1303: "Comedy", 1304: "Education", 1483: "Fiction", 1511: "Government", 1487: "History",
-  1512: "Health & Fitness", 1305: "Kids & Family", 1502: "Leisure", 1310: "Music", 1489: "News", 1314: "Religion & Spirituality",
+  1512: "Health & Fitness", 1305: "Kids & Family", 1502: "Leisure", 1310: "Music", 1489: "News", 1526: "Daily News", 1527: "Politics", 1490: "Business News", 1528: "Tech News", 1314: "Religion & Spirituality",
   1533: "Science", 1324: "Society & Culture", 1545: "Sports", 1318: "Technology", 1488: "True Crime", 1309: "TV & Film" };
 
 // ---------- petits outils (jamais d'innerHTML avec des données externes) ----------
@@ -200,7 +200,7 @@ const itunes = {
     return r.results.filter(x => x.collectionId).map(podcast);
   },
   async top(genre) {
-    const r = await getJson(`https://itunes.apple.com/${country.toLowerCase()}/rss/toppodcasts/limit=40${genre ? "/genre=" + genre : ""}/json`);
+    const r = await getJson(`https://itunes.apple.com/${country.toLowerCase()}/rss/toppodcasts/limit=${genre ? 100 : 40}${genre ? "/genre=" + genre : ""}/json`);
     return (r.feed.entry || []).map(e => ({ kind: "podcast", id: e.id.attributes["im:id"], name: e["im:name"].label,
       artist: e["im:artist"]?.label || "", art: e["im:image"].at(-1).label.replace(/\/\d+x\d+bb/, "/600x600bb") }));
   },

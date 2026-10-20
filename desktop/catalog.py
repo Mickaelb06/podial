@@ -192,7 +192,7 @@ def search_podcasts(term):
 # Genres du classement Apple Podcasts (identifiants vérifiés ; les noms sont traduits à l'affichage)
 APPLE_GENRES = [(1301, "Arts"), (1321, "Business"), (1303, "Comedy"), (1304, "Education"), (1483, "Fiction"),
                 (1511, "Government"), (1487, "History"), (1512, "Health & Fitness"), (1305, "Kids & Family"),
-                (1502, "Leisure"), (1310, "Music"), (1489, "News"), (1314, "Religion & Spirituality"),
+                (1502, "Leisure"), (1310, "Music"), (1489, "News"), (1526, "Daily News"), (1527, "Politics"), (1490, "Business News"), (1528, "Tech News"), (1314, "Religion & Spirituality"),
                 (1533, "Science"), (1324, "Society & Culture"), (1545, "Sports"), (1318, "Technology"),
                 (1488, "True Crime"), (1309, "TV & Film")]
 
@@ -203,14 +203,20 @@ def top_podcasts(limit=40, genre=None):
     ids = None
     for cc in (country, "US"):
         try:
-            if genre is None:
-                top = json.loads(http_get(f"https://rss.marketingtools.apple.com/api/v2/{cc.lower()}/podcasts/top/{limit}/podcasts.json"))
-                ids = [r["id"] for r in top["feed"]["results"]]
-            else:
-                top = json.loads(http_get(f"https://itunes.apple.com/{cc.lower()}/rss/toppodcasts/limit={limit}/genre={int(genre)}/json"))
+            # service des classements iTunes (rapide, avec ou sans genre) ; pour le classement général, l'ancien service Apple en secours
+            # (un genre est plus étroit : on en montre davantage, les journaux des radios sont loin dans le classement)
+            n = limit if genre is None else max(limit, 100)
+            suffix = "" if genre is None else f"/genre={int(genre)}"
+            try:
+                top = json.loads(http_get(f"https://itunes.apple.com/{cc.lower()}/rss/toppodcasts/limit={n}{suffix}/json"))
                 entries = top["feed"].get("entry", [])
                 entries = entries if isinstance(entries, list) else [entries]
                 ids = [e["id"]["attributes"]["im:id"] for e in entries]
+            except (OSError, ValueError, KeyError):
+                if genre is not None:
+                    raise
+                top = json.loads(http_get(f"https://rss.marketingtools.apple.com/api/v2/{cc.lower()}/podcasts/top/{limit}/podcasts.json"))
+                ids = [r["id"] for r in top["feed"]["results"]]
             break
         except (OSError, ValueError, KeyError):
             continue
