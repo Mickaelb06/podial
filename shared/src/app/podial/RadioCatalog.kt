@@ -8,9 +8,13 @@ import java.util.Locale
  * genres et sous-genres (chacun est une ou plusieurs étiquettes de l'annuaire radio-browser) et marques de radios
  * dont on regroupe les webradios (« NRJ » → NRJ, NRJ Hits, NRJ Dance…).
  */
-class RadioGenre(val id: String, private val names: Map<String, String>, val tags: List<String>, val children: List<RadioGenre>) {
+class RadioGenre(val id: String, private val labels: Map<String, String>, val tags: List<String>, val children: List<RadioGenre>,
+                 /** Morceaux de nom de station qui comptent aussi dans ce genre (« Chabad », « Christmas »…). */
+                 val names: List<String> = emptyList(),
+                 /** Vrai pour un thème qui n'a pas de pays (Noël, judaïsme…) : on cherche dans le monde entier. */
+                 val world: Boolean = false) {
     /** Nom dans la langue demandée, sinon en anglais. */
-    fun name(lang: String = Locale.getDefault().language): String = names[lang] ?: names["en"] ?: id
+    fun name(lang: String = Locale.getDefault().language): String = labels[lang] ?: labels["en"] ?: id
 }
 
 /** Une marque : le [name] affiché et les morceaux de nom [queries] cherchés dans l'annuaire du pays [country] (une station y figure si son nom en contient un). */
@@ -31,7 +35,9 @@ class RadioCatalog(val genres: List<RadioGenre>, val brands: List<RadioBrand>) {
             o.getString("id"),
             o.keys().asSequence().filter { it != "id" && it.length == 2 }.associateWith { o.getString(it) },
             o.getJSONArray("tags").let { t -> (0 until t.length()).map { t.getString(it) } },
-            o.optJSONArray("children")?.let { c -> (0 until c.length()).map { genre(c.getJSONObject(it)) } } ?: emptyList())
+            o.optJSONArray("children")?.let { c -> (0 until c.length()).map { genre(c.getJSONObject(it)) } } ?: emptyList(),
+            o.optJSONArray("names")?.let { n -> (0 until n.length()).map { n.getString(it) } } ?: emptyList(),
+            o.optBoolean("world", false))
 
         fun parse(json: String): RadioCatalog {
             val o = JSONObject(json)

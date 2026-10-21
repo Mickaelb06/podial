@@ -21,7 +21,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gst, Gtk  # noqa: E402
 import integration  # noqa: E402
 from catalog import (  # noqa: E402
     COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, VERSION, REPO, check_new_episodes, check_update, delete_download, download_episode, fetch_feed, load_played, mark_seen, new_counts, seen_urls, set_played, fetch_youtube_feed, flag, get_country, get_setting,
-    http_get, item_key, radio_browse, radio_brand_groups, radio_by_brand, radio_by_tags, radio_genre, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
+    http_get, item_key, radio_browse, radio_brand_groups, radio_by_brand, radio_by_genre, radio_genre, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
     add_quote, cue_index, fmt_clock, load_quotes, load_transcript, quote_id, remove_quote, set_quote_note, share_text,
     youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path,
     COUNTRY_NAMES, filter_episodes, local_flashes, source_groups, source_item, source_podcasts)
@@ -701,9 +701,9 @@ class Window(Adw.ApplicationWindow):
                 source_open, plain_title = True, brand["name"]
                 load = lambda: radio_by_brand(brand)  # noqa: E731
             elif rg.genre:  # genre ou sous-genre : les radios portant ses étiquettes
-                tags = radio_genre(rg.genre)["tags"]
+                genre = radio_genre(rg.genre)
                 plain_title = rg.genre_name()
-                load = lambda: radio_by_tags(tags, get_country())  # noqa: E731
+                load = lambda: radio_by_genre(genre)  # noqa: E731
 
         def done(items):
             if rid != self.req:

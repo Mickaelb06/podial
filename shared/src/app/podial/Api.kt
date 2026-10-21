@@ -221,9 +221,9 @@ object Api {
      * (réunis, et on ne garde que les stations dont le nom en contient un). Sinon [name] est la recherche libre.
      */
     suspend fun radios(country: String, name: String? = null, order: String = "clickcount", limit: Int = 60, withLogos: Boolean = true,
-                       tags: List<String> = emptyList(), names: List<String> = emptyList()): List<Item> =
+                       tags: List<String> = emptyList(), names: List<String> = emptyList(), world: Boolean = false): List<Item> =
         withContext(Dispatchers.IO) {
-            val base = "/json/stations/search?hidebroken=true&order=$order&reverse=true&limit=${limit * 2}&countrycode=$country"
+            val base = "/json/stations/search?hidebroken=true&order=$order&reverse=true&limit=${limit * 2}" + if (world) "" else "&countrycode=$country"
             val queries = when {
                 tags.isNotEmpty() -> tags.map { "$base&tag=${enc(it)}&tagExact=true" }
                 names.isNotEmpty() -> names.map { "$base&name=${enc(it.trim())}" }
@@ -251,9 +251,16 @@ object Api {
                     quality = listOf(s.optString("codec").uppercase().takeIf { it.isNotBlank() && it != "UNKNOWN" },
                         s.optInt("bitrate").takeIf { it > 0 }?.let { "$it kbps" }).filterNotNull().joinToString(" · "))
             }
-            val extras = if (tags.isNotEmpty()) emptyList() else Extras.matching(country, names.firstOrNull() ?: name).filter { it.key !in byKey.values.map { r -> r.key } && stationKey(it.name) !in byKey }
+            val extras = if (tags.isNotEmpty()) emptyList() else Extras.matching(country, names.firstOrNull() ?: name, strict = names.isNotEmpty()).filter { it.key !in byKey.values.map { r -> r.key } && stationKey(it.name) !in byKey }
             (byKey.values.take(limit) + extras).let { if (withLogos) Logos.fill(it) else it }
         }
+
+    /** Radios d'un genre : ses étiquettes et ses noms de stations, dans le pays choisi ou dans le monde entier pour un thème sans pays. */
+    suspend fun genreRadios(g: RadioGenre, country: String): List<Item> {
+        val byTag = if (g.tags.isNotEmpty()) radios(country, tags = g.tags, limit = 100, world = g.world) else emptyList()
+        val byName = if (g.names.isNotEmpty()) runCatching { radios(country, names = g.names, limit = 100, world = g.world) }.getOrDefault(emptyList()) else emptyList()
+        return (byTag + byName).distinctBy { stationKey(it.name) }
+    }
 
     private fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { getJSONObject(it) }
 }

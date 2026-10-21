@@ -728,6 +728,43 @@
      "tags": [
       "islam"
      ]
+    },
+    {
+     "id": "jewish",
+     "en": "Jewish",
+     "fr": "Judaïsme",
+     "es": "Judaísmo",
+     "de": "Judentum",
+     "pt": "Judaísmo",
+     "tags": [
+      "jewish",
+      "judaism",
+      "hebrew",
+      "yiddish",
+      "torah",
+      "klezmer"
+     ],
+     "names": [
+      "Chabad",
+      "Judaïque",
+      "Judaique",
+      "Kol Chai",
+      "Radio J Juive"
+     ],
+     "world": true
+    },
+    {
+     "id": "hindu",
+     "en": "Hindu",
+     "fr": "Hindouisme",
+     "es": "Hinduismo",
+     "de": "Hinduismus",
+     "pt": "Hinduísmo",
+     "tags": [
+      "hindu",
+      "bhajan"
+     ],
+     "world": true
     }
    ]
   },
@@ -741,6 +778,93 @@
    "tags": [
     "kids",
     "comedy"
+   ]
+  },
+  {
+   "id": "seasonal",
+   "en": "Holidays",
+   "fr": "Fêtes",
+   "es": "Fiestas",
+   "de": "Feste",
+   "pt": "Festas",
+   "tags": [
+    "christmas",
+    "halloween",
+    "hanukkah"
+   ],
+   "names": [
+    "Christmas",
+    "Xmas",
+    "Noël",
+    "Halloween"
+   ],
+   "world": true,
+   "children": [
+    {
+     "id": "christmas",
+     "en": "Christmas",
+     "fr": "Noël",
+     "es": "Navidad",
+     "de": "Weihnachten",
+     "pt": "Natal",
+     "tags": [
+      "christmas",
+      "christmas music",
+      "xmas",
+      "noël",
+      "weihnachten",
+      "navidad"
+     ],
+     "names": [
+      "Christmas",
+      "Xmas",
+      "Noël",
+      "Weihnacht",
+      "Navidad"
+     ],
+     "world": true
+    },
+    {
+     "id": "halloween",
+     "en": "Halloween",
+     "fr": "Halloween",
+     "es": "Halloween",
+     "de": "Halloween",
+     "pt": "Halloween",
+     "tags": [
+      "halloween",
+      "spooky",
+      "horror"
+     ],
+     "names": [
+      "Halloween",
+      "Spooky"
+     ],
+     "world": true
+    },
+    {
+     "id": "hanukkah",
+     "en": "Hanukkah",
+     "fr": "Hanouka",
+     "es": "Janucá",
+     "de": "Chanukka",
+     "pt": "Hanucá",
+     "tags": [
+      "hanukkah",
+      "chanukah",
+      "jewish",
+      "klezmer",
+      "yiddish"
+     ],
+     "names": [
+      "Hanukkah",
+      "Chanukah",
+      "Hanouka",
+      "Hanouca",
+      "Chabad"
+     ],
+     "world": true
+    }
    ]
   }
  ],
@@ -1324,7 +1448,7 @@
   {
    "name": "Radio Monte Carlo",
    "country": "IT",
-   "q": "Monte Carlo",
+   "q": "Monte Carlo|RMC",
    "logo": "https://img-api.cloud.mediaset.net/api/images/rd/v1/ita/aHR0cHM6Ly93d3cucmFkaW9tb250ZWNhcmxvLm5ldC93cC1jb250ZW50L3VwbG9hZHMvMjAyNS8wNS9jcm9wcGVkLWZhdmljb25fMS0xLnBuZw/-/0/0?r=073a79d0fa661589553336655a8ac844"
   },
   {

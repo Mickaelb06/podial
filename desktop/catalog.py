@@ -415,20 +415,21 @@ EXTRA_RADIOS = [
 ]
 
 
-def extra_radios(params, known):
-    """Radios fournies à ajouter : celles du pays affiché, et celles dont le nom correspond à la recherche (tous pays)."""
+def extra_radios(params, known, strict=False):
+    """Radios fournies à ajouter : celles du pays affiché, et celles dont le nom correspond à la recherche (tous pays).
+    strict : liste d'une marque, seules celles du pays de la marque (RMC 2 est italienne : elle n'est pas dans « RMC » de France)."""
     q = station_key(params.get("name", "")) if params.get("name") else ""
     out = []
     for r in EXTRA_RADIOS:
         key = station_key(r["name"])
         if key in known or r["stream"] in {k["stream"] for k in known.values()}:
             continue
-        if (q in key) if q else (r["country"] == params.get("countrycode")):
+        if (q in key and (not strict or r["country"] == params.get("countrycode"))) if q else (r["country"] == params.get("countrycode")):
             out.append({k: v for k, v in r.items() if k != "country"})
     return out
 
 
-def radio_query(**params):
+def radio_query(strict_extras=False, **params):
     base = {"hidebroken": "true", "order": "clickcount", "reverse": "true", "limit": 48}
     base.update(params)
     data = radio_get("stations/search?" + urllib.parse.urlencode(base))
@@ -443,7 +444,8 @@ def radio_query(**params):
         if not (s.get("url_resolved") or s.get("url")):
             continue
         by_key[key] = radio_item(s)
-    return list(by_key.values()) + extra_radios(params, by_key)
+    # un genre (étiquette) ne reçoit pas les radios fournies : elles n'ont pas d'étiquette et s'afficheraient dans tous les genres
+    return list(by_key.values()) + ([] if params.get("tag") else extra_radios(params, by_key, strict_extras))
 
 
 def search_radios(term):
@@ -911,16 +913,23 @@ def _merge_radios(lists):
     return out
 
 
-def radio_by_tags(tags, code=None, limit=100):
-    """Radios d'un genre : une requête par étiquette de l'annuaire, résultats réunis."""
-    code = code or get_country()
+def radio_by_genre(genre, code=None, limit=100):
+    """Radios d'un genre : une requête par étiquette de l'annuaire et par nom de station du genre, résultats réunis.
+    Un thème sans pays (Noël, judaïsme…, « world ») cherche dans le monde entier."""
+    scope = {} if genre.get("world") else {"countrycode": code or get_country()}
+    queries = [dict(scope, tag=t, tagExact="true") for t in genre.get("tags", [])]
+    queries += [dict(scope, name=n.strip()) for n in genre.get("names", [])]
     lists, failures = [], 0
-    for t in tags:
+    for q in queries:
         try:
-            lists.append(radio_query(countrycode=code, tag=t, tagExact="true", limit=limit))
+            found = radio_query(limit=limit, **q)
         except OSError:
             failures += 1
-    if failures == len(tags):
+            continue
+        if "name" in q:
+            found = [r for r in found if q["name"].casefold() in r["name"].casefold()]
+        lists.append(found)
+    if queries and failures == len(queries):
         raise OSError("No radio server available")
     return _merge_radios(lists)[:limit]
 
@@ -930,7 +939,7 @@ def radio_by_brand(brand, limit=200):
     queries, lists, failures = brand["queries"], [], 0
     for q in queries:
         try:
-            found = radio_query(name=q.strip(), countrycode=brand["country"], limit=limit)
+            found = radio_query(strict_extras=True, name=q.strip(), countrycode=brand["country"], limit=limit)
         except OSError:
             failures += 1
             continue

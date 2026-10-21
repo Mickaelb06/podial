@@ -14,8 +14,9 @@ object Extras {
     )
 
     /** Radios fournies à ajouter : celles du pays affiché, et celles dont le nom correspond à la recherche (dans n'importe quel pays). */
-    fun matching(country: String, name: String?): List<Item> {
+    fun matching(country: String, name: String?, strict: Boolean = false): List<Item> {
         val q = name?.let(Api::stationKey).orEmpty()
-        return list.filter { if (q.isEmpty()) it.country == country else Api.stationKey(it.item.name).contains(q) }.map { it.item }
+        // strict : liste d'une marque, on ne garde que les radios du pays de la marque (RMC 2 est italienne : elle n'est pas dans « RMC » de France)
+        return list.filter { if (q.isEmpty()) it.country == country else Api.stationKey(it.item.name).contains(q) && (!strict || it.country == country) }.map { it.item }
     }
 }

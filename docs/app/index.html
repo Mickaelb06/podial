@@ -306,10 +306,13 @@ const radioApi = {
     }
     return out;
   },
-  // radios d'un genre : une requête par étiquette de l'annuaire, résultats réunis
-  async byTags(cc, tags) {
+  // radios d'un genre : une requête par étiquette et par nom de station, résultats réunis ; un thème sans pays (Noël, judaïsme…) cherche dans le monde entier
+  async byGenre(cc, g) {
     await logosP;
-    const lists = await Promise.all(tags.map(tg => this.get(`/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=200&countrycode=${cc}&tag=${encodeURIComponent(tg)}&tagExact=true`).catch(() => [])));
+    const scope = g.world ? "" : `&countrycode=${cc}`, base = `/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=200${scope}`;
+    const lists = await Promise.all([
+      ...(g.tags || []).map(tg => this.get(`${base}&tag=${encodeURIComponent(tg)}&tagExact=true`).catch(() => [])),
+      ...(g.names || []).map(async n => (await this.get(`${base}&name=${encodeURIComponent(n.trim())}`).catch(() => [])).filter(s => s.name.toLowerCase().includes(n.trim().toLowerCase())))]);
     return this.collect(lists.flat()).slice(0, 100);
   },
   // toutes les webradios d'une marque : les stations du pays dont le nom contient un des morceaux de nom
@@ -504,7 +507,7 @@ function showBrowse(kind) {
         return;
       }
       const items = kind === "radio" ? (q ? await radioApi.stations(state.cc, q) : state.rsource ? await radioApi.byBrand(state.rsource)
-          : genre ? await radioApi.byTags(state.cc, genre.tags) : await radioApi.stations(state.cc, ""))
+          : genre ? await radioApi.byGenre(state.cc, genre) : await radioApi.stations(state.cc, ""))
         : kind !== "podcast" ? await radioApi.stations(state.cc, q)
         : q ? await itunes.search(q)
         : state.source ? await itunes.bySource(state.source)

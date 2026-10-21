@@ -235,7 +235,7 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
                 when {
                     query.isNotBlank() -> Api.radios(country, query)
                     b != null -> Api.radios(b.country, names = b.queries, limit = 200)
-                    g != null -> Api.radios(country, tags = g.tags, limit = 100)
+                    g != null -> Api.genreRadios(g, country)
                     else -> Api.radios(country, null)
                 }
             }
