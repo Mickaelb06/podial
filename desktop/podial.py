@@ -21,7 +21,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gst, Gtk  # noqa: E402
 import integration  # noqa: E402
 from catalog import (  # noqa: E402
     COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, VERSION, REPO, check_new_episodes, check_update, delete_download, download_episode, fetch_feed, load_played, mark_seen, new_counts, seen_urls, set_played, fetch_youtube_feed, flag, get_country, get_setting,
-    http_get, item_key, radio_browse, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
+    http_get, item_key, radio_browse, radio_brand_items, radio_by_brand, radio_by_tags, radio_genre, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
     add_quote, cue_index, fmt_clock, load_quotes, load_transcript, quote_id, remove_quote, set_quote_note, share_text,
     youtube_audio_file, youtube_channel_item, youtube_enabled, youtube_search, ytdlp_path,
     COUNTRY_NAMES, filter_episodes, local_flashes, source_groups, source_item, source_podcasts)
@@ -578,11 +578,15 @@ class Window(Adw.ApplicationWindow):
         # filtres : genres de podcasts, ou pays / région / ville / tri pour les radios
         self.genre_bar = GenreBar(self.show_home)
         self.radio_bar = RadioBar(self.show_home, self.make_country_popover(), self.show_world_map if WORLD_MAP else None, self.surprise_radio)
+        self.radio_genre_bar = GenreBar(self.show_home, kind="radio")
+        radio_filters = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, valign=Gtk.Align.START)
+        radio_filters.append(self.radio_genre_bar)
+        radio_filters.append(self.radio_bar)
         self.filter_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, vhomogeneous=False,
                                       valign=Gtk.Align.START)
         self.filter_stack.add_named(Gtk.Box(), "none")
         self.filter_stack.add_named(self.genre_bar, "podcast")
-        self.filter_stack.add_named(self.radio_bar, "radio")
+        self.filter_stack.add_named(radio_filters, "radio")
         holder = Gtk.Box(margin_top=10, margin_bottom=6, margin_start=18, margin_end=18)
         holder.append(Adw.Clamp(maximum_size=1244, hexpand=True, child=self.filter_stack))
         view.add_top_bar(holder)
@@ -682,11 +686,25 @@ class Window(Adw.ApplicationWindow):
             elif gb.panel == "local":
                 load, plain_title = local_flashes, _("Local news")
         else:
-            rb = self.radio_bar
+            rb, rg = self.radio_bar, self.radio_genre_bar
             filters = (rb.state, rb.city_text(), rb.order)
             load = lambda: radio_browse(get_country(), filters[0], filters[1] or None, None, filters[2])  # noqa: E731
             top_title = _("Top 10 · {name}").format(name=rb.place_name())
             more_title = _("More stations")
+            if rg.panel == "webradios" and rg.source is None:
+                # liste fixe des marques du pays : rien à charger
+                brands = radio_brand_items()
+                self.show_sections([(_("Webradios") + " · " + COUNTRY_NAMES.get(get_country(), get_country()), brands)]) if brands \
+                    else self.show_status("system-search-symbolic", _("No results"))
+                return
+            if rg.source is not None:  # une marque ouverte : toutes ses webradios
+                brand = rg.source
+                source_open, plain_title = True, brand["name"]
+                load = lambda: radio_by_brand(brand)  # noqa: E731
+            elif rg.genre:  # genre ou sous-genre : les radios portant ses étiquettes
+                tags = radio_genre(rg.genre)["tags"]
+                plain_title = rg.genre_name()
+                load = lambda: radio_by_tags(tags, get_country())  # noqa: E731
 
         def done(items):
             if rid != self.req:
@@ -697,8 +715,9 @@ class Window(Adw.ApplicationWindow):
             if plain_title:
                 self.show_sections([(plain_title, items)])
                 if source_open:
-                    back = Gtk.Button(label="← " + _("Radios"), css_classes=["flat"], halign=Gtk.Align.START)
-                    back.connect("clicked", lambda *_a: self.genre_bar.close_source())
+                    back_bar = self.radio_genre_bar if section == "radio" else self.genre_bar
+                    back = Gtk.Button(label="← " + (_("Webradios") if section == "radio" else _("Radios")), css_classes=["flat"], halign=Gtk.Align.START)
+                    back.connect("clicked", lambda *_a: back_bar.close_source())
                     self.content_box.prepend(back)
                 return
             if section == "radio" and not self.radio_bar.is_default():
@@ -882,6 +901,9 @@ class Window(Adw.ApplicationWindow):
     def open_item(self, item):
         if item.get("kind") == "source":  # radio ou éditeur de la liste « Radios » : on affiche ses podcasts
             self.genre_bar.open_source(item)
+            return
+        if item.get("kind") == "brand":  # marque de la liste « Webradios » : on affiche ses webradios
+            self.radio_genre_bar.open_source(item)
             return
         self.detail_item = item
         radio = item["kind"] == "radio"

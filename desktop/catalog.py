@@ -842,6 +842,96 @@ def radio_browse(code=None, state=None, city=None, name=None, order="clickcount"
     return radio_query(**params)
 
 
+# ---------- radios : genres et marques (shared/data/radio_catalog.json) ----------
+def _load_radio_catalog():
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "radio_catalog.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None  # fichier absent : pas de genres ni de webradios
+
+
+RADIO_CATALOG = _load_radio_catalog()
+
+
+def radio_genres(parent=None):
+    """Genres de radios de premier niveau, ou sous-genres du genre [parent] (identifiant) ; liste vide sans fichier."""
+    if not RADIO_CATALOG:
+        return []
+    if parent is None:
+        return RADIO_CATALOG["genres"]
+    g = radio_genre(parent)
+    return (g or {}).get("children", [])
+
+
+def radio_genre(gid):
+    for g in (RADIO_CATALOG or {}).get("genres", []):
+        if g["id"] == gid:
+            return g
+        for c in g.get("children", []):
+            if c["id"] == gid:
+                return c
+    return None
+
+
+def radio_genre_parent(gid):
+    """Identifiant du genre de premier niveau qui contient gid (ou gid lui-même)."""
+    for g in (RADIO_CATALOG or {}).get("genres", []):
+        if g["id"] == gid or any(c["id"] == gid for c in g.get("children", [])):
+            return g["id"]
+    return None
+
+
+def radio_brand_items(code=None):
+    """Marques de radios du pays, sous forme de cartes (sans pochette : tuile colorée avec initiale)."""
+    code = code or get_country()
+    return [{"kind": "brand", "name": b["name"], "artist": COUNTRY_NAMES.get(b["country"], b["country"]), "art": "",
+             "queries": b["q"].split("|"), "country": b["country"]}
+            for b in (RADIO_CATALOG or {}).get("brands", []) if b["country"] == code]
+
+
+def _merge_radios(lists):
+    """Réunit plusieurs listes de radios en alternant (les plus écoutées de chaque liste d'abord), sans doublon."""
+    out, seen = [], set()
+    for i in range(max((len(x) for x in lists), default=0)):
+        for lst in lists:
+            if i < len(lst):
+                key = station_key(lst[i]["name"])
+                if key not in seen:
+                    seen.add(key)
+                    out.append(lst[i])
+    return out
+
+
+def radio_by_tags(tags, code=None, limit=100):
+    """Radios d'un genre : une requête par étiquette de l'annuaire, résultats réunis."""
+    code = code or get_country()
+    lists, failures = [], 0
+    for t in tags:
+        try:
+            lists.append(radio_query(countrycode=code, tag=t, tagExact="true", limit=limit))
+        except OSError:
+            failures += 1
+    if failures == len(tags):
+        raise OSError("No radio server available")
+    return _merge_radios(lists)[:limit]
+
+
+def radio_by_brand(brand, limit=200):
+    """Toutes les webradios d'une marque : les stations du pays dont le nom contient un des morceaux de nom de la marque."""
+    queries, lists, failures = brand["queries"], [], 0
+    for q in queries:
+        try:
+            found = radio_query(name=q.strip(), countrycode=brand["country"], limit=limit)
+        except OSError:
+            failures += 1
+            continue
+        lists.append([r for r in found if q.strip().casefold() in r["name"].casefold()])
+    if failures == len(queries):
+        raise OSError("No radio server available")
+    return _merge_radios(lists)[:limit]
+
+
 def auto_download(items, per_feed=3, progress=None, cancel=None):
     """Télécharge les derniers épisodes (non encore traités) des podcasts suivis. Renvoie le nombre d'épisodes récupérés."""
     try:

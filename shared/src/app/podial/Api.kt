@@ -1,6 +1,9 @@
 package app.podial
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -213,13 +216,28 @@ object Api {
         return s.replace(Regex("[^a-z0-9]+"), "")
     }
 
-    suspend fun radios(country: String, name: String? = null, order: String = "clickcount", limit: Int = 60, withLogos: Boolean = true): List<Item> =
+    /**
+     * Radios d'un pays. [tags] : étiquettes d'un genre (une requête par étiquette, résultats réunis) ; [names] : morceaux de nom d'une marque
+     * (réunis, et on ne garde que les stations dont le nom en contient un). Sinon [name] est la recherche libre.
+     */
+    suspend fun radios(country: String, name: String? = null, order: String = "clickcount", limit: Int = 60, withLogos: Boolean = true,
+                       tags: List<String> = emptyList(), names: List<String> = emptyList()): List<Item> =
         withContext(Dispatchers.IO) {
-            var q = "/json/stations/search?hidebroken=true&order=$order&reverse=true&limit=${limit * 2}&countrycode=$country"
-            if (!name.isNullOrBlank()) q += "&name=${enc(name)}"
+            val base = "/json/stations/search?hidebroken=true&order=$order&reverse=true&limit=${limit * 2}&countrycode=$country"
+            val queries = when {
+                tags.isNotEmpty() -> tags.map { "$base&tag=${enc(it)}&tagExact=true" }
+                names.isNotEmpty() -> names.map { "$base&name=${enc(it.trim())}" }
+                !name.isNullOrBlank() -> listOf("$base&name=${enc(name)}")
+                else -> listOf(base)
+            }
+            val rows = coroutineScope { queries.map { q -> async { runCatching { JSONArray(radioGet(q)).objects() }.getOrNull() } }.awaitAll() }
+            if (rows.all { it == null }) throw java.io.IOException("no radio server")
+            var all = rows.filterNotNull().flatten().distinctBy { it.optString("stationuuid").ifEmpty { it.optString("name") + it.optString("url") } }
+            if (queries.size > 1) all = all.sortedByDescending { if (order == "clickcount") it.optInt("clickcount") else 0 }
+            if (names.isNotEmpty()) all = all.filter { s -> names.any { s.optString("name").contains(it.trim(), ignoreCase = true) } }
             // « FIP », « FIP (HD) » et « Fip 128k » sont la même radio : on garde la première, mais on lui prend le logo d'un doublon si elle n'en a pas
             val byKey = LinkedHashMap<String, Item>()
-            for (s in JSONArray(radioGet(q)).objects()) {
+            for (s in all) {
                 val stream = s.optString("url_resolved").ifEmpty { s.optString("url") }
                 val n = s.optString("name").trim()
                 if (n.isEmpty()) continue
@@ -233,7 +251,7 @@ object Api {
                     quality = listOf(s.optString("codec").uppercase().takeIf { it.isNotBlank() && it != "UNKNOWN" },
                         s.optInt("bitrate").takeIf { it > 0 }?.let { "$it kbps" }).filterNotNull().joinToString(" · "))
             }
-            val extras = Extras.matching(country, name).filter { it.key !in byKey.values.map { r -> r.key } && stationKey(it.name) !in byKey }
+            val extras = if (tags.isNotEmpty()) emptyList() else Extras.matching(country, names.firstOrNull() ?: name).filter { it.key !in byKey.values.map { r -> r.key } && stationKey(it.name) !in byKey }
             (byKey.values.take(limit) + extras).let { if (withLogos) Logos.fill(it) else it }
         }
 

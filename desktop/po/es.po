@@ -563,3 +563,6 @@ msgstr "Ningún episodio coincide con este filtro."
 
 msgid "Downloaded episodes"
 msgstr "Descargados"
+
+msgid "Webradios"
+msgstr "Webradios"

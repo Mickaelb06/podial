@@ -140,7 +140,7 @@ const T = {
     insecure: "This station only streams over unsecured http, which browsers block here. Open the stream in another player:",
     open_stream: "Open stream", resumed: "Resuming where you left off",
     foot: 'Free and open source · No account, no tracking: your library stays in this browser · Data: Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · The apps add downloads, transcripts, quotes and Android Auto',
-    min: "min", country: "Country", panel_radios: "Radios", panel_local: "Local news", surprise: "Surprise me", surprise_none: "Couldn't find a radio. Try again.", share: "Share", copied: "Link copied", bad_link: "This link no longer works.", ep_newest: "Newest first", ep_oldest: "Oldest first", ep_all: "All episodes", ep_unfinished: "Unfinished", ep_none_filtered: "No episode matches this filter.", no_eps: "This podcast's episodes can't be listed in the web version. Open it in the Podial app.", get_app: "Get the app",
+    min: "min", country: "Country", panel_radios: "Radios", panel_webradios: "Webradios", panel_local: "Local news", surprise: "Surprise me", surprise_none: "Couldn't find a radio. Try again.", share: "Share", copied: "Link copied", bad_link: "This link no longer works.", ep_newest: "Newest first", ep_oldest: "Oldest first", ep_all: "All episodes", ep_unfinished: "Unfinished", ep_none_filtered: "No episode matches this filter.", no_eps: "This podcast's episodes can't be listed in the web version. Open it in the Podial app.", get_app: "Get the app",
     carry_t: "Want to take Podial <em>everywhere</em>?", carry_p: "The free apps add downloads for offline listening, transcripts, quotes, Android Auto and more. No account, no tracking.",
     carry_btn: "📲 Get the app", carry_all: "All downloads and details →", close: "Close" },
   fr: { podcasts: "Podcasts", radios: "Radios", library: "Bibliothèque", s_pod: "Rechercher un podcast", s_rad: "Rechercher une radio",
@@ -150,7 +150,7 @@ const T = {
     insecure: "Cette radio diffuse seulement en http non sécurisé, ce que les navigateurs bloquent ici. Ouvre le flux dans un autre lecteur :",
     open_stream: "Ouvrir le flux", resumed: "Reprise là où tu t'étais arrêté",
     foot: 'Libre et open source · Sans compte, sans pistage : ta bibliothèque reste dans ce navigateur · Données : Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · Les applications ajoutent téléchargements, transcriptions, citations et Android Auto',
-    min: "min", country: "Pays", panel_radios: "Radios", panel_local: "Infos locales", surprise: "Surprends-moi", surprise_none: "Aucune radio trouvée. Réessaie.", share: "Partager", copied: "Lien copié", bad_link: "Ce lien ne fonctionne plus.", ep_newest: "Plus récents", ep_oldest: "Plus anciens", ep_all: "Tous les épisodes", ep_unfinished: "Non terminés", ep_none_filtered: "Aucun épisode ne correspond à ce filtre.", no_eps: "Les épisodes de ce podcast ne peuvent pas être listés dans la version web. Ouvre-le dans l'application Podial.", get_app: "Télécharger l'application",
+    min: "min", country: "Pays", panel_radios: "Radios", panel_webradios: "Webradios", panel_local: "Infos locales", surprise: "Surprends-moi", surprise_none: "Aucune radio trouvée. Réessaie.", share: "Partager", copied: "Lien copié", bad_link: "Ce lien ne fonctionne plus.", ep_newest: "Plus récents", ep_oldest: "Plus anciens", ep_all: "Tous les épisodes", ep_unfinished: "Non terminés", ep_none_filtered: "Aucun épisode ne correspond à ce filtre.", no_eps: "Les épisodes de ce podcast ne peuvent pas être listés dans la version web. Ouvre-le dans l'application Podial.", get_app: "Télécharger l'application",
     carry_t: "Envie d'emporter Podial <em>partout</em> ?", carry_p: "Les applications gratuites ajoutent les téléchargements hors ligne, les transcriptions, les citations, Android Auto et plus encore. Sans compte, sans pistage.",
     carry_btn: "📲 Emporter Podial", carry_all: "Tous les téléchargements et détails →", close: "Fermer" },
 };
@@ -194,6 +194,10 @@ function cover(item, cls = "") {
 
 // ---------- catalogue : genres, radios et éditeurs (même fichier que les applications) ----------
 const catalogP = fetch("podcast_sources.json").then(r => r.ok ? r.json() : null).catch(() => null);
+// genres de radios et marques (webradios) : même fichier que les applications
+const rcatP = fetch("radio_catalog.json").then(r => r.ok ? r.json() : null).catch(() => null);
+const findRadioGenre = (rc, id) => rc.genres.find(g => g.id === id) || rc.genres.flatMap(g => g.children || []).find(c => c.id === id);
+const parentRadioGenre = (rc, id) => rc.genres.find(g => g.id === id || (g.children || []).some(c => c.id === id));
 // logos fournis pour les radios dont l'annuaire n'a rien ou une adresse morte (nom normalisé -> logo)
 let radioLogos = {};
 const logosP = fetch("radio_logos.json").then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => { radioLogos = j; });
@@ -277,13 +281,10 @@ const radioApi = {
     let last; for (const host of this.hosts) { try { return await getJson(host + path); } catch (e) { last = e; } }
     throw last;
   },
-  async stations(cc, name) {
-    await logosP;
-    let q = `/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=120&countrycode=${cc}`;
-    if (name) q += "&name=" + encodeURIComponent(name);
-    // même radio sous plusieurs noms (« FIP », « FIP (HD) »…) : on garde la première, avec le logo d'un doublon si elle n'en a pas
+  // même radio sous plusieurs noms (« FIP », « FIP (HD) »…) : on garde la première, avec le logo d'un doublon si elle n'en a pas
+  collect(rows) {
     const byKey = new Map();
-    for (const s of await this.get(q)) {
+    for (const s of rows) {
       const stream = s.url_resolved || s.url, key = s.name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
       if (!key) continue;
       const known = byKey.get(key);
@@ -291,13 +292,34 @@ const radioApi = {
       if (!stream) continue;
       byKey.set(key, stationItem(s, stream));
     }
-    const out = [...byKey.values()].slice(0, 60);
+    return [...byKey.values()];
+  },
+  async stations(cc, name) {
+    await logosP;
+    let q = `/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=120&countrycode=${cc}`;
+    if (name) q += "&name=" + encodeURIComponent(name);
+    const out = this.collect(await this.get(q)).slice(0, 60);
     const nq = name ? stationKey(name) : "";
     for (const { country: c, ...r } of EXTRA_RADIOS) {
-      if (byKey.has(stationKey(r.name)) || out.some(o => o.stream === r.stream)) continue;
+      if (out.some(o => o.stream === r.stream || stationKey(o.name) === stationKey(r.name))) continue;
       if (nq ? stationKey(r.name).includes(nq) : c === cc) out.push(r);
     }
     return out;
+  },
+  // radios d'un genre : une requête par étiquette de l'annuaire, résultats réunis
+  async byTags(cc, tags) {
+    await logosP;
+    const lists = await Promise.all(tags.map(tg => this.get(`/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=200&countrycode=${cc}&tag=${encodeURIComponent(tg)}&tagExact=true`).catch(() => [])));
+    return this.collect(lists.flat()).slice(0, 100);
+  },
+  // toutes les webradios d'une marque : les stations du pays dont le nom contient un des morceaux de nom
+  async byBrand(b) {
+    await logosP;
+    const lists = await Promise.all(b.q.split("|").map(async raw => {
+      const q = raw.trim(), rows = await this.get(`/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=200&countrycode=${b.country}&name=${encodeURIComponent(q)}`).catch(() => []);
+      return rows.filter(s => s.name.toLowerCase().includes(q.toLowerCase()));
+    }));
+    return this.collect(lists.flat()).slice(0, 200);
   },
   countries() { return this._countries ||= this.get("/json/countries?order=stationcount&reverse=true&hidebroken=true"); },
   // radio d'un lien partagé : les radios fournies d'abord, puis l'annuaire (par identifiant)
@@ -370,19 +392,20 @@ audio.addEventListener("error", () => {
 // ---------- écrans ----------
 const view = $("view");
 let tab = store.get("tab", 0), detail = null;
-const state = { q: ["", ""], genre: null, panel: null, source: null, cc: store.get("cc", country) };
+const state = { q: ["", ""], genre: null, panel: null, source: null, cc: store.get("cc", country), rgenre: null, webradios: false, rsource: null };
 let seq = 0;
 
 function renderTabs() {
   const tabs = $("tabs"); tabs.replaceChildren(...["podcasts", "radios", "library"].map((k, i) =>
     h("button", { role: "tab", "aria-selected": String(tab === i), onclick: () => { tab = i; detail = null; store.set("tab", i); renderTabs(); route(); } }, t(k))));
 }
-function syncHash() {
+// ouvrir une fiche ajoute une entrée d'historique : le retour (bouton ou geste) revient à la liste, sans la réinitialiser
+function syncHash(push) {
   const want = detail?.id ? "#" + (detail.kind === "radio" ? "r" : "p") + "=" + encodeURIComponent(detail.id) : "";
-  if (location.hash !== want) history.replaceState(null, "", location.pathname + location.search + want);
+  if (location.hash !== want) (push ? history.pushState : history.replaceState).call(history, { podial: push ? 1 : 0 }, "", location.pathname + location.search + want);
 }
-function route() { syncHash(); detail ? showDetail(detail) : tab === 2 ? showLibrary() : showBrowse(tab === 0 ? "podcast" : "radio"); window.scrollTo(0, 0); }
-function open(item) { detail = item; route(); }
+function route(push = false) { syncHash(push); detail ? showDetail(detail) : tab === 2 ? showLibrary() : showBrowse(tab === 0 ? "podcast" : "radio"); window.scrollTo(0, 0); }
+function open(item) { detail = item; route(true); }
 
 function grid(items, ranked) {
   return h("div", { class: "grid" }, items.map((it, i) => h("button", { class: "card", onclick: () => open(it) },
@@ -431,14 +454,40 @@ function showBrowse(kind) {
     if (state.source) view.append(h("button", { class: "btn back", onclick: () => { state.source = null; showBrowse(kind); } }, t("back") + " · " + state.source.name));
     else view.append(chips);
   }
+  if (kind === "radio") {
+    const rchip = (label, on, fn) => h("button", { class: "chip", "aria-pressed": String(on), onclick: () => { fn(); state.rsource = null; showBrowse(kind); } }, label);
+    rcatP.then(rc => {
+      if (!rc || state.q[idx].trim()) return;
+      const top = state.rgenre ? parentRadioGenre(rc, state.rgenre) : null;
+      const row1 = h("div", { class: "chips" },
+        rchip(t("all"), !state.rgenre && !state.webradios, () => { state.rgenre = null; state.webradios = false; }),
+        rchip("📡 " + t("panel_webradios"), state.webradios, () => { state.webradios = true; state.rgenre = null; }),
+        ...rc.genres.map(g => rchip(gName(g), !state.webradios && top?.id === g.id, () => { state.rgenre = g.id; state.webradios = false; })));
+      const kids = !state.webradios && top ? top.children : [];
+      chips.replaceChildren(row1, ...(kids.length ? [h("div", { class: "chips" },
+        rchip(gName(top), state.rgenre === top.id, () => { state.rgenre = top.id; }),
+        ...kids.map(g => rchip(gName(g), state.rgenre === g.id, () => { state.rgenre = g.id; })))] : []));
+    });
+    if (state.rsource) view.append(h("button", { class: "btn back", onclick: () => { state.rsource = null; showBrowse(kind); } }, t("back") + " · " + state.rsource.name));
+    else view.append(chips);
+  }
   view.append(results);
   let timer;
-  input.addEventListener("input", () => { state.q[idx] = input.value; if (input.value.trim()) { state.panel = null; state.source = null; } clearTimeout(timer); timer = setTimeout(load, 450); });
+  input.addEventListener("input", () => { state.q[idx] = input.value; if (input.value.trim()) { state.panel = null; state.source = null; state.webradios = false; state.rsource = null; } clearTimeout(timer); timer = setTimeout(load, 450); });
   async function load() {
     const id = ++seq, q = state.q[idx].trim();
     results.replaceChildren(h("div", { class: "msg" }, "…"));
     try {
       const cat = kind === "podcast" ? await catalogP : null;
+      const rc = kind === "radio" ? await rcatP : null;
+      if (kind === "radio" && !q && state.webradios && !state.rsource) {
+        // liste fixe : les marques du pays, une carte par marque
+        const brands = rc ? rc.brands.filter(b => b.country === state.cc.toUpperCase()) : [];
+        results.replaceChildren(brands.length ? h("div", { class: "grid" }, brands.map(b => h("button", { class: "card", onclick: () => { state.rsource = b; showBrowse(kind); } },
+          cover({ name: b.name, art: "" }), h("div", { class: "n" }, b.name), h("div", { class: "a" }, regionName(b.country))))) : h("div", { class: "msg" }, t("none")));
+        return;
+      }
+      const genre = kind === "radio" && rc && state.rgenre && !q ? findRadioGenre(rc, state.rgenre) : null;
       if (kind === "podcast" && !q && state.panel === "radios" && !state.source && cat) {
         // liste fixe : les radios et éditeurs du pays de l'utilisateur d'abord, puis les autres pays
         const groups = new Map();
@@ -450,14 +499,17 @@ function showBrowse(kind) {
             cover({ name: src.name, art: "" }), h("div", { class: "n" }, src.name))))]));
         return;
       }
-      const items = kind !== "podcast" ? await radioApi.stations(state.cc, q)
+      const items = kind === "radio" ? (q ? await radioApi.stations(state.cc, q) : state.rsource ? await radioApi.byBrand(state.rsource)
+          : genre ? await radioApi.byTags(state.cc, genre.tags) : await radioApi.stations(state.cc, ""))
+        : kind !== "podcast" ? await radioApi.stations(state.cc, q)
         : q ? await itunes.search(q)
         : state.source ? await itunes.bySource(state.source)
         : state.panel === "local" && cat ? await itunes.local(cat)
         : await itunes.top(state.genre);
       if (id !== seq) return;
-      const plain = !q && !state.panel && !state.source;
-      results.replaceChildren(...(items.length ? [plain ? h("h2", {}, kind === "radio" ? t("top") + " · " + state.cc : t("top")) : null, grid(items, plain)].filter(Boolean) : [h("div", { class: "msg" }, t("none"))]));
+      const plain = !q && !state.panel && !state.source && !genre && !state.rsource;
+      const head = plain ? (kind === "radio" ? t("top") + " · " + state.cc : t("top")) : genre ? gName(genre) : !q && state.rsource ? state.rsource.name : null;
+      results.replaceChildren(...(items.length ? [head ? h("h2", {}, head) : null, grid(items, plain)].filter(Boolean) : [h("div", { class: "msg" }, t("none"))]));
     } catch { if (id === seq) results.replaceChildren(h("div", { class: "msg" }, t("failed"))); }
   }
   load();
@@ -477,7 +529,7 @@ async function loadFromHash(hash = location.hash) {
   if (!m) return;
   try {
     const item = m[1] === "r" ? await radioApi.byId(decodeURIComponent(m[2])) : await itunes.byId(decodeURIComponent(m[2]));
-    if (item) { tab = m[1] === "r" ? 1 : 0; renderTabs(); open(item); } else toast(t("bad_link"));
+    if (item) { tab = m[1] === "r" ? 1 : 0; renderTabs(); detail = item; route(); } else toast(t("bad_link"));
   } catch { toast(t("bad_link")); }
 }
 
@@ -492,7 +544,7 @@ function showDetail(item) {
   const actions = h("div", { style: "display:flex;gap:8px;flex-wrap:wrap" });
   const head = h("div", { class: "head" }, cover(item, item.kind === "radio" ? "logo-box" : ""), h("div", {}, h("h1", {}, item.name), h("p", {}, item.artist), actions));
   const list = h("div");
-  view.replaceChildren(h("button", { class: "btn back", onclick: () => { detail = null; route(); } }, t("back")), head, list);
+  view.replaceChildren(h("button", { class: "btn back", onclick: () => history.state?.podial ? history.back() : (detail = null, route()) }, t("back")), head, list);
   if (item.kind === "radio") {
     actions.append(h("button", { class: "btn primary", onclick: () => playRadio(item) }, "▶ " + t("play_live")), star, shareBtn);
     if (item.homepage) actions.append(h("a", { class: "btn", href: item.homepage, target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none" }, "↗"));
@@ -550,7 +602,8 @@ $("foot").innerHTML = t("foot");   // texte fixe écrit ici, sans donnée extern
 const firstHash = location.hash;   // à lire avant le premier affichage, qui remet l'adresse à zéro
 renderTabs(); route(); loadFromHash(firstHash);
 addEventListener("hashchange", () => {
-  if (!detail || location.hash !== "#" + (detail.kind === "radio" ? "r" : "p") + "=" + encodeURIComponent(detail.id)) loadFromHash();
+  if (/^#[rp]=/.test(location.hash)) { if (!detail || location.hash !== "#" + (detail.kind === "radio" ? "r" : "p") + "=" + encodeURIComponent(detail.id)) loadFromHash(); }
+  else if (detail) { detail = null; route(); }   // retour à la liste : on garde les filtres en cours
 });
 </script>
 </body>

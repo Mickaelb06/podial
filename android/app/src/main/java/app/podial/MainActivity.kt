@@ -151,14 +151,14 @@ fun PodialApp() {
         },
     ) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
-            val d = detail
-            if (d != null) DetailScreen(d, player) { detail = null }
-            else when (tab) {
+            // la page de détail se pose par-dessus la liste, qui reste en place : au retour on retrouve le même genre, la même recherche et le même défilement
+            when (tab) {
                 0 -> BrowseScreen("podcast") { detail = it }
                 1 -> BrowseScreen("radio", onSurprise = { player.play(PlaybackService.radioItem(it)); detail = it }) { detail = it }
                 2 -> LibraryScreen(onMenu = { menu = true }) { detail = it }
                 else -> DownloadsScreen(player)
             }
+            detail?.let { d -> Surface(Modifier.fillMaxSize()) { DetailScreen(d, player) { detail = null } } }
         }
     }
     if (sheet) PlayerSheet(player, onTranscript = { sheet = false; transcript = true }) { sheet = false }
@@ -226,16 +226,22 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     var items by remember(kind) { mutableStateOf<List<Item>?>(null) }
     var failed by remember(kind) { mutableStateOf(false) }
     var country by remember { mutableStateOf(Store.radioCountry) }
+    var rGenre by remember { mutableStateOf<String?>(null) }     // radios : genre ou sous-genre choisi
+    var webradios by remember { mutableStateOf(false) }          // radios : liste des marques
+    var brand by remember { mutableStateOf<RadioBrand?>(null) }  // radios : marque ouverte (ses webradios)
     var map by remember { mutableStateOf(false) }
     var surprising by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val countries = remember { runCatching { World.parse(ctx.assets.open("world.json").bufferedReader().use { it.readText() }) }.getOrDefault(emptyList()) }
     val catalog = remember { runCatching { SourceCatalog.parse(ctx.assets.open("podcast_sources.json").bufferedReader().use { it.readText() }) }.getOrNull() }
+    val radioCatalog = remember { runCatching { RadioCatalog.parse(ctx.assets.open("radio_catalog.json").bufferedReader().use { it.readText() }) }.getOrNull() }
     BackHandler(enabled = kind == "podcast" && (source != null || panel != null)) { if (source != null) source = null else panel = null }
-    LaunchedEffect(kind, query, genre, country, panel, source) {
+    BackHandler(enabled = kind == "radio" && (brand != null || webradios)) { if (brand != null) brand = null else webradios = false }
+    LaunchedEffect(kind, query, genre, country, panel, source, rGenre, webradios, brand) {
         val src = source
         if (kind == "podcast" && query.isBlank() && panel == "radios" && src == null) { items = emptyList(); failed = false; return@LaunchedEffect }   // liste fixe : rien à charger
+        if (kind == "radio" && query.isBlank() && webradios && brand == null) { items = emptyList(); failed = false; return@LaunchedEffect }
         if (query.isNotBlank()) delay(500)   // on attend la fin de la frappe
         items = null; failed = false
         items = try {
@@ -245,14 +251,23 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
                 panel == "local" && catalog != null -> Api.localFlashes(catalog.sources, catalog.local)
                 else -> Api.topPodcasts(genre)
             }
-            else Api.radios(country, query.ifBlank { null })
+            else {
+                val b = brand
+                val g = radioCatalog?.genre(rGenre)
+                when {
+                    query.isNotBlank() -> Api.radios(country, query)
+                    b != null -> Api.radios(b.country, names = b.queries, limit = 200)
+                    g != null -> Api.radios(country, tags = g.tags, limit = 100)
+                    else -> Api.radios(country, null)
+                }
+            }
         } catch (e: Exception) { failed = true; emptyList() }
     }
     // la barre de recherche reste hors du `when` : sinon elle est recréée à chaque changement d'état
     // (chargement → liste) et perd le focus, ce qui referme le clavier
     val searchBar: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(query, { query = it; if (it.isNotBlank()) { panel = null; source = null } }, singleLine = true, shape = RoundedCornerShape(24.dp),
+            OutlinedTextField(query, { query = it; if (it.isNotBlank()) { panel = null; source = null; webradios = false; brand = null } }, singleLine = true, shape = RoundedCornerShape(24.dp),
                 placeholder = { Text(stringResource(if (kind == "podcast") R.string.search_podcasts else R.string.search_radios)) },
                 leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
             if (kind == "radio" && countries.isNotEmpty()) {
@@ -293,11 +308,28 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
                     items(children) { g -> FilterChip(genre == g.id, { genre = g.id }, { Text(g.name()) }) }
                 }
             }
+            else if (kind == "radio" && query.isBlank() && brand != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton({ brand = null }) { Icon(Icons.Default.ArrowBack, stringResource(R.string.back)) }
+                Text(brand!!.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+            }
+            else if (kind == "radio" && query.isBlank() && radioCatalog != null) {
+                val parent = radioCatalog.parentOf(rGenre)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+                    item { FilterChip(rGenre == null && !webradios, { rGenre = null; webradios = false }, { Text(stringResource(R.string.all)) }) }
+                    item { FilterChip(webradios, { webradios = true; rGenre = null }, { Text("📡 " + stringResource(R.string.panel_webradios)) }) }
+                    items(radioCatalog.genres) { g -> FilterChip(!webradios && parent?.id == g.id, { rGenre = g.id; webradios = false }, { Text(g.name()) }) }
+                }
+                val children = if (!webradios) parent?.children.orEmpty() else emptyList()
+                if (children.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+                    item { FilterChip(rGenre == parent?.id, { rGenre = parent?.id }, { Text(parent?.name() ?: "") }) }
+                    items(children) { g -> FilterChip(rGenre == g.id, { rGenre = g.id }, { Text(g.name()) }) }
+                }
+            }
             else if (kind == "podcast" && query.isBlank()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                 item { FilterChip(genre == null, { genre = null }, { Text(stringResource(R.string.all)) }) }
                 items(Api.APPLE_GENRES.entries.toList()) { g -> FilterChip(genre == g.key, { genre = g.key }, { Text(g.value) }) }
             }
-            if (query.isBlank() && panel == null && items?.isNotEmpty() == true) Text(if (kind == "radio") World.flag(country) + " " + World.name(country) + " · " + stringResource(R.string.top10) else stringResource(R.string.top10), style = MaterialTheme.typography.titleLarge,
+            if (query.isBlank() && panel == null && !webradios && brand == null && rGenre == null && items?.isNotEmpty() == true) Text(if (kind == "radio") World.flag(country) + " " + World.name(country) + " · " + stringResource(R.string.top10) else stringResource(R.string.top10), style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(8.dp))
         }
     }
@@ -308,10 +340,28 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
         searchBar()
         when {
             kind == "podcast" && query.isBlank() && panel == "radios" && source == null && catalog != null -> SourcesList(catalog, header) { source = it }
+            kind == "radio" && query.isBlank() && webradios && brand == null && radioCatalog != null -> BrandList(radioCatalog.brands(country), country, header) { brand = it }
             list == null -> Column { header(); Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
             failed -> Column { header(); Message(stringResource(R.string.load_failed)) }
             list.isEmpty() -> Column { header(); Message(stringResource(R.string.no_results)) }
-            else -> Grid(list, header, onOpen, ranked = query.isBlank() && panel == null)
+            else -> Grid(list, header, onOpen, ranked = query.isBlank() && panel == null && rGenre == null && brand == null)
+        }
+    }
+}
+
+/** Marques de radios du pays affiché : un toucher ouvre toutes leurs webradios. */
+@Composable
+fun BrandList(brands: List<RadioBrand>, country: String, header: @Composable () -> Unit, onPick: (RadioBrand) -> Unit) {
+    LazyVerticalGrid(GridCells.Adaptive(150.dp), contentPadding = PaddingValues(8.dp), modifier = Modifier.fillMaxSize()) {
+        item(span = { GridItemSpan(maxLineSpan) }) { header() }
+        if (brands.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { Text(World.flag(country) + " " + stringResource(R.string.no_results), modifier = Modifier.padding(16.dp)) }
+        items(brands.size) { i ->
+            val b = brands[i]
+            Column(Modifier.clickable { onPick(b) }.padding(6.dp)) {
+                Cover(null, b.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
+                Text(b.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+            }
         }
     }
 }

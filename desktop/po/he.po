@@ -569,3 +569,6 @@ msgstr "אין פרק התואם לסינון זה."
 
 msgid "Downloaded episodes"
 msgstr "הורדו"
+
+msgid "Webradios"
+msgstr "תחנות אינטרנט"

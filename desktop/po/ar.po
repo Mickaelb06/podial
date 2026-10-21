@@ -579,3 +579,6 @@ msgstr "لا توجد حلقة تطابق هذا المرشح."
 
 msgid "Downloaded episodes"
 msgstr "تم تنزيلها"
+
+msgid "Webradios"
+msgstr "إذاعات الإنترنت"

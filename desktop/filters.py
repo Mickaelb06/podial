@@ -6,8 +6,8 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk  # noqa: E402
 
-from catalog import (APPLE_GENRES, COUNTRIES, PODCAST_SOURCES, country_label, flag, genre_label, get_country,  # noqa: E402
-                     source_genre, source_genres)
+from catalog import (APPLE_GENRES, COUNTRIES, PODCAST_SOURCES, RADIO_CATALOG, country_label, flag, genre_label, get_country,  # noqa: E402
+                     radio_genre, radio_genre_parent, radio_genres, source_genre, source_genres)
 from i18n import _  # noqa: E402
 
 RADIO_SORTS = [("clickcount", "Most popular"), ("votes", "Top rated"), ("name", "A–Z"),
@@ -63,13 +63,15 @@ class CountryChooser(Gtk.Box):
 
 
 class GenreBar(Gtk.Box):
-    """Pastilles : Tous, Radios, Infos locales, puis les genres Apple ; une seconde ligne montre les sous-genres du genre choisi."""
+    """Pastilles : Tous, puis les genres ; une seconde ligne montre les sous-genres du genre choisi.
+    Podcasts : Radios (podcasts par radio), Infos locales. Radios : Webradios (marques) ; `source` garde la marque ouverte."""
 
-    def __init__(self, on_change):
+    def __init__(self, on_change, kind="podcast"):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.START)
-        self.genre = None   # identifiant Apple (genre ou sous-genre), None = classement général
-        self.panel = None   # None, "radios" (podcasts par radio) ou "local" (flashs d'info locaux)
-        self.source = None  # radio ou éditeur ouvert dans « Radios » (carte), None = liste des radios
+        self.kind = kind
+        self.genre = None   # identifiant (genre ou sous-genre), None = classement général
+        self.panel = None   # podcasts : None, "radios" (podcasts par radio) ou "local" (flashs d'info locaux) ; radios : "webradios"
+        self.source = None  # radio ou éditeur (podcasts), ou marque (radios) ouverte, None = liste
         self.on_change = on_change
         self.row1 = self._scroller()
         self.row2 = self._scroller()
@@ -99,7 +101,11 @@ class GenreBar(Gtk.Box):
 
     def _top_entries(self):
         entries = [(_("All"), ("all", None))]
-        if PODCAST_SOURCES:
+        if self.kind == "radio":
+            if RADIO_CATALOG:
+                entries += [("📡 " + _("Webradios"), ("panel", "webradios"))]
+                entries += [(genre_label(g), ("genre", g["id"])) for g in radio_genres()]
+        elif PODCAST_SOURCES:
             entries += [("📻 " + _("Radios"), ("panel", "radios")), ("🗞 " + _("Local news"), ("panel", "local"))]
             entries += [(genre_label(g), ("genre", g["id"])) for g in source_genres(0)]
         else:
@@ -107,6 +113,8 @@ class GenreBar(Gtk.Box):
         return entries
 
     def _parent(self):
+        if self.kind == "radio":
+            return radio_genre_parent(self.genre) if self.genre else self.genre
         g = source_genre(self.genre) if self.genre else None
         return (g.get("parent") or g["id"]) if g else self.genre
 
@@ -115,19 +123,25 @@ class GenreBar(Gtk.Box):
         self.row1.set_child(self._chips(self._top_entries(), active))
         self._build_row2()
 
+    def _kids(self, parent):
+        return radio_genres(parent) if self.kind == "radio" else source_genres(parent)
+
+    def _named(self, gid):
+        return radio_genre(gid) if self.kind == "radio" else source_genre(gid)
+
     def _build_row2(self):
         parent = self._parent() if not self.panel else None
-        kids = source_genres(parent) if parent else []
+        kids = self._kids(parent) if parent else []
         self.row2.set_visible(bool(kids))
         if kids:
-            entries = [(genre_label(source_genre(parent)), ("genre", parent))] + [(genre_label(g), ("genre", g["id"])) for g in kids]
+            entries = [(genre_label(self._named(parent)), ("genre", parent))] + [(genre_label(g), ("genre", g["id"])) for g in kids]
             self.row2.set_child(self._chips(entries, ("genre", self.genre)))
 
     def genre_name(self):
-        g = source_genre(self.genre)
+        g = self._named(self.genre)
         if g:
             return genre_label(g)
-        return next((_(n) for gid, n in APPLE_GENRES if gid == self.genre), None)
+        return next((_(n) for gid, n in APPLE_GENRES if gid == self.genre), None) if self.kind == "podcast" else None
 
     def _toggled(self, btn, value, row):
         if not btn.get_active():
@@ -141,7 +155,7 @@ class GenreBar(Gtk.Box):
             changed = self.panel != v or self.source is not None
             self.panel, self.genre, self.source = v, None, None
         else:
-            changed = self.genre != v or self.panel is not None
+            changed = self.genre != v or self.panel is not None or self.source is not None
             self.genre, self.panel, self.source = v, None, None
         if not changed:
             return

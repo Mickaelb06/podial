@@ -1,0 +1,1569 @@
+{
+ "version": 1,
+ "genres": [
+  {
+   "id": "pop",
+   "en": "Pop",
+   "fr": "Pop",
+   "es": "Pop",
+   "de": "Pop",
+   "pt": "Pop",
+   "tags": [
+    "pop"
+   ],
+   "children": [
+    {
+     "id": "top40",
+     "en": "Top 40 & Hits",
+     "fr": "Top 40 & Hits",
+     "es": "Top 40 y éxitos",
+     "de": "Charts & Hits",
+     "pt": "Top 40 e hits",
+     "tags": [
+      "top 40",
+      "hits",
+      "charts"
+     ]
+    },
+    {
+     "id": "poprock",
+     "en": "Pop rock",
+     "fr": "Pop rock",
+     "es": "Pop rock",
+     "de": "Pop-Rock",
+     "pt": "Pop rock",
+     "tags": [
+      "pop rock"
+     ]
+    },
+    {
+     "id": "ac",
+     "en": "Adult contemporary",
+     "fr": "Adulte contemporain",
+     "es": "Adulto contemporáneo",
+     "de": "Adult Contemporary",
+     "pt": "Adulto contemporâneo",
+     "tags": [
+      "adult contemporary"
+     ]
+    },
+    {
+     "id": "french",
+     "en": "French songs",
+     "fr": "Chanson française",
+     "es": "Canción francesa",
+     "de": "Französische Chansons",
+     "pt": "Canção francesa",
+     "tags": [
+      "chansons françaises",
+      "chanson",
+      "french"
+     ]
+    },
+    {
+     "id": "schlager",
+     "en": "Schlager",
+     "fr": "Schlager",
+     "es": "Schlager",
+     "de": "Schlager",
+     "pt": "Schlager",
+     "tags": [
+      "schlager"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "rock",
+   "en": "Rock",
+   "fr": "Rock",
+   "es": "Rock",
+   "de": "Rock",
+   "pt": "Rock",
+   "tags": [
+    "rock"
+   ],
+   "children": [
+    {
+     "id": "classicrock",
+     "en": "Classic rock",
+     "fr": "Classic rock",
+     "es": "Rock clásico",
+     "de": "Classic Rock",
+     "pt": "Classic rock",
+     "tags": [
+      "classic rock"
+     ]
+    },
+    {
+     "id": "alt",
+     "en": "Alternative & Indie",
+     "fr": "Alternatif & Indie",
+     "es": "Alternativo e indie",
+     "de": "Alternative & Indie",
+     "pt": "Alternativo e indie",
+     "tags": [
+      "alternative",
+      "indie"
+     ]
+    },
+    {
+     "id": "hardrock",
+     "en": "Hard rock & Metal",
+     "fr": "Hard rock & Metal",
+     "es": "Hard rock y metal",
+     "de": "Hardrock & Metal",
+     "pt": "Hard rock e metal",
+     "tags": [
+      "metal",
+      "hard rock"
+     ]
+    },
+    {
+     "id": "punk",
+     "en": "Punk",
+     "fr": "Punk",
+     "es": "Punk",
+     "de": "Punk",
+     "pt": "Punk",
+     "tags": [
+      "punk"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "electro",
+   "en": "Electronic",
+   "fr": "Électro",
+   "es": "Electrónica",
+   "de": "Elektronisch",
+   "pt": "Eletrônica",
+   "tags": [
+    "electronic",
+    "electro"
+   ],
+   "children": [
+    {
+     "id": "dance",
+     "en": "Dance",
+     "fr": "Dance",
+     "es": "Dance",
+     "de": "Dance",
+     "pt": "Dance",
+     "tags": [
+      "dance"
+     ]
+    },
+    {
+     "id": "house",
+     "en": "House",
+     "fr": "House",
+     "es": "House",
+     "de": "House",
+     "pt": "House",
+     "tags": [
+      "house",
+      "deep house"
+     ]
+    },
+    {
+     "id": "techno",
+     "en": "Techno & Trance",
+     "fr": "Techno & Trance",
+     "es": "Techno y trance",
+     "de": "Techno & Trance",
+     "pt": "Techno e trance",
+     "tags": [
+      "techno",
+      "trance"
+     ]
+    },
+    {
+     "id": "disco",
+     "en": "Disco & Funk",
+     "fr": "Disco & Funk",
+     "es": "Disco y funk",
+     "de": "Disco & Funk",
+     "pt": "Disco e funk",
+     "tags": [
+      "disco",
+      "funk"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "hiphop",
+   "en": "Hip-hop & R&B",
+   "fr": "Hip-hop & R&B",
+   "es": "Hip-hop y R&B",
+   "de": "Hip-Hop & R&B",
+   "pt": "Hip-hop e R&B",
+   "tags": [
+    "hip hop",
+    "hiphop",
+    "rap"
+   ],
+   "children": [
+    {
+     "id": "rap",
+     "en": "Rap",
+     "fr": "Rap",
+     "es": "Rap",
+     "de": "Rap",
+     "pt": "Rap",
+     "tags": [
+      "rap"
+     ]
+    },
+    {
+     "id": "rnb",
+     "en": "R&B & Soul",
+     "fr": "R&B & Soul",
+     "es": "R&B y soul",
+     "de": "R&B & Soul",
+     "pt": "R&B e soul",
+     "tags": [
+      "r&b",
+      "rnb",
+      "soul"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "jazz",
+   "en": "Jazz & Blues",
+   "fr": "Jazz & Blues",
+   "es": "Jazz y blues",
+   "de": "Jazz & Blues",
+   "pt": "Jazz e blues",
+   "tags": [
+    "jazz"
+   ],
+   "children": [
+    {
+     "id": "smoothjazz",
+     "en": "Smooth jazz",
+     "fr": "Smooth jazz",
+     "es": "Smooth jazz",
+     "de": "Smooth Jazz",
+     "pt": "Smooth jazz",
+     "tags": [
+      "smooth jazz"
+     ]
+    },
+    {
+     "id": "blues",
+     "en": "Blues",
+     "fr": "Blues",
+     "es": "Blues",
+     "de": "Blues",
+     "pt": "Blues",
+     "tags": [
+      "blues"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "classical",
+   "en": "Classical",
+   "fr": "Classique",
+   "es": "Clásica",
+   "de": "Klassik",
+   "pt": "Clássica",
+   "tags": [
+    "classical",
+    "klassik"
+   ],
+   "children": [
+    {
+     "id": "opera",
+     "en": "Opera",
+     "fr": "Opéra",
+     "es": "Ópera",
+     "de": "Oper",
+     "pt": "Ópera",
+     "tags": [
+      "opera"
+     ]
+    },
+    {
+     "id": "baroque",
+     "en": "Baroque",
+     "fr": "Baroque",
+     "es": "Barroco",
+     "de": "Barock",
+     "pt": "Barroco",
+     "tags": [
+      "baroque"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "decades",
+   "en": "Decades",
+   "fr": "Années",
+   "es": "Décadas",
+   "de": "Jahrzehnte",
+   "pt": "Décadas",
+   "tags": [
+    "oldies"
+   ],
+   "children": [
+    {
+     "id": "60s",
+     "en": "60s",
+     "fr": "Années 60",
+     "es": "Años 60",
+     "de": "60er",
+     "pt": "Anos 60",
+     "tags": [
+      "60s"
+     ]
+    },
+    {
+     "id": "70s",
+     "en": "70s",
+     "fr": "Années 70",
+     "es": "Años 70",
+     "de": "70er",
+     "pt": "Anos 70",
+     "tags": [
+      "70s"
+     ]
+    },
+    {
+     "id": "80s",
+     "en": "80s",
+     "fr": "Années 80",
+     "es": "Años 80",
+     "de": "80er",
+     "pt": "Anos 80",
+     "tags": [
+      "80s",
+      "80er"
+     ]
+    },
+    {
+     "id": "90s",
+     "en": "90s",
+     "fr": "Années 90",
+     "es": "Años 90",
+     "de": "90er",
+     "pt": "Anos 90",
+     "tags": [
+      "90s",
+      "90er"
+     ]
+    },
+    {
+     "id": "2000s",
+     "en": "2000s",
+     "fr": "Années 2000",
+     "es": "Años 2000",
+     "de": "2000er",
+     "pt": "Anos 2000",
+     "tags": [
+      "2000s"
+     ]
+    },
+    {
+     "id": "retro",
+     "en": "Retro",
+     "fr": "Rétro",
+     "es": "Retro",
+     "de": "Retro",
+     "pt": "Retrô",
+     "tags": [
+      "retro",
+      "classic hits"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "news",
+   "en": "News & Talk",
+   "fr": "Infos & Talk",
+   "es": "Noticias y charla",
+   "de": "Nachrichten & Talk",
+   "pt": "Notícias e papo",
+   "tags": [
+    "news",
+    "info",
+    "information"
+   ],
+   "children": [
+    {
+     "id": "talk",
+     "en": "Talk",
+     "fr": "Débats & Talk",
+     "es": "Charla",
+     "de": "Talk",
+     "pt": "Papo",
+     "tags": [
+      "talk",
+      "news talk"
+     ]
+    },
+    {
+     "id": "public",
+     "en": "Public radio",
+     "fr": "Radio publique",
+     "es": "Radio pública",
+     "de": "Öffentlicher Rundfunk",
+     "pt": "Rádio pública",
+     "tags": [
+      "public radio"
+     ]
+    },
+    {
+     "id": "localnews",
+     "en": "Local",
+     "fr": "Locale",
+     "es": "Local",
+     "de": "Lokal",
+     "pt": "Local",
+     "tags": [
+      "local news",
+      "radio locale",
+      "local radio"
+     ]
+    },
+    {
+     "id": "culture",
+     "en": "Culture",
+     "fr": "Culture",
+     "es": "Cultura",
+     "de": "Kultur",
+     "pt": "Cultura",
+     "tags": [
+      "culture"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sports",
+   "en": "Sports",
+   "fr": "Sport",
+   "es": "Deportes",
+   "de": "Sport",
+   "pt": "Esportes",
+   "tags": [
+    "sports",
+    "sport",
+    "deportes"
+   ]
+  },
+  {
+   "id": "latin",
+   "en": "Latin",
+   "fr": "Latino",
+   "es": "Latina",
+   "de": "Latin",
+   "pt": "Latina",
+   "tags": [
+    "latin",
+    "latino"
+   ],
+   "children": [
+    {
+     "id": "salsa",
+     "en": "Salsa & Bachata",
+     "fr": "Salsa & Bachata",
+     "es": "Salsa y bachata",
+     "de": "Salsa & Bachata",
+     "pt": "Salsa e bachata",
+     "tags": [
+      "salsa",
+      "bachata"
+     ]
+    },
+    {
+     "id": "reggaeton",
+     "en": "Reggaeton",
+     "fr": "Reggaeton",
+     "es": "Reguetón",
+     "de": "Reggaeton",
+     "pt": "Reggaeton",
+     "tags": [
+      "reggaeton"
+     ]
+    },
+    {
+     "id": "regionalmx",
+     "en": "Regional Mexican",
+     "fr": "Mexicain régional",
+     "es": "Regional mexicana",
+     "de": "Mexikanisch regional",
+     "pt": "Regional mexicana",
+     "tags": [
+      "regional mexican"
+     ]
+    },
+    {
+     "id": "sertanejo",
+     "en": "Brazilian",
+     "fr": "Brésilien",
+     "es": "Brasileña",
+     "de": "Brasilianisch",
+     "pt": "Brasileira",
+     "tags": [
+      "sertanejo",
+      "mpb",
+      "brazilian music"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "worldmusic",
+   "en": "World",
+   "fr": "Musiques du monde",
+   "es": "Música del mundo",
+   "de": "Weltmusik",
+   "pt": "Música do mundo",
+   "tags": [
+    "world music",
+    "world"
+   ],
+   "children": [
+    {
+     "id": "reggae",
+     "en": "Reggae",
+     "fr": "Reggae",
+     "es": "Reggae",
+     "de": "Reggae",
+     "pt": "Reggae",
+     "tags": [
+      "reggae"
+     ]
+    },
+    {
+     "id": "arabic",
+     "en": "Arabic",
+     "fr": "Arabe",
+     "es": "Árabe",
+     "de": "Arabisch",
+     "pt": "Árabe",
+     "tags": [
+      "arabic"
+     ]
+    },
+    {
+     "id": "african",
+     "en": "African",
+     "fr": "Africain",
+     "es": "Africana",
+     "de": "Afrikanisch",
+     "pt": "Africana",
+     "tags": [
+      "african",
+      "afrobeat"
+     ]
+    },
+    {
+     "id": "bollywood",
+     "en": "Bollywood",
+     "fr": "Bollywood",
+     "es": "Bollywood",
+     "de": "Bollywood",
+     "pt": "Bollywood",
+     "tags": [
+      "bollywood"
+     ]
+    },
+    {
+     "id": "kpop",
+     "en": "K-pop",
+     "fr": "K-pop",
+     "es": "K-pop",
+     "de": "K-Pop",
+     "pt": "K-pop",
+     "tags": [
+      "k-pop"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "country",
+   "en": "Country & Folk",
+   "fr": "Country & Folk",
+   "es": "Country y folk",
+   "de": "Country & Folk",
+   "pt": "Country e folk",
+   "tags": [
+    "country"
+   ],
+   "children": [
+    {
+     "id": "folk",
+     "en": "Folk",
+     "fr": "Folk",
+     "es": "Folk",
+     "de": "Folk",
+     "pt": "Folk",
+     "tags": [
+      "folk"
+     ]
+    },
+    {
+     "id": "bluegrass",
+     "en": "Bluegrass",
+     "fr": "Bluegrass",
+     "es": "Bluegrass",
+     "de": "Bluegrass",
+     "pt": "Bluegrass",
+     "tags": [
+      "bluegrass"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chill",
+   "en": "Chill",
+   "fr": "Détente",
+   "es": "Relax",
+   "de": "Entspannung",
+   "pt": "Relax",
+   "tags": [
+    "chillout",
+    "lounge"
+   ],
+   "children": [
+    {
+     "id": "ambient",
+     "en": "Ambient",
+     "fr": "Ambient",
+     "es": "Ambient",
+     "de": "Ambient",
+     "pt": "Ambient",
+     "tags": [
+      "ambient"
+     ]
+    },
+    {
+     "id": "easy",
+     "en": "Easy listening",
+     "fr": "Easy listening",
+     "es": "Easy listening",
+     "de": "Easy Listening",
+     "pt": "Easy listening",
+     "tags": [
+      "easy listening"
+     ]
+    },
+    {
+     "id": "lofi",
+     "en": "Lo-fi",
+     "fr": "Lo-fi",
+     "es": "Lo-fi",
+     "de": "Lo-Fi",
+     "pt": "Lo-fi",
+     "tags": [
+      "lofi"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "religion",
+   "en": "Religion",
+   "fr": "Religion",
+   "es": "Religión",
+   "de": "Religion",
+   "pt": "Religião",
+   "tags": [
+    "religious",
+    "christian"
+   ],
+   "children": [
+    {
+     "id": "christian",
+     "en": "Christian",
+     "fr": "Chrétien",
+     "es": "Cristiana",
+     "de": "Christlich",
+     "pt": "Cristã",
+     "tags": [
+      "christian"
+     ]
+    },
+    {
+     "id": "gospel",
+     "en": "Gospel",
+     "fr": "Gospel",
+     "es": "Gospel",
+     "de": "Gospel",
+     "pt": "Gospel",
+     "tags": [
+      "gospel"
+     ]
+    },
+    {
+     "id": "catholic",
+     "en": "Catholic",
+     "fr": "Catholique",
+     "es": "Católica",
+     "de": "Katholisch",
+     "pt": "Católica",
+     "tags": [
+      "catholic"
+     ]
+    },
+    {
+     "id": "islam",
+     "en": "Islamic",
+     "fr": "Musulman",
+     "es": "Islámica",
+     "de": "Islamisch",
+     "pt": "Islâmica",
+     "tags": [
+      "islam"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kids",
+   "en": "Kids & Humor",
+   "fr": "Enfants & Humour",
+   "es": "Niños y humor",
+   "de": "Kinder & Humor",
+   "pt": "Crianças e humor",
+   "tags": [
+    "kids",
+    "comedy"
+   ]
+  }
+ ],
+ "brands": [
+  {
+   "name": "NRJ",
+   "country": "FR",
+   "q": "NRJ"
+  },
+  {
+   "name": "Nostalgie",
+   "country": "FR",
+   "q": "Nostalgie"
+  },
+  {
+   "name": "Chérie FM",
+   "country": "FR",
+   "q": "Chérie FM"
+  },
+  {
+   "name": "Rire et Chansons",
+   "country": "FR",
+   "q": "Rire et Chansons|Rire & Chansons"
+  },
+  {
+   "name": "RTL",
+   "country": "FR",
+   "q": "RTL"
+  },
+  {
+   "name": "Fun Radio",
+   "country": "FR",
+   "q": "Fun Radio"
+  },
+  {
+   "name": "Virgin Radio",
+   "country": "FR",
+   "q": "Virgin Radio"
+  },
+  {
+   "name": "RFM",
+   "country": "FR",
+   "q": "RFM"
+  },
+  {
+   "name": "Europe 1",
+   "country": "FR",
+   "q": "Europe 1"
+  },
+  {
+   "name": "Europe 2",
+   "country": "FR",
+   "q": "Europe 2"
+  },
+  {
+   "name": "RMC",
+   "country": "FR",
+   "q": "RMC"
+  },
+  {
+   "name": "BFM",
+   "country": "FR",
+   "q": "BFM"
+  },
+  {
+   "name": "Skyrock",
+   "country": "FR",
+   "q": "Skyrock"
+  },
+  {
+   "name": "FIP",
+   "country": "FR",
+   "q": "FIP"
+  },
+  {
+   "name": "France Musique",
+   "country": "FR",
+   "q": "France Musique"
+  },
+  {
+   "name": "France Inter",
+   "country": "FR",
+   "q": "France Inter"
+  },
+  {
+   "name": "franceinfo",
+   "country": "FR",
+   "q": "franceinfo"
+  },
+  {
+   "name": "France Culture",
+   "country": "FR",
+   "q": "France Culture"
+  },
+  {
+   "name": "Mouv'",
+   "country": "FR",
+   "q": "Mouv"
+  },
+  {
+   "name": "ICI (ex-France Bleu)",
+   "country": "FR",
+   "q": "ICI |France Bleu"
+  },
+  {
+   "name": "Radio Classique",
+   "country": "FR",
+   "q": "Radio Classique"
+  },
+  {
+   "name": "Jazz Radio",
+   "country": "FR",
+   "q": "Jazz Radio"
+  },
+  {
+   "name": "Générations",
+   "country": "FR",
+   "q": "Générations"
+  },
+  {
+   "name": "Radio Nova",
+   "country": "FR",
+   "q": "Nova"
+  },
+  {
+   "name": "RCF",
+   "country": "FR",
+   "q": "RCF"
+  },
+  {
+   "name": "M Radio",
+   "country": "FR",
+   "q": "M Radio"
+  },
+  {
+   "name": "Alouette",
+   "country": "FR",
+   "q": "Alouette"
+  },
+  {
+   "name": "MFM",
+   "country": "FR",
+   "q": "MFM"
+  },
+  {
+   "name": "Voltage",
+   "country": "FR",
+   "q": "Voltage"
+  },
+  {
+   "name": "Oui FM",
+   "country": "FR",
+   "q": "Oui FM"
+  },
+  {
+   "name": "Latina",
+   "country": "FR",
+   "q": "Latina"
+  },
+  {
+   "name": "Forum",
+   "country": "FR",
+   "q": "Forum"
+  },
+  {
+   "name": "Radio FG",
+   "country": "FR",
+   "q": "Radio FG"
+  },
+  {
+   "name": "Africa N°1",
+   "country": "FR",
+   "q": "Africa"
+  },
+  {
+   "name": "RFI",
+   "country": "FR",
+   "q": "RFI"
+  },
+  {
+   "name": "Wit FM",
+   "country": "FR",
+   "q": "Wit FM"
+  },
+  {
+   "name": "Vibration",
+   "country": "FR",
+   "q": "Vibration"
+  },
+  {
+   "name": "Radio Scoop",
+   "country": "FR",
+   "q": "Scoop"
+  },
+  {
+   "name": "Radio Campus",
+   "country": "FR",
+   "q": "Campus"
+  },
+  {
+   "name": "BBC Radio",
+   "country": "GB",
+   "q": "BBC Radio"
+  },
+  {
+   "name": "Absolute Radio",
+   "country": "GB",
+   "q": "Absolute"
+  },
+  {
+   "name": "Capital",
+   "country": "GB",
+   "q": "Capital"
+  },
+  {
+   "name": "Heart",
+   "country": "GB",
+   "q": "Heart"
+  },
+  {
+   "name": "Kiss",
+   "country": "GB",
+   "q": "Kiss"
+  },
+  {
+   "name": "Magic",
+   "country": "GB",
+   "q": "Magic"
+  },
+  {
+   "name": "Smooth",
+   "country": "GB",
+   "q": "Smooth"
+  },
+  {
+   "name": "Classic FM",
+   "country": "GB",
+   "q": "Classic FM"
+  },
+  {
+   "name": "LBC",
+   "country": "GB",
+   "q": "LBC"
+  },
+  {
+   "name": "talkSPORT",
+   "country": "GB",
+   "q": "talkSPORT"
+  },
+  {
+   "name": "Virgin Radio",
+   "country": "GB",
+   "q": "Virgin Radio"
+  },
+  {
+   "name": "Radio X",
+   "country": "GB",
+   "q": "Radio X"
+  },
+  {
+   "name": "Hits Radio",
+   "country": "GB",
+   "q": "Hits Radio"
+  },
+  {
+   "name": "iHeart",
+   "country": "US",
+   "q": "iHeart"
+  },
+  {
+   "name": "NPR",
+   "country": "US",
+   "q": "NPR"
+  },
+  {
+   "name": "KEXP",
+   "country": "US",
+   "q": "KEXP"
+  },
+  {
+   "name": "Radio Disney",
+   "country": "US",
+   "q": "Radio Disney"
+  },
+  {
+   "name": "KISS",
+   "country": "US",
+   "q": "KISS"
+  },
+  {
+   "name": "ESPN",
+   "country": "US",
+   "q": "ESPN"
+  },
+  {
+   "name": "K-LOVE",
+   "country": "US",
+   "q": "K-LOVE"
+  },
+  {
+   "name": "Bloomberg",
+   "country": "US",
+   "q": "Bloomberg"
+  },
+  {
+   "name": "CBS",
+   "country": "US",
+   "q": "CBS"
+  },
+  {
+   "name": "SWR",
+   "country": "DE",
+   "q": "SWR"
+  },
+  {
+   "name": "NDR",
+   "country": "DE",
+   "q": "NDR"
+  },
+  {
+   "name": "WDR",
+   "country": "DE",
+   "q": "WDR"
+  },
+  {
+   "name": "MDR",
+   "country": "DE",
+   "q": "MDR"
+  },
+  {
+   "name": "Antenne",
+   "country": "DE",
+   "q": "Antenne"
+  },
+  {
+   "name": "Energy",
+   "country": "DE",
+   "q": "Energy"
+  },
+  {
+   "name": "Deutschlandfunk",
+   "country": "DE",
+   "q": "Deutschlandfunk"
+  },
+  {
+   "name": "Rock Antenne",
+   "country": "DE",
+   "q": "Rock Antenne"
+  },
+  {
+   "name": "1LIVE",
+   "country": "DE",
+   "q": "1LIVE"
+  },
+  {
+   "name": "Sunshine live",
+   "country": "DE",
+   "q": "Sunshine"
+  },
+  {
+   "name": "Regenbogen",
+   "country": "DE",
+   "q": "Regenbogen"
+  },
+  {
+   "name": "RTL",
+   "country": "DE",
+   "q": "RTL"
+  },
+  {
+   "name": "FFH",
+   "country": "DE",
+   "q": "FFH"
+  },
+  {
+   "name": "Radio Gong",
+   "country": "DE",
+   "q": "Gong"
+  },
+  {
+   "name": "Rockland",
+   "country": "DE",
+   "q": "Rockland"
+  },
+  {
+   "name": "rbb",
+   "country": "DE",
+   "q": "rbb"
+  },
+  {
+   "name": "Egofm",
+   "country": "DE",
+   "q": "Egofm"
+  },
+  {
+   "name": "Klassik Radio",
+   "country": "DE",
+   "q": "Klassik Radio"
+  },
+  {
+   "name": "Delta",
+   "country": "DE",
+   "q": "Delta"
+  },
+  {
+   "name": "Cadena SER",
+   "country": "ES",
+   "q": "Cadena SER"
+  },
+  {
+   "name": "COPE",
+   "country": "ES",
+   "q": "COPE"
+  },
+  {
+   "name": "Onda Cero",
+   "country": "ES",
+   "q": "Onda Cero"
+  },
+  {
+   "name": "LOS40",
+   "country": "ES",
+   "q": "Los 40|LOS40"
+  },
+  {
+   "name": "RNE",
+   "country": "ES",
+   "q": "RNE|Radio Nacional"
+  },
+  {
+   "name": "Kiss FM",
+   "country": "ES",
+   "q": "Kiss FM"
+  },
+  {
+   "name": "Radio Marca",
+   "country": "ES",
+   "q": "Radio Marca"
+  },
+  {
+   "name": "Catalunya",
+   "country": "ES",
+   "q": "Catalunya"
+  },
+  {
+   "name": "RAI",
+   "country": "IT",
+   "q": "RAI"
+  },
+  {
+   "name": "Radio Deejay",
+   "country": "IT",
+   "q": "Deejay"
+  },
+  {
+   "name": "RTL 102.5",
+   "country": "IT",
+   "q": "RTL 102.5"
+  },
+  {
+   "name": "Radio Italia",
+   "country": "IT",
+   "q": "Radio Italia"
+  },
+  {
+   "name": "Virgin Radio",
+   "country": "IT",
+   "q": "Virgin"
+  },
+  {
+   "name": "Radio 105",
+   "country": "IT",
+   "q": "Radio 105"
+  },
+  {
+   "name": "Radio Capital",
+   "country": "IT",
+   "q": "Capital"
+  },
+  {
+   "name": "Radio Kiss Kiss",
+   "country": "IT",
+   "q": "Kiss Kiss"
+  },
+  {
+   "name": "Radio Monte Carlo",
+   "country": "IT",
+   "q": "Monte Carlo"
+  },
+  {
+   "name": "m2o",
+   "country": "IT",
+   "q": "m2o"
+  },
+  {
+   "name": "Radio Maria",
+   "country": "IT",
+   "q": "Radio Maria"
+  },
+  {
+   "name": "RTBF",
+   "country": "BE",
+   "q": "RTBF"
+  },
+  {
+   "name": "Vivacité",
+   "country": "BE",
+   "q": "Vivacité"
+  },
+  {
+   "name": "Classic 21",
+   "country": "BE",
+   "q": "Classic 21"
+  },
+  {
+   "name": "Nostalgie",
+   "country": "BE",
+   "q": "Nostalgie"
+  },
+  {
+   "name": "Studio Brussel",
+   "country": "BE",
+   "q": "Studio Brussel|StuBru"
+  },
+  {
+   "name": "Qmusic",
+   "country": "BE",
+   "q": "Qmusic"
+  },
+  {
+   "name": "Joe",
+   "country": "BE",
+   "q": "Joe"
+  },
+  {
+   "name": "MNM",
+   "country": "BE",
+   "q": "MNM"
+  },
+  {
+   "name": "Willy",
+   "country": "BE",
+   "q": "Willy"
+  },
+  {
+   "name": "NPO",
+   "country": "NL",
+   "q": "NPO"
+  },
+  {
+   "name": "Qmusic",
+   "country": "NL",
+   "q": "Qmusic"
+  },
+  {
+   "name": "Sublime",
+   "country": "NL",
+   "q": "Sublime"
+  },
+  {
+   "name": "538",
+   "country": "NL",
+   "q": "538"
+  },
+  {
+   "name": "Sky Radio",
+   "country": "NL",
+   "q": "Sky Radio"
+  },
+  {
+   "name": "Radio 10",
+   "country": "NL",
+   "q": "Radio 10"
+  },
+  {
+   "name": "Slam",
+   "country": "NL",
+   "q": "Slam"
+  },
+  {
+   "name": "Veronica",
+   "country": "NL",
+   "q": "Veronica"
+  },
+  {
+   "name": "KINK",
+   "country": "NL",
+   "q": "KINK"
+  },
+  {
+   "name": "BNR",
+   "country": "NL",
+   "q": "BNR"
+  },
+  {
+   "name": "SRF",
+   "country": "CH",
+   "q": "SRF"
+  },
+  {
+   "name": "RTS",
+   "country": "CH",
+   "q": "RTS"
+  },
+  {
+   "name": "Radio Swiss",
+   "country": "CH",
+   "q": "Radio Swiss"
+  },
+  {
+   "name": "Rouge FM",
+   "country": "CH",
+   "q": "Rouge"
+  },
+  {
+   "name": "One FM",
+   "country": "CH",
+   "q": "One FM"
+  },
+  {
+   "name": "Antena",
+   "country": "PT",
+   "q": "Antena"
+  },
+  {
+   "name": "RFM",
+   "country": "PT",
+   "q": "RFM"
+  },
+  {
+   "name": "Rádio Comercial",
+   "country": "PT",
+   "q": "Comercial"
+  },
+  {
+   "name": "M80",
+   "country": "PT",
+   "q": "M80"
+  },
+  {
+   "name": "Jovem Pan",
+   "country": "BR",
+   "q": "Jovem Pan"
+  },
+  {
+   "name": "CBN",
+   "country": "BR",
+   "q": "CBN"
+  },
+  {
+   "name": "Band",
+   "country": "BR",
+   "q": "Band"
+  },
+  {
+   "name": "Antena 1",
+   "country": "BR",
+   "q": "Antena 1"
+  },
+  {
+   "name": "Metropolitana",
+   "country": "BR",
+   "q": "Metropolitana"
+  },
+  {
+   "name": "Nativa",
+   "country": "BR",
+   "q": "Nativa"
+  },
+  {
+   "name": "Massa",
+   "country": "BR",
+   "q": "Massa"
+  },
+  {
+   "name": "Clube FM",
+   "country": "BR",
+   "q": "Clube FM"
+  },
+  {
+   "name": "ICI (Radio-Canada)",
+   "country": "CA",
+   "q": "ICI "
+  },
+  {
+   "name": "CBC",
+   "country": "CA",
+   "q": "CBC"
+  },
+  {
+   "name": "Boom",
+   "country": "CA",
+   "q": "Boom"
+  },
+  {
+   "name": "Jack",
+   "country": "CA",
+   "q": "Jack"
+  },
+  {
+   "name": "Radio Fórmula",
+   "country": "MX",
+   "q": "Fórmula|Radio Formula"
+  },
+  {
+   "name": "W Radio",
+   "country": "MX",
+   "q": "W Radio"
+  },
+  {
+   "name": "La Mejor",
+   "country": "MX",
+   "q": "La Mejor"
+  },
+  {
+   "name": "Ke Buena",
+   "country": "MX",
+   "q": "Ke Buena"
+  },
+  {
+   "name": "Radio Centro",
+   "country": "MX",
+   "q": "Radio Centro"
+  },
+  {
+   "name": "La Z",
+   "country": "MX",
+   "q": "La Z"
+  },
+  {
+   "name": "Grupo ACIR",
+   "country": "MX",
+   "q": "ACIR"
+  },
+  {
+   "name": "ABC",
+   "country": "AU",
+   "q": "ABC"
+  },
+  {
+   "name": "triple j",
+   "country": "AU",
+   "q": "triple j|Triple J"
+  },
+  {
+   "name": "Nova",
+   "country": "AU",
+   "q": "Nova"
+  },
+  {
+   "name": "KIIS",
+   "country": "AU",
+   "q": "KIIS"
+  },
+  {
+   "name": "Triple M",
+   "country": "AU",
+   "q": "Triple M"
+  },
+  {
+   "name": "Gold",
+   "country": "AU",
+   "q": "Gold"
+  },
+  {
+   "name": "Smooth",
+   "country": "AU",
+   "q": "Smooth"
+  },
+  {
+   "name": "NHK",
+   "country": "JP",
+   "q": "NHK"
+  },
+  {
+   "name": "Radio Mitre",
+   "country": "AR",
+   "q": "Mitre"
+  },
+  {
+   "name": "La 100",
+   "country": "AR",
+   "q": "La 100"
+  },
+  {
+   "name": "Rivadavia",
+   "country": "AR",
+   "q": "Rivadavia"
+  },
+  {
+   "name": "Radio 10",
+   "country": "AR",
+   "q": "Radio 10"
+  },
+  {
+   "name": "Aspen",
+   "country": "AR",
+   "q": "Aspen"
+  },
+  {
+   "name": "Caracol",
+   "country": "CO",
+   "q": "Caracol"
+  },
+  {
+   "name": "La FM",
+   "country": "CO",
+   "q": "La FM"
+  },
+  {
+   "name": "Tropicana",
+   "country": "CO",
+   "q": "Tropicana"
+  },
+  {
+   "name": "Olímpica",
+   "country": "CO",
+   "q": "Olímpica"
+  },
+  {
+   "name": "Blu",
+   "country": "CO",
+   "q": "Blu"
+  }
+ ]
+}

@@ -96,6 +96,7 @@
     <string name="share_image">Share as image</string>
     <string name="share_image_failed">Couldn\'t create the image.</string>
     <string name="panel_radios">Radios</string>
+    <string name="panel_webradios">Webradios</string>
     <string name="panel_local">Local news</string>
     <string name="ep_newest">Newest first</string>
     <string name="ep_oldest">Oldest first</string>
