@@ -305,14 +305,15 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
         }
         when {
             kind == "radio" && query.isBlank() && webradios && brand == null && radioCatalog != null -> {
-                val brands = radioCatalog.brands(country)
-                if (brands.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { Message(T["no_results"]) }
-                items(brands.size) { i ->
-                    val b = brands[i]
-                    Column(Modifier.clickable { brand = b }.padding(6.dp)) {
-                        Cover(null, b.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
-                        Text(b.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                for ((cc, group) in radioCatalog.byCountry(country)) {
+                    item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle(World.flag(cc) + " " + World.name(cc)) }
+                    items(group.size) { i ->
+                        val b = group[i]
+                        Column(Modifier.clickable { brand = b }.padding(6.dp)) {
+                            Cover(b.logo.ifEmpty { null }, b.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
+                            Text(b.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                        }
                     }
                 }
             }

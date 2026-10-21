@@ -340,7 +340,7 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
         searchBar()
         when {
             kind == "podcast" && query.isBlank() && panel == "radios" && source == null && catalog != null -> SourcesList(catalog, header) { source = it }
-            kind == "radio" && query.isBlank() && webradios && brand == null && radioCatalog != null -> BrandList(radioCatalog.brands(country), country, header) { brand = it }
+            kind == "radio" && query.isBlank() && webradios && brand == null && radioCatalog != null -> BrandList(radioCatalog, country, header) { brand = it }
             list == null -> Column { header(); Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
             failed -> Column { header(); Message(stringResource(R.string.load_failed)) }
             list.isEmpty() -> Column { header(); Message(stringResource(R.string.no_results)) }
@@ -349,18 +349,23 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     }
 }
 
-/** Marques de radios du pays affiché : un toucher ouvre toutes leurs webradios. */
+/** Marques de radios de tous les pays, celui de l'écoute d'abord : un toucher ouvre toutes leurs webradios. */
 @Composable
-fun BrandList(brands: List<RadioBrand>, country: String, header: @Composable () -> Unit, onPick: (RadioBrand) -> Unit) {
+fun BrandList(catalog: RadioCatalog, country: String, header: @Composable () -> Unit, onPick: (RadioBrand) -> Unit) {
+    val groups = remember(catalog, country) { catalog.byCountry(country) }
     LazyVerticalGrid(GridCells.Adaptive(150.dp), contentPadding = PaddingValues(8.dp), modifier = Modifier.fillMaxSize()) {
         item(span = { GridItemSpan(maxLineSpan) }) { header() }
-        if (brands.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { Text(World.flag(country) + " " + stringResource(R.string.no_results), modifier = Modifier.padding(16.dp)) }
-        items(brands.size) { i ->
-            val b = brands[i]
-            Column(Modifier.clickable { onPick(b) }.padding(6.dp)) {
-                Cover(null, b.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
-                Text(b.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+        for ((cc, list) in groups) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(World.flag(cc) + " " + World.name(cc), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(8.dp))
+            }
+            items(list.size) { i ->
+                val b = list[i]
+                Column(Modifier.clickable { onPick(b) }.padding(6.dp)) {
+                    Cover(b.logo.ifEmpty { null }, b.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
+                    Text(b.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                }
             }
         }
     }

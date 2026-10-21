@@ -481,10 +481,14 @@ function showBrowse(kind) {
       const cat = kind === "podcast" ? await catalogP : null;
       const rc = kind === "radio" ? await rcatP : null;
       if (kind === "radio" && !q && state.webradios && !state.rsource) {
-        // liste fixe : les marques du pays, une carte par marque
-        const brands = rc ? rc.brands.filter(b => b.country === state.cc.toUpperCase()) : [];
-        results.replaceChildren(brands.length ? h("div", { class: "grid" }, brands.map(b => h("button", { class: "card", onclick: () => { state.rsource = b; showBrowse(kind); } },
-          cover({ name: b.name, art: "" }), h("div", { class: "n" }, b.name), h("div", { class: "a" }, regionName(b.country))))) : h("div", { class: "msg" }, t("none")));
+        // liste fixe : les marques de tous les pays, celui de la liste d'abord
+        const groups = new Map();
+        for (const b of rc ? rc.brands : []) groups.set(b.country, [...(groups.get(b.country) || []), b]);
+        const first = state.cc.toUpperCase();
+        const order = [...groups.keys()].sort((a, b) => (a === first ? 0 : 1) - (b === first ? 0 : 1) || regionName(a).localeCompare(regionName(b), UL));
+        results.replaceChildren(...(order.length ? order.flatMap(cc => [h("h2", {}, flagOf(cc) + " " + regionName(cc)),
+          h("div", { class: "grid" }, groups.get(cc).map(b => h("button", { class: "card", onclick: () => { state.rsource = b; showBrowse(kind); } },
+            cover({ name: b.name, art: b.logo || "" }, b.logo ? "logo-box" : ""), h("div", { class: "n" }, b.name))))]) : [h("div", { class: "msg" }, t("none"))]));
         return;
       }
       const genre = kind === "radio" && rc && state.rgenre && !q ? findRadioGenre(rc, state.rgenre) : null;

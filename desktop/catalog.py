@@ -882,12 +882,20 @@ def radio_genre_parent(gid):
     return None
 
 
-def radio_brand_items(code=None):
-    """Marques de radios du pays, sous forme de cartes (sans pochette : tuile colorée avec initiale)."""
-    code = code or get_country()
-    return [{"kind": "brand", "name": b["name"], "artist": COUNTRY_NAMES.get(b["country"], b["country"]), "art": "",
-             "queries": b["q"].split("|"), "country": b["country"]}
-            for b in (RADIO_CATALOG or {}).get("brands", []) if b["country"] == code]
+def radio_brand_item(b):
+    """Une marque sous forme de carte : son logo, ou à défaut une tuile colorée avec initiale."""
+    return {"kind": "brand", "name": b["name"], "artist": COUNTRY_NAMES.get(b["country"], b["country"]), "art": b.get("logo", ""),
+            "queries": b["q"].split("|"), "country": b["country"]}
+
+
+def radio_brand_groups(first=None):
+    """Marques de tous les pays, groupées : le pays [first] (par défaut celui de l'utilisateur) d'abord, puis les autres par ordre alphabétique."""
+    first = first or get_country()
+    groups = {}
+    for b in (RADIO_CATALOG or {}).get("brands", []):
+        groups.setdefault(b["country"], []).append(radio_brand_item(b))
+    order = sorted(groups, key=lambda cc: (cc != first, COUNTRY_NAMES.get(cc, cc).casefold()))
+    return [(cc, groups[cc]) for cc in order]
 
 
 def _merge_radios(lists):

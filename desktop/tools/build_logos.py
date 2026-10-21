@@ -29,6 +29,8 @@ def get(url, n=300_000, rng=None):
 def alive(url):
     try:
         ct, b = get(url, 32, "bytes=0-31")
+        if "svg" in ct.lower() or url.lower().split("?")[0].endswith(".svg") or b[:5] == b"<?xml" or b[:4] == b"<svg":
+            return False   # ni Android ni GTK n'affichent le SVG
         return ct.startswith("image/") or b[:4] in (b"\x89PNG", b"GIF8", b"RIFF") or b[:3] == b"\xff\xd8\xff" or b[:4] == b"\0\0\1\0"
     except Exception:
         return False
