@@ -5,7 +5,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.verticalScroll
@@ -13,6 +22,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -57,9 +69,11 @@ class MainActivity : ComponentActivity() {
         CheckWorker.schedule(this)
         if (android.os.Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         setContent {
-            MaterialTheme(colorScheme = if (androidx.compose.foundation.isSystemInDarkTheme())
-                darkColorScheme(primary = Violet) else lightColorScheme(primary = Violet)) {
-                Surface(Modifier.fillMaxSize()) { PodialApp() }
+            PodialTheme {
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                    Aurora()
+                    PodialApp()
+                }
             }
         }
     }
@@ -122,7 +136,9 @@ fun PodialApp() {
         player.refresh()
         while (true) { delay(500); player.refresh() }
     }
-    var tab by remember { mutableIntStateOf(0) }
+    val pager = rememberPagerState { 4 }   // les quatre onglets se font glisser de gauche à droite
+    val tab = pager.currentPage
+    val scope = rememberCoroutineScope()
     var detail by remember { mutableStateOf<Item?>(null) }
     var sheet by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
@@ -132,33 +148,35 @@ fun PodialApp() {
     BackHandler(enabled = detail != null) { detail = null }
 
     Scaffold(
+        containerColor = Color.Transparent,
         bottomBar = {
             Column {
-                if (player.mediaId.isNotEmpty()) MiniPlayer(player) { sheet = true }
-                NavigationBar {
-                    val newTotal = Store.newCounts.collectAsState().value.values.sum()
-                    listOf(Icons.Default.Podcasts to R.string.tab_podcasts, Icons.Default.Radio to R.string.tab_radios,
-                        Icons.Default.Star to R.string.tab_library, Icons.Default.Download to R.string.tab_downloads)
-                        .forEachIndexed { i, (icon, label) ->
-                            NavigationBarItem(selected = tab == i, onClick = { tab = i; detail = null },
-                                icon = {
-                                    if (i == 2 && newTotal > 0) BadgedBox(badge = { Badge { Text("$newTotal") } }) { Icon(icon, null) }
-                                    else Icon(icon, null)
-                                }, label = { Text(stringResource(label)) })
-                        }
+                AnimatedVisibility(player.mediaId.isNotEmpty(), enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
+                    MiniPlayer(player) { sheet = true }
                 }
+                FloatingNav(tab, { i -> detail = null; scope.launch { pager.animateScrollToPage(i) } }, Store.newCounts.collectAsState().value.values.sum())
             }
         },
     ) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
             // la page de détail se pose par-dessus la liste, qui reste en place : au retour on retrouve le même genre, la même recherche et le même défilement
-            when (tab) {
-                0 -> BrowseScreen("podcast") { detail = it }
-                1 -> BrowseScreen("radio", onSurprise = { player.play(PlaybackService.radioItem(it)); detail = it }) { detail = it }
-                2 -> LibraryScreen(onMenu = { menu = true }) { detail = it }
-                else -> DownloadsScreen(player)
+            HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 3, userScrollEnabled = detail == null) { page ->
+                // la page qui s'éloigne rétrécit et s'estompe pendant le glissement
+                Box(Modifier.fillMaxSize().graphicsLayer {
+                    val away = ((pager.currentPage - page) + pager.currentPageOffsetFraction).let { if (it < 0) -it else it }.coerceAtMost(1f)
+                    alpha = 1f - 0.55f * away; scaleX = 1f - 0.06f * away; scaleY = scaleX
+                }) {
+                    when (page) {
+                        0 -> BrowseScreen("podcast", active = tab == 0) { detail = it }
+                        1 -> BrowseScreen("radio", onSurprise = { player.play(PlaybackService.radioItem(it)); detail = it }, active = tab == 1) { detail = it }
+                        2 -> LibraryScreen(onMenu = { menu = true }) { detail = it }
+                        else -> DownloadsScreen(player)
+                    }
+                }
             }
-            detail?.let { d -> Surface(Modifier.fillMaxSize()) { DetailScreen(d, player) { detail = null } } }
+            AnimatedContent(detail, transitionSpec = { (fadeIn(tween(260)) + slideInVertically(tween(320)) { it / 12 }).togetherWith(fadeOut(tween(160))) }, label = "detail") { d ->
+                if (d != null) Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { Aurora(); DetailScreen(d, player) { detail = null } }
+            }
         }
     }
     if (sheet) PlayerSheet(player, onTranscript = { sheet = false; transcript = true }) { sheet = false }
@@ -173,7 +191,8 @@ fun PodialApp() {
 @Composable
 fun Cover(url: String?, name: String, size: Int, modifier: Modifier = Modifier) {
     val hue = (name.hashCode().toUInt() % 360u).toFloat()
-    Box(modifier.size(size.dp).clip(RoundedCornerShape(12.dp))
+    val r = (size / 7.5f).coerceIn(10f, 20f).dp
+    Box(modifier.size(size.dp).shadow(if (size >= 100) 8.dp else 3.dp, RoundedCornerShape(r), ambientColor = Brand.Violet, spotColor = Brand.Violet).clip(RoundedCornerShape(r))
         .background(Brush.linearGradient(listOf(Color.hsv(hue, 0.6f, 0.9f), Color.hsv((hue + 50) % 360, 0.7f, 0.8f)))),
         contentAlignment = Alignment.Center) {
         Text(name.firstOrNull()?.uppercase() ?: "?", color = Color.White, fontWeight = FontWeight.ExtraBold,
@@ -183,21 +202,20 @@ fun Cover(url: String?, name: String, size: Int, modifier: Modifier = Modifier) 
 }
 
 @Composable
-fun ItemCard(item: Item, rank: Int?, onClick: () -> Unit) {
+fun ItemCard(item: Item, rank: Int?, index: Int = 0, onClick: () -> Unit) {
     val newCount = if (item.kind == "podcast") Store.newCounts.collectAsState().value[item.feed] ?: 0 else 0
-    Column(Modifier.clickable(onClick = onClick).padding(6.dp)) {
+    Column(Modifier.entrance(index).pressable(onClick).padding(6.dp)) {
         Box {
-            Cover(item.art, item.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
-            if (rank != null) Text("$rank", color = Color.White, fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(6.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Violet, Pink)))
-                    .padding(horizontal = 9.dp, vertical = 2.dp))
+            if (item.kind == "radio") RadioLogo(null, item.art, item.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
+            else Cover(item.art, item.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
+            if (rank != null) Text("$rank", color = Color.White, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(8.dp).clip(CircleShape).background(Brand.grad).padding(horizontal = 10.dp, vertical = 2.dp))
             if (newCount > 0) Text(stringResource(R.string.new_badge, newCount), color = Color.White, style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).clip(CircleShape).background(Color(0xFFE5484D)).padding(horizontal = 7.dp, vertical = 1.dp))
-            if (item.kind == "radio") Text(stringResource(R.string.live), color = Color.White, style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).clip(CircleShape).background(Color(0xFFE5484D)).padding(horizontal = 7.dp, vertical = 1.dp))
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).clip(CircleShape).background(Brand.Live).padding(horizontal = 8.dp, vertical = 2.dp))
+            if (item.kind == "radio") LiveBadge(Modifier.align(Alignment.TopEnd).padding(8.dp))
         }
-        Text(item.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
-            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+        Text(item.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
         Text(item.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -205,9 +223,9 @@ fun ItemCard(item: Item, rank: Int?, onClick: () -> Unit) {
 
 @Composable
 fun Grid(items: List<Item>, header: @Composable (() -> Unit)? = null, onOpen: (Item) -> Unit, ranked: Boolean = false) {
-    LazyVerticalGrid(GridCells.Adaptive(150.dp), contentPadding = PaddingValues(8.dp), modifier = Modifier.fillMaxSize()) {
+    LazyVerticalGrid(GridCells.Adaptive(150.dp), contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), modifier = Modifier.fillMaxSize()) {
         if (header != null) item(span = { GridItemSpan(maxLineSpan) }) { header() }
-        items(items.size) { i -> ItemCard(items[i], if (ranked && i < 10) i + 1 else null) { onOpen(items[i]) } }
+        items(items.size) { i -> ItemCard(items[i], if (ranked && i < 10) i + 1 else null, i) { onOpen(items[i]) } }
     }
 }
 
@@ -218,7 +236,7 @@ fun Message(text: String) = Box(Modifier.fillMaxSize().padding(32.dp), contentAl
 
 // ---------- parcourir ----------
 @Composable
-fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -> Unit) {
+fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, active: Boolean = true, onOpen: (Item) -> Unit) {
     var query by remember(kind) { mutableStateOf("") }
     var genre by remember { mutableStateOf<Int?>(null) }
     var panel by remember { mutableStateOf<String?>(null) }      // null, "radios" (podcasts par radio) ou "local" (flashs d'info locaux)
@@ -236,8 +254,8 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     val countries = remember { runCatching { World.parse(ctx.assets.open("world.json").bufferedReader().use { it.readText() }) }.getOrDefault(emptyList()) }
     val catalog = remember { runCatching { SourceCatalog.parse(ctx.assets.open("podcast_sources.json").bufferedReader().use { it.readText() }) }.getOrNull() }
     val radioCatalog = remember { runCatching { RadioCatalog.parse(ctx.assets.open("radio_catalog.json").bufferedReader().use { it.readText() }) }.getOrNull() }
-    BackHandler(enabled = kind == "podcast" && (source != null || panel != null)) { if (source != null) source = null else panel = null }
-    BackHandler(enabled = kind == "radio" && (brand != null || webradios)) { if (brand != null) brand = null else webradios = false }
+    BackHandler(enabled = active && kind == "podcast" && (source != null || panel != null)) { if (source != null) source = null else panel = null }
+    BackHandler(enabled = active && kind == "radio" && (brand != null || webradios)) { if (brand != null) brand = null else webradios = false }
     LaunchedEffect(kind, query, genre, country, panel, source, rGenre, webradios, brand) {
         val src = source
         if (kind == "podcast" && query.isBlank() && panel == "radios" && src == null) { items = emptyList(); failed = false; return@LaunchedEffect }   // liste fixe : rien à charger
@@ -267,9 +285,11 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
     // (chargement → liste) et perd le focus, ce qui referme le clavier
     val searchBar: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(query, { query = it; if (it.isNotBlank()) { panel = null; source = null; webradios = false; brand = null } }, singleLine = true, shape = RoundedCornerShape(24.dp),
+            OutlinedTextField(query, { query = it; if (it.isNotBlank()) { panel = null; source = null; webradios = false; brand = null } }, singleLine = true, shape = CircleShape,
                 placeholder = { Text(stringResource(if (kind == "podcast") R.string.search_podcasts else R.string.search_radios)) },
-                leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp))
+                leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.weight(1f).padding(4.dp),
+                colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant, focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant, focusedBorderColor = Brand.Violet))
             if (kind == "radio" && countries.isNotEmpty()) {
                 FilledTonalIconButton({
                     if (surprising) return@FilledTonalIconButton
@@ -298,8 +318,8 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
                 val parent = genre?.let { g -> catalog.genre(g)?.let { if (it.parent == 0) it.id else it.parent } }
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                     item { FilterChip(genre == null && panel == null, { genre = null; panel = null }, { Text(stringResource(R.string.all)) }) }
-                    item { FilterChip(panel == "radios", { panel = "radios"; genre = null }, { Text("📻 " + stringResource(R.string.panel_radios)) }) }
-                    item { FilterChip(panel == "local", { panel = "local"; genre = null }, { Text("🗞 " + stringResource(R.string.panel_local)) }) }
+                    item { FilterChip(panel == "radios", { panel = "radios"; genre = null }, { Text(stringResource(R.string.panel_radios)) }, { ChipIcon(Icons.Default.Radio) }) }
+                    item { FilterChip(panel == "local", { panel = "local"; genre = null }, { Text(stringResource(R.string.panel_local)) }, { ChipIcon(Icons.Default.Newspaper) }) }
                     items(catalog.topLevel()) { g -> FilterChip(panel == null && parent == g.id, { genre = g.id; panel = null }, { Text(g.name()) }) }
                 }
                 val children = if (panel == null && parent != null) catalog.children(parent) else emptyList()
@@ -316,7 +336,7 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
                 val parent = radioCatalog.parentOf(rGenre)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
                     item { FilterChip(rGenre == null && !webradios, { rGenre = null; webradios = false }, { Text(stringResource(R.string.all)) }) }
-                    item { FilterChip(webradios, { webradios = true; rGenre = null }, { Text("📡 " + stringResource(R.string.panel_webradios)) }) }
+                    item { FilterChip(webradios, { webradios = true; rGenre = null }, { Text(stringResource(R.string.panel_webradios)) }, { ChipIcon(Icons.Default.CellTower) }) }
                     items(radioCatalog.genres) { g -> FilterChip(!webradios && parent?.id == g.id, { rGenre = g.id; webradios = false }, { Text(g.name()) }) }
                 }
                 val children = if (!webradios) parent?.children.orEmpty() else emptyList()
@@ -341,7 +361,7 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
         when {
             kind == "podcast" && query.isBlank() && panel == "radios" && source == null && catalog != null -> SourcesList(catalog, header) { source = it }
             kind == "radio" && query.isBlank() && webradios && brand == null && radioCatalog != null -> BrandList(radioCatalog, country, header) { brand = it }
-            list == null -> Column { header(); Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+            list == null -> SkeletonGrid(header)
             failed -> Column { header(); Message(stringResource(R.string.load_failed)) }
             list.isEmpty() -> Column { header(); Message(stringResource(R.string.no_results)) }
             else -> Grid(list, header, onOpen, ranked = query.isBlank() && panel == null && rGenre == null && brand == null)
@@ -362,7 +382,7 @@ fun BrandList(catalog: RadioCatalog, country: String, header: @Composable () -> 
             items(list.size) { i ->
                 val b = list[i]
                 Column(Modifier.clickable { onPick(b) }.padding(6.dp)) {
-                    Cover(b.logo.ifEmpty { null }, b.name, 150, Modifier.fillMaxWidth().aspectRatio(1f))
+                    RadioLogo(null, b.logo, b.name, 150, Modifier.fillMaxWidth().aspectRatio(1f).entrance())
                     Text(b.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
                         style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
                 }
@@ -448,24 +468,27 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
         if (known != null && fresh.isEmpty()) fresh = eps.map { it.url }.toSet() - known
         Store.markSeen(item.feed, eps.map { it.url })
     }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, stringResource(R.string.back)) }
+            Box(Modifier.padding(bottom = 6.dp).size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.ArrowBack, stringResource(R.string.back), Modifier.size(22.dp))
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Cover(item.art, item.name, 120)
+                Cover(item.art, item.name, 128)
                 Column(Modifier.weight(1f)) {
                     Text(item.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
                     Text(item.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (item.kind == "radio") Button(onClick = { player.play(PlaybackService.radioItem(item)) }) {
+                        if (item.kind == "radio") GradientButton({ player.play(PlaybackService.radioItem(item)) }) {
                             Icon(Icons.Default.PlayArrow, null); Text(stringResource(R.string.live))
                         }
-                        OutlinedButton(onClick = { Store.toggle(item) }) {
-                            Icon(if (saved) Icons.Default.Star else Icons.Outlined.StarOutline, null)
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(if (item.kind == "radio") (if (saved) R.string.remove_favorite else R.string.add_favorite)
-                                                else (if (saved) R.string.subscribed else R.string.subscribe)))
+                        val label = stringResource(if (item.kind == "radio") (if (saved) R.string.remove_favorite else R.string.add_favorite)
+                                                   else (if (saved) R.string.subscribed else R.string.subscribe))
+                        if (saved) OutlinedButton(onClick = { Store.toggle(item) }) {
+                            Icon(Icons.Default.Star, null, tint = Brand.Pink); Spacer(Modifier.width(6.dp)); Text(label)
+                        } else GradientButton({ Store.toggle(item) }) {
+                            Icon(Icons.Outlined.StarOutline, null); Text(label)
                         }
                     }
                 }
@@ -473,7 +496,9 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
             feed?.first?.takeIf { it.isNotEmpty() }?.let {
                 Text(it, maxLines = 5, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
             }
-            if (item.kind == "podcast" && feed == null && !failed) Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            if (item.kind == "podcast" && feed == null && !failed) Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                repeat(5) { Box(Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(18.dp)).shimmer()) }
+            }
             if (failed) Message(stringResource(R.string.load_failed))
         }
         feed?.second?.let { allEps ->
@@ -497,10 +522,12 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
                 val dl = downloads.any { it.episode.url == ep.url }
                 val progress = active[ep.url]
                 val done = ep.url in played
-                Row(Modifier.fillMaxWidth().clickable { player.play(PlaybackService.episodeItem(item, ep)) }.padding(vertical = 6.dp)
+                val current = player.mediaId == "ep|" + ep.url
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+                    .background(if (current) Brand.Violet.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                    .clickable { player.play(PlaybackService.episodeItem(item, ep)) }.padding(start = 12.dp, top = 6.dp, bottom = 6.dp)
                     .alpha(if (done) 0.55f else 1f), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(if (player.mediaId == "ep|" + ep.url) Icons.Default.GraphicEq else Icons.Default.PlayArrow, null,
-                        tint = MaterialTheme.colorScheme.primary)
+                    if (current) EqBars(player.isPlaying, Modifier.width(22.dp)) else Icon(Icons.Default.PlayArrow, null, tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (ep.url in fresh && !done) Text(stringResource(R.string.new_chip), color = MaterialTheme.colorScheme.primary,
@@ -523,7 +550,6 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
                         else -> IconButton(onClick = { Store.download(item, ep) }) { Icon(Icons.Default.Download, stringResource(R.string.download)) }
                     }
                 }
-                HorizontalDivider()
             }
         }
     }
@@ -535,7 +561,8 @@ fun DownloadsScreen(player: PlayerState) {
     if (downloads.isEmpty()) { Message(stringResource(R.string.no_downloads)); return }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         items(downloads, key = { it.episode.url }) { d ->
-            Row(Modifier.fillMaxWidth().clickable { player.play(PlaybackService.episodeItem(d.podcast, d.episode)) }.padding(vertical = 8.dp),
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                .clickable { player.play(PlaybackService.episodeItem(d.podcast, d.episode)) }.padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 Cover(d.podcast.art, d.podcast.name, 48)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
@@ -545,7 +572,6 @@ fun DownloadsScreen(player: PlayerState) {
                 }
                 IconButton(onClick = { Store.removeDownload(d.episode.url) }) { Icon(Icons.Default.DeleteOutline, stringResource(R.string.remove_download)) }
             }
-            HorizontalDivider()
         }
     }
 }
@@ -553,15 +579,21 @@ fun DownloadsScreen(player: PlayerState) {
 // ---------- lecteur ----------
 @Composable
 fun MiniPlayer(p: PlayerState, onOpen: () -> Unit) {
-    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).clickable(onClick = onOpen).padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-        if (p.live) RadioLogo(null, p.art, p.title, 44) else Cover(p.art, p.title, 44)
-        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-            Text(p.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
-            Text(p.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
-        }
-        IconButton(onClick = { p.controller?.let { if (it.isPlaying) it.pause() else it.play() } }) {
-            Icon(if (p.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, stringResource(if (p.isPlaying) R.string.pause else R.string.play))
+    Surface(Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth().shadow(18.dp, RoundedCornerShape(26.dp), ambientColor = Brand.Violet, spotColor = Brand.Pink),
+        shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+        Box {
+            Row(Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (p.live) RadioLogo(null, p.art, p.title, 46) else Cover(p.art, p.title, 46)
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Text(p.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                    Text(p.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                EqBars(p.isPlaying, Modifier.padding(end = 12.dp))
+                PlayCircle(p.isPlaying, 44, { p.controller?.let { if (it.isPlaying) it.pause() else it.play() } },
+                    description = stringResource(if (p.isPlaying) R.string.pause else R.string.play))
+            }
+            if (!p.live && p.duration > 0) Box(Modifier.align(Alignment.BottomStart).padding(horizontal = 22.dp)
+                .fillMaxWidth((p.position.toFloat() / p.duration).coerceIn(0f, 1f)).height(3.dp).clip(CircleShape).background(Brand.grad))
         }
     }
 }
@@ -578,12 +610,12 @@ fun PlayerSheet(p: PlayerState, onTranscript: () -> Unit, onClose: () -> Unit) {
     val eop by SleepTimer.endOfEpisode.collectAsState()
     var timerMenu by remember { mutableStateOf(false) }
     var seeking by remember { mutableStateOf<Float?>(null) }
-    ModalBottomSheet(onDismissRequest = onClose) {
+    ModalBottomSheet(onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), shape = RoundedCornerShape(topStart = 34.dp, topEnd = 34.dp), containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         if (p.live) { RadioSheet(p); return@ModalBottomSheet }
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Cover(p.art, p.title, 220)
             Text(p.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, maxLines = 2,
-                modifier = Modifier.padding(top = 16.dp))
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
             Text(p.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!p.live && p.duration > 0) {
                 Slider(seeking ?: (p.position.toFloat() / p.duration), { seeking = it },
@@ -595,9 +627,8 @@ fun PlayerSheet(p: PlayerState, onTranscript: () -> Unit, onClose: () -> Unit) {
             } else Text(stringResource(R.string.live), color = Color(0xFFE5484D), fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 IconButton({ p.controller?.seekBack() }, enabled = !p.live) { Icon(Icons.Default.Replay10, null) }
-                FilledIconButton({ p.controller?.let { if (it.isPlaying) it.pause() else it.play() } }, Modifier.size(64.dp)) {
-                    Icon(if (p.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, stringResource(if (p.isPlaying) R.string.pause else R.string.play), Modifier.size(36.dp))
-                }
+                PlayCircle(p.isPlaying, 72, { p.controller?.let { if (it.isPlaying) it.pause() else it.play() } },
+                    description = stringResource(if (p.isPlaying) R.string.pause else R.string.play))
                 IconButton({ p.controller?.seekForward() }, enabled = !p.live) { Icon(Icons.Default.Forward30, null) }
             }
             if (!p.live) {
@@ -725,7 +756,7 @@ fun AboutDialog(version: String, onClose: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton({ uri.openUri(Release.SITE) }) { Text("GitHub") }
                     TextButton({ uri.openUri(Release.SITE + "/issues") }) { Text(stringResource(R.string.report_bug)) }
-                    TextButton({ uri.openUri(Release.SUPPORT) }) { Text("☕") }
+                    TextButton({ uri.openUri(Release.SUPPORT) }) { Icon(Icons.Default.LocalCafe, null, Modifier.size(20.dp)) }
                 }
                 status?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
                 link?.let { TextButton({ uri.openUri(it) }) { Text(stringResource(R.string.download)) } }
@@ -750,9 +781,10 @@ fun AboutDialog(version: String, onClose: () -> Unit) {
 // ---------- radios ----------
 /** Logo de station : affiché en entier sur fond clair (les logos de radio sont rarement carrés ni recadrables). */
 @Composable
-fun RadioLogo(item: Item?, art: String?, name: String, size: Int) {
+fun RadioLogo(item: Item?, art: String?, name: String, size: Int, modifier: Modifier = Modifier) {
     val hue = (name.hashCode().toUInt() % 360u).toFloat()
-    Box(Modifier.size(size.dp).shadow(18.dp, RoundedCornerShape(28.dp), spotColor = Violet).clip(RoundedCornerShape(28.dp))
+    val r = if (size >= 160) 30.dp else (size / 7.5f).coerceIn(10f, 20f).dp
+    Box(modifier.size(size.dp).shadow(if (size >= 100) 12.dp else 4.dp, RoundedCornerShape(r), ambientColor = Brand.Violet, spotColor = Brand.Violet).clip(RoundedCornerShape(r))
         .background(if (art.isNullOrEmpty()) Brush.linearGradient(listOf(Color.hsv(hue, 0.6f, 0.9f), Color.hsv((hue + 50) % 360, 0.7f, 0.8f)))
                     else Brush.linearGradient(listOf(Color(0xFFFFFFFF), Color(0xFFF1EEFA)))),
         contentAlignment = Alignment.Center) {
@@ -791,7 +823,11 @@ fun RadioDetail(item: Item, player: PlayerState, onBack: () -> Unit) {
     val uri = androidx.compose.ui.platform.LocalUriHandler.current
     val here = player.mediaId == "radio|" + item.stream
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(Modifier.fillMaxWidth()) { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, stringResource(R.string.back)) } }
+        Row(Modifier.fillMaxWidth()) {
+            Box(Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.ArrowBack, stringResource(R.string.back), Modifier.size(22.dp))
+            }
+        }
         RadioLogo(item, item.art, item.name, 210)
         Spacer(Modifier.height(20.dp))
         LivePill()
@@ -803,20 +839,17 @@ fun RadioDetail(item: Item, player: PlayerState, onBack: () -> Unit) {
             chips.forEach { AssistChip(onClick = {}, label = { Text(it) }) }
         }
         Spacer(Modifier.height(20.dp))
-        FilledIconButton({ if (here) player.controller?.let { if (it.isPlaying) it.pause() else it.play() } else player.play(PlaybackService.radioItem(item)) },
-            Modifier.size(76.dp)) {
-            Icon(if (here && player.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                stringResource(if (here && player.isPlaying) R.string.pause else R.string.play), Modifier.size(42.dp))
-        }
+        PlayCircle(here && player.isPlaying, 84, { if (here) player.controller?.let { if (it.isPlaying) it.pause() else it.play() } else player.play(PlaybackService.radioItem(item)) },
+            description = stringResource(if (here && player.isPlaying) R.string.pause else R.string.play))
+        if (here && player.isPlaying) EqBars(true, Modifier.padding(top = 14.dp), 22)
         Spacer(Modifier.height(16.dp))
         if (here) NowPlaying(player.nowPlaying)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(onClick = { Store.toggle(item) }) {
-                Icon(if (saved) Icons.Default.Star else Icons.Outlined.StarOutline, null)
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(if (saved) R.string.remove_favorite else R.string.add_favorite))
-            }
+            val favLabel = stringResource(if (saved) R.string.remove_favorite else R.string.add_favorite)
+            if (saved) OutlinedButton(onClick = { Store.toggle(item) }) {
+                Icon(Icons.Default.Star, null, tint = Brand.Pink); Spacer(Modifier.width(6.dp)); Text(favLabel)
+            } else GradientButton({ Store.toggle(item) }) { Icon(Icons.Outlined.StarOutline, null); Text(favLabel) }
             if (item.homepage.startsWith("http")) OutlinedButton(onClick = { uri.openUri(item.homepage) }) {
                 Icon(Icons.Default.Language, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.website))
             }
@@ -879,10 +912,8 @@ fun RadioSheet(p: PlayerState) {
         Spacer(Modifier.height(16.dp))
         NowPlaying(p.nowPlaying)
         Spacer(Modifier.height(20.dp))
-        FilledIconButton({ p.controller?.let { if (it.isPlaying) it.pause() else it.play() } }, Modifier.size(76.dp)) {
-            Icon(if (p.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                stringResource(if (p.isPlaying) R.string.pause else R.string.play), Modifier.size(42.dp))
-        }
+        PlayCircle(p.isPlaying, 84, { p.controller?.let { if (it.isPlaying) it.pause() else it.play() } },
+            description = stringResource(if (p.isPlaying) R.string.pause else R.string.play))
         Box(Modifier.padding(top = 10.dp)) {
             TextButton({ timerMenu = true }) {
                 Icon(Icons.Default.Alarm, stringResource(R.string.sleep_timer)); Spacer(Modifier.width(6.dp))
