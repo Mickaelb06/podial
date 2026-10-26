@@ -8,99 +8,194 @@
 <meta property="og:title" content="Podial Player: podcasts and live radio in one free app">
 <meta property="og:description" content="Free and open source. No account, no tracking. Linux, Windows, macOS and Android.">
 <meta property="og:image" content="screenshots/top-bar-player.png">
-<meta name="theme-color" content="#14121c">
+<meta name="theme-color" content="#0f0d17">
+<script>document.documentElement.classList.add("js");</script>
 <style>
 :root {
-  --bg: #14121c; --bg2: #1c1a27; --card: #211f2e; --text: #f3f1fa; --muted: #a9a4c0;
-  --violet: #8b5cf6; --pink: #ec4899; --line: rgba(255,255,255,.09);
-  --grad: linear-gradient(135deg, var(--violet), var(--pink));
+  --bg: #0f0d17; --bg2: #161324; --card: rgba(255,255,255,.045); --card-solid: #1c1930; --text: #f4f2fb; --muted: #aaa5c4;
+  --violet: #8b5cf6; --pink: #ec4899; --cyan: #22d3ee; --line: rgba(255,255,255,.1); --glow: rgba(139,92,246,.35);
+  --grad: linear-gradient(120deg, var(--violet), var(--pink));
+  --ease: cubic-bezier(.2,.7,.2,1);
+  color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
-  :root { --bg: #faf9ff; --bg2: #f1eefc; --card: #fff; --text: #1d1a2b; --muted: #5f5a78; --line: rgba(0,0,0,.09); }
+  :root { --bg: #faf9ff; --bg2: #f1eefc; --card: rgba(255,255,255,.7); --card-solid: #fff; --text: #1d1a2b; --muted: #5f5a78; --line: rgba(0,0,0,.1); --glow: rgba(139,92,246,.22); color-scheme: light; }
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.6;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif; -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
-header.nav { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px);
-  background: color-mix(in srgb, var(--bg) 80%, transparent); border-bottom: 1px solid var(--line); }
-.nav .wrap { display: flex; align-items: center; gap: 18px; height: 62px; }
-.logo { font-weight: 900; font-size: 1.25rem; text-decoration: none; display: flex; align-items: center; gap: 10px; }
-.logo i { width: 28px; height: 28px; border-radius: 50%; background: var(--grad); display: inline-block; position: relative; }
-.logo i::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--bg); }
-.nav nav { margin-left: auto; display: flex; gap: 20px; align-items: center; font-size: .95rem; }
-.nav nav a { text-decoration: none; color: var(--muted); }
-.nav nav a:hover { color: var(--text); }
-.lang { border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 99px;
-  padding: 4px 12px; cursor: pointer; font: inherit; font-size: .85rem; }
-.hero { padding: 72px 0 40px; text-align: center; position: relative; overflow: hidden; }
-.hero::before { content: ""; position: absolute; width: 760px; height: 760px; left: 50%; top: -320px; transform: translateX(-50%);
-  background: radial-gradient(closest-side, rgba(139,92,246,.45), rgba(236,72,153,.18) 60%, transparent); filter: blur(10px); z-index: 0; }
-.hero > .wrap { position: relative; z-index: 1; }
-.vinyl { width: 150px; height: 150px; margin: 0 auto 26px; border-radius: 50%;
-  background: radial-gradient(circle, #14121c 0 14%, transparent 15%), conic-gradient(from 0deg, #26233a, #111018, #2b2842, #111018, #26233a);
-  box-shadow: 0 0 60px rgba(236,72,153,.5), inset 0 0 0 6px #0e0d14; position: relative; animation: spin 6s linear infinite; }
-.vinyl::after { content: ""; position: absolute; inset: 52px; border-radius: 50%; background: var(--grad); }
-@keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .vinyl, .eq span { animation: none !important; } }
-h1 { font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.08; margin: 0 0 16px; letter-spacing: -.02em; }
-h1 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.lead { font-size: 1.2rem; color: var(--muted); max-width: 640px; margin: 0 auto 28px; }
-.cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 99px; font-weight: 700;
-  text-decoration: none; border: 1px solid var(--line); }
-.btn.primary { background: var(--grad); color: #fff; border: 0; box-shadow: 0 8px 28px rgba(139,92,246,.4); }
-.btn.coffee { background: #ffdd00; color: #111; border: 0; }
-.btn:hover { transform: translateY(-1px); }
-.eq { display: flex; gap: 4px; justify-content: center; height: 30px; align-items: flex-end; margin-top: 30px; }
-.eq span { width: 5px; border-radius: 3px; background: var(--grad); animation: bar 1.1s ease-in-out infinite; height: 30%; }
-.eq span:nth-child(2n) { animation-duration: 0.8s; } .eq span:nth-child(3n) { animation-duration: 1.4s; }
-.eq span:nth-child(4n) { animation-delay: .2s; } .eq span:nth-child(5n) { animation-delay: .45s; }
-@keyframes bar { 0%,100% { height: 18%; } 50% { height: 100%; } }
-.shot { margin: 46px auto 0; max-width: 860px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
-  box-shadow: 0 30px 80px rgba(0,0,0,.45); }
-.shot img { display: block; width: 100%; height: auto; }
-section { padding: 70px 0; }
-section.alt { background: var(--bg2); }
-h2 { font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 0 0 10px; text-align: center; letter-spacing: -.01em; }
-.sub { text-align: center; color: var(--muted); max-width: 620px; margin: 0 auto 40px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
-.card .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--grad); display: grid; place-items: center; font-size: 1.35rem; margin-bottom: 12px; }
-.card h3 { margin: 0 0 6px; font-size: 1.1rem; }
-.card p { margin: 0; color: var(--muted); font-size: .96rem; }
-.gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; }
-.gallery figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-.gallery img { width: 100%; display: block; }
-.gallery figcaption { padding: 12px 16px; color: var(--muted); font-size: .92rem; }
-.platforms { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-.plat { text-align: center; }
-.plat .ic { margin: 0 auto 12px; }
-.tag { display: inline-block; font-size: .75rem; padding: 2px 10px; border-radius: 99px; background: rgba(139,92,246,.2); color: #b79bff; margin-top: 10px; }
-.tag.warn { background: rgba(234,179,8,.18); color: #f0c040; }
-.road { max-width: 700px; margin: 0 auto; padding: 0; list-style: none; display: grid; gap: 10px; }
-.road li { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px 12px 44px; position: relative; }
-.road li::before { content: "○"; position: absolute; left: 16px; color: var(--pink); }
-.center { text-align: center; }
-footer { border-top: 1px solid var(--line); padding: 34px 0; color: var(--muted); font-size: .92rem; text-align: center; }
-footer a { text-decoration: none; margin: 0 8px; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 8px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 22px; }
 
+/* ----- barre de navigation + progression ----- */
+#progress { position: fixed; left: 0; top: 0; height: 3px; width: 100%; z-index: 30; background: var(--grad); transform-origin: 0 50%; transform: scaleX(0); }
+header.nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  background: color-mix(in srgb, var(--bg) 70%, transparent); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; gap: 18px; height: 64px; }
+.logo { font-weight: 900; font-size: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 10px; letter-spacing: -.01em; white-space: nowrap; flex: none; }
+.logo i { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--grad); display: inline-block; position: relative; animation: spin 8s linear infinite; }
+.logo i::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--bg); }
+.nav nav { margin-left: auto; display: flex; gap: 6px; align-items: center; font-size: .94rem; }
+.nav nav a { text-decoration: none; color: var(--muted); padding: 6px 12px; border-radius: 99px; transition: color .2s, background .2s; }
+.nav nav a:hover, .nav nav a.on { color: var(--text); background: var(--card); }
+.lang { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 99px; padding: 5px 13px; cursor: pointer; font: inherit; font-size: .84rem; margin-left: 6px; transition: transform .2s var(--ease); }
+.lang:hover { transform: scale(1.06); }
+@media (max-width: 760px) { .nav nav a:not(.keep) { display: none; } .nav .wrap { gap: 10px; } .nav nav { gap: 2px; } }
+
+/* ----- fond animé ----- */
+.aurora { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.aurora b { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .55; will-change: transform; }
+.aurora b:nth-child(1) { width: 560px; height: 560px; left: -8%; top: -180px; background: radial-gradient(circle, var(--violet), transparent 70%); animation: drift1 16s ease-in-out infinite; }
+.aurora b:nth-child(2) { width: 520px; height: 520px; right: -6%; top: -120px; background: radial-gradient(circle, var(--pink), transparent 70%); animation: drift2 19s ease-in-out infinite; }
+.aurora b:nth-child(3) { width: 420px; height: 420px; left: 38%; top: 140px; background: radial-gradient(circle, var(--cyan), transparent 70%); opacity: .28; animation: drift3 22s ease-in-out infinite; }
+@keyframes drift1 { 50% { transform: translate(120px, 60px) scale(1.15); } }
+@keyframes drift2 { 50% { transform: translate(-140px, 80px) scale(.9); } }
+@keyframes drift3 { 50% { transform: translate(-90px, -50px) scale(1.2); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ----- héros ----- */
+.hero { padding: 76px 0 30px; text-align: center; position: relative; overflow: hidden; }
+.hero > .wrap { position: relative; z-index: 1; }
+.badge { display: inline-flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--muted); padding: 6px 14px; border: 1px solid var(--line); border-radius: 99px; background: var(--card); margin-bottom: 22px; }
+.badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 0 rgba(52,211,153,.6); animation: ping 2s ease-out infinite; }
+@keyframes ping { to { box-shadow: 0 0 0 10px rgba(52,211,153,0); } }
+.vinyl { width: 130px; height: 130px; margin: 0 auto 24px; border-radius: 50%;
+  background: radial-gradient(circle, #14121c 0 14%, transparent 15%), conic-gradient(from 0deg, #26233a, #111018, #2b2842, #111018, #26233a);
+  box-shadow: 0 0 70px rgba(236,72,153,.55), inset 0 0 0 6px #0e0d14; position: relative; animation: spin 6s linear infinite; }
+.vinyl::after { content: ""; position: absolute; inset: 46px; border-radius: 50%; background: var(--grad); }
+h1 { font-size: clamp(2.3rem, 6.4vw, 4.4rem); line-height: 1.06; margin: 0 0 18px; letter-spacing: -.03em; font-weight: 900; }
+h1 .l { display: block; animation: rise 1s var(--ease) both; }
+h1 .l:nth-child(2) { animation-delay: .12s; }
+h1 em { font-style: normal; background: linear-gradient(100deg, var(--violet), var(--pink), var(--cyan), var(--violet)); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: rise 1s var(--ease) .12s both, shine 7s linear infinite; }
+@keyframes shine { to { background-position: 300% 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(28px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+.lead { font-size: 1.2rem; color: var(--muted); max-width: 660px; margin: 0 auto 30px; animation: rise 1s var(--ease) .25s both; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; animation: rise 1s var(--ease) .35s both; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 99px; font-weight: 700; text-decoration: none;
+  border: 1px solid var(--line); background: var(--card); transition: transform .25s var(--ease), box-shadow .25s, background .25s; position: relative; overflow: hidden; }
+.btn:hover { transform: translateY(-3px); }
+.btn.primary { background: var(--grad); color: #fff; border: 0; box-shadow: 0 10px 30px var(--glow); }
+.btn.primary:hover { box-shadow: 0 16px 40px rgba(236,72,153,.45); }
+.btn.primary::after { content: ""; position: absolute; top: 0; left: -80%; width: 50%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent);
+  transform: skewX(-20deg); animation: sweep 3.8s ease-in-out infinite; }
+@keyframes sweep { 0%, 55% { left: -80%; } 100% { left: 140%; } }
+.btn.coffee { background: #ffdd00; color: #111; border: 0; }
+
+/* ----- widget « quelque part, maintenant » ----- */
+.world { margin: 34px auto 0; max-width: 520px; display: flex; align-items: center; gap: 14px; padding: 12px 18px; border: 1px solid var(--line); border-radius: 18px;
+  background: var(--card); backdrop-filter: blur(10px); text-align: left; animation: rise 1s var(--ease) .5s both; }
+.world .eq { display: flex; gap: 3px; height: 26px; align-items: flex-end; }
+.eq span { width: 4px; border-radius: 3px; background: var(--grad); animation: bar 1.1s ease-in-out infinite; height: 30%; }
+.eq span:nth-child(2n) { animation-duration: .8s; } .eq span:nth-child(3n) { animation-duration: 1.4s; }
+.eq span:nth-child(4n) { animation-delay: .2s; } .eq span:nth-child(5n) { animation-delay: .45s; }
+@keyframes bar { 0%, 100% { height: 18%; } 50% { height: 100%; } }
+.world .txt { flex: 1; min-width: 0; line-height: 1.3; }
+.world small { color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; }
+.world .place { font-weight: 800; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .35s, transform .35s var(--ease); }
+.world .place.out { opacity: 0; transform: translateY(8px); }
+.world .clock { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 1.25rem; }
+
+.shot { margin: 50px auto 0; max-width: 900px; perspective: 1400px; animation: rise 1.2s var(--ease) .6s both; }
+.shot .frame { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 40px 100px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03), 0 0 90px var(--glow);
+  transition: transform .25s ease-out; transform-style: preserve-3d; will-change: transform; }
+.shot img { display: block; width: 100%; height: auto; }
+
+/* ----- bandeau de pays ----- */
+.marquee { overflow: hidden; border-block: 1px solid var(--line); background: var(--card); padding: 14px 0; margin-top: 56px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.marquee .track { display: flex; gap: 12px; width: max-content; animation: scroll 46s linear infinite; }
+.marquee:hover .track { animation-play-state: paused; }
+.marquee span { padding: 6px 16px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: .92rem; white-space: nowrap; }
+@keyframes scroll { to { transform: translateX(-50%); } }
+
+/* ----- chiffres ----- */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 56px; }
+.stat { text-align: center; padding: 22px 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--card); }
+.stat b { display: block; font-size: clamp(2.2rem, 5vw, 3rem); line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stat span { display: block; margin-top: 8px; color: var(--muted); font-size: .92rem; }
+
+/* ----- sections ----- */
+section { padding: 84px 0; }
+section.alt { background: var(--bg2); }
+h2 { font-size: clamp(1.8rem, 4.4vw, 2.7rem); margin: 0 0 12px; text-align: center; letter-spacing: -.02em; line-height: 1.15; }
+.sub { text-align: center; color: var(--muted); max-width: 640px; margin: 0 auto 44px; font-size: 1.05rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 24px; position: relative; overflow: hidden;
+  transition: transform .35s var(--ease), border-color .3s, box-shadow .35s; }
+.card::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 0%), rgba(139,92,246,.22), transparent 60%); }
+.card:hover { transform: translateY(-5px); border-color: rgba(139,92,246,.5); box-shadow: 0 18px 50px rgba(0,0,0,.25); }
+.card:hover::before { opacity: 1; }
+.card .ic { width: 48px; height: 48px; border-radius: 14px; background: var(--grad); display: grid; place-items: center; font-size: 1.4rem; margin-bottom: 14px;
+  box-shadow: 0 8px 22px var(--glow); transition: transform .4s var(--ease); }
+.card:hover .ic { transform: rotate(-8deg) scale(1.1); }
+.card h3 { margin: 0 0 6px; font-size: 1.12rem; position: relative; }
+.card p { margin: 0; color: var(--muted); font-size: .96rem; position: relative; }
 .ic svg { display: block; }
-.files { margin: 14px 0 0; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+.gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)); gap: 20px; }
+.gallery figure { margin: 0; background: var(--card-solid); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; cursor: zoom-in;
+  transition: transform .4s var(--ease), box-shadow .4s; }
+.gallery figure:hover { transform: translateY(-6px) scale(1.012); box-shadow: 0 26px 60px rgba(0,0,0,.35), 0 0 60px var(--glow); }
+.gallery .im { overflow: hidden; }
+.gallery img { width: 100%; display: block; transition: transform .7s var(--ease); }
+.gallery figure:hover img { transform: scale(1.05); }
+.gallery figcaption { padding: 13px 18px; color: var(--muted); font-size: .93rem; }
+dialog#lb { border: 0; padding: 0; background: transparent; max-width: min(1100px, 94vw); max-height: 92vh; overflow: visible; }
+dialog#lb::backdrop { background: rgba(8,6,16,.82); backdrop-filter: blur(8px); }
+dialog#lb img { max-width: 100%; max-height: 88vh; border-radius: 14px; box-shadow: 0 30px 90px rgba(0,0,0,.6); display: block; animation: pop .35s var(--ease); }
+dialog#lb button { position: absolute; top: -14px; right: -14px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--grad); color: #fff; font-size: 1.2rem; cursor: pointer; }
+@keyframes pop { from { opacity: 0; transform: scale(.94); } }
+
+.platforms { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.plat { text-align: center; }
+.plat .ic { margin: 0 auto 14px; }
+.plat.rec { border-color: var(--violet); box-shadow: 0 0 0 1px var(--violet), 0 20px 60px var(--glow); }
+.rec-badge { display: none; position: absolute; top: 12px; right: 12px; font-size: .72rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--grad); color: #fff; }
+.plat.rec .rec-badge { display: block; animation: pop .5s var(--ease); }
+.tag { display: inline-block; font-size: .75rem; padding: 2px 10px; border-radius: 99px; background: rgba(139,92,246,.2); color: #b79bff; margin-top: 10px; position: relative; }
+.tag.warn { background: rgba(234,179,8,.18); color: #f0c040; }
+.files { margin: 14px 0 0; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; position: relative; }
 .files .btn { padding: 8px 18px; }
-.footnote { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 18px; }
+.footnote { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 20px; }
+
+.road { max-width: 700px; margin: 0 auto; padding: 0 0 0 26px; list-style: none; display: grid; gap: 14px; position: relative; }
+.road::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(var(--violet), var(--pink), transparent); }
+.road li { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 13px 18px; position: relative; }
+.road li::before { content: ""; position: absolute; left: -26px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--bg2); border: 2px solid var(--pink); }
+.center { text-align: center; }
+.coffee-box { padding: 54px 24px; border-radius: 28px; border: 1px solid var(--line); background: var(--card); position: relative; overflow: hidden; }
+.coffee-box::before { content: ""; position: absolute; inset: -40%; background: conic-gradient(from 0deg, transparent, rgba(236,72,153,.25), transparent 40%); animation: spin 10s linear infinite; }
+.coffee-box > * { position: relative; }
+footer { border-top: 1px solid var(--line); padding: 36px 0; color: var(--muted); font-size: .92rem; text-align: center; }
+footer a { text-decoration: none; margin: 0 8px; }
+footer a:hover { color: var(--text); }
+
+/* ----- apparition au défilement (seulement avec JavaScript) ----- */
+.js .rv { opacity: 0; transform: translateY(34px) scale(.98); transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: calc(var(--i, 0) * 70ms); }
+.js .rv.in { opacity: 1; transform: none; }
+.js .rv.card.in:hover { transform: translateY(-5px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: .001ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+  .js .rv { opacity: 1; transform: none; }
+  .marquee .track { animation: none; flex-wrap: wrap; width: auto; justify-content: center; }
+  .btn.primary::after, .aurora b { display: none; }
+}
 </style>
 </head>
 <body>
+<div id="progress" aria-hidden="true"></div>
 <header class="nav">
   <div class="wrap">
     <a class="logo" href="#top"><i></i> Podial Player</a>
     <nav>
       <a href="#features" data-i18n="nav_features">Features</a>
       <a href="#screens" data-i18n="nav_screens">Screenshots</a>
-      <a href="#download" data-i18n="nav_download">Download</a>
+      <a href="#download" class="keep" data-i18n="nav_download">Download</a>
       <a href="app/" data-i18n="nav_web">Web app</a>
       <a href="https://github.com/Mickaelb06/podial">GitHub</a>
       <button class="lang" id="lang" type="button" aria-label="Language">FR</button>
@@ -110,9 +205,11 @@ footer a { text-decoration: none; margin: 0 8px; }
 
 <main id="top">
 <div class="hero">
+  <div class="aurora" aria-hidden="true"><b></b><b></b><b></b></div>
   <div class="wrap">
+    <div class="badge"><span class="dot"></span><span data-i18n="badge">Free, open source, no account</span></div>
     <div class="vinyl" aria-hidden="true"></div>
-    <h1><span data-i18n="h1a">Podcasts and live radio,</span><br><em data-i18n="h1b">in one free app.</em></h1>
+    <h1><span class="l" data-i18n="h1a">Podcasts and live radio,</span><span class="l"><em data-i18n="h1b">in one free app.</em></span></h1>
     <p class="lead" data-i18n="lead">Listen to podcasts and radio stations from every country. Download episodes for offline listening. No account, no tracking, fully open source.</p>
     <div class="cta">
       <a class="btn primary" href="#download" data-i18n="cta_dl">Download Podial</a>
@@ -120,80 +217,101 @@ footer a { text-decoration: none; margin: 0 8px; }
       <a class="btn" href="https://github.com/Mickaelb06/podial" data-i18n="cta_gh">View on GitHub</a>
       <a class="btn coffee" href="https://buymeacoffee.com/mickaelb06">☕ <span data-i18n="cta_coffee">Buy me a coffee</span></a>
     </div>
-    <div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="shot"><img src="screenshots/top-bar-player.png" alt="Podial with its animated player in the GNOME top bar"></div>
+    <div class="world" aria-live="off">
+      <div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="txt"><small data-i18n="wc_label">Somewhere in the world, right now</small><div class="place" id="wc-place">🇫🇷 Paris</div></div>
+      <div class="clock" id="wc-clock" aria-hidden="true">--:--</div>
+    </div>
+    <div class="shot"><div class="frame" id="tilt"><img src="screenshots/top-bar-player.png" alt="Podial with its animated player in the GNOME top bar"></div></div>
   </div>
 </div>
 
-<section id="features">
+<div class="marquee" aria-hidden="true"><div class="track" id="marquee"></div></div>
+
+<section id="stats" style="padding-top:20px">
   <div class="wrap">
-    <h2 data-i18n="f_title">Everything you listen to, in one place</h2>
-    <p class="sub" data-i18n="f_sub">Podcasts, radio and offline listening, with the small details that make a player pleasant.</p>
+    <div class="stats">
+      <div class="stat rv"><b data-count="230">230</b><span data-i18n="st1">radio brands, with all their webradios</span></div>
+      <div class="stat rv" style="--i:1"><b data-count="110">110</b><span data-i18n="st2">podcast genres and sub-genres</span></div>
+      <div class="stat rv" style="--i:2"><b data-count="7">7</b><span data-i18n="st3">languages, including right-to-left</span></div>
+      <div class="stat rv" style="--i:3"><b data-count="0">0</b><span data-i18n="st4">accounts, trackers or ads</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="alt">
+  <div class="wrap">
+    <h2 class="rv" data-i18n="f_title">Everything you listen to, in one place</h2>
+    <p class="sub rv" data-i18n="f_sub">Podcasts, radio and offline listening, with the small details that make a player pleasant.</p>
     <div class="grid">
-      <div class="card"><div class="ic">🎙️</div><h3 data-i18n="f1t">Podcasts</h3><p data-i18n="f1d">Top 10 by country and genre, search, subscriptions, and a badge when a new episode arrives.</p></div>
-      <div class="card"><div class="ic">📻</div><h3 data-i18n="f2t">Live radio worldwide</h3><p data-i18n="f2d">Browse stations by country, city or on a world map. Duplicates are removed, favorites are one click away.</p></div>
-      <div class="card"><div class="ic">⬇️</div><h3 data-i18n="f3t">Offline listening</h3><p data-i18n="f3d">Download episodes by hand or automatically. Cover art is kept too. Cancel any time.</p></div>
-      <div class="card"><div class="ic">😴</div><h3 data-i18n="f4t">Sleep timer</h3><p data-i18n="f4d">Stop after minutes, hours or at the end of the episode, with a gentle volume fade-out.</p></div>
-      <div class="card"><div class="ic">🔒</div><h3 data-i18n="f5t">Private by design</h3><p data-i18n="f5d">No account, no tracking, no server of ours. Your library stays on your device.</p></div>
-      <div class="card"><div class="ic">🌍</div><h3 data-i18n="f6t">Speaks your language</h3><p data-i18n="f6d">English, French, Spanish, German, Portuguese, Hebrew and Arabic, including right-to-left layout.</p></div>
-      <div class="card"><div class="ic">✨</div><h3 data-i18n="f7t">A player in your top bar</h3><p data-i18n="f7d">On GNOME, an animated pill with a spinning vinyl, a live spectrum, progress and volume.</p></div>
-      <div class="card"><div class="ic">🚗</div><h3 data-i18n="f8t">Android Auto</h3><p data-i18n="f8d">The Android app shows your podcasts, radios and downloads in the car, with no Google dependency.</p></div>
-      <div class="card"><div class="ic">🗺️</div><h3 data-i18n="f9t">A live world map</h3><p data-i18n="f9d">Tap a country to hear its radios. The map shows day and night in real time.</p></div>
-      <div class="card"><div class="ic">💬</div><h3 data-i18n="f10t">Transcripts and quotes</h3><p data-i18n="f10d">Read the published transcript while you listen, tap a line to jump there, highlight sentences and keep your quotes with notes. Works with right-to-left and Asian scripts.</p></div>
-      <div class="card"><div class="ic">📱</div><h3 data-i18n="f11t">Home-screen widgets</h3><p data-i18n="f11d">On Android, a compact widget with the cover and controls, or a vinyl that spins while it plays.</p></div>
-      <div class="card"><div class="ic">🔔</div><h3 data-i18n="f12t">Never miss an episode</h3><p data-i18n="f12d">A badge on the podcasts you follow, a notification when a new episode is out, and a mark on what you have finished.</p></div>
+      <div class="card rv"><div class="ic">🎙️</div><h3 data-i18n="f1t">Podcasts</h3><p data-i18n="f1d">Top 10 by country and genre, search, subscriptions, and a badge when a new episode arrives.</p></div>
+      <div class="card rv" style="--i:1"><div class="ic">📻</div><h3 data-i18n="f2t">Live radio worldwide</h3><p data-i18n="f2d">Browse stations by country, city or on a world map. Duplicates are removed, favorites are one click away.</p></div>
+      <div class="card rv" style="--i:2"><div class="ic">🏷️</div><h3 data-i18n="f13t">Genres and webradios</h3><p data-i18n="f13d">Browse radios by genre and sub-genre, or open a brand to find all its webradios, in dozens of countries.</p></div>
+      <div class="card rv"><div class="ic">⬇️</div><h3 data-i18n="f3t">Offline listening</h3><p data-i18n="f3d">Download episodes by hand or automatically. Cover art is kept too. Cancel any time.</p></div>
+      <div class="card rv" style="--i:1"><div class="ic">🎚️</div><h3 data-i18n="f14t">Find the right episode</h3><p data-i18n="f14d">Sort newest or oldest, and show only downloaded or unfinished episodes.</p></div>
+      <div class="card rv" style="--i:2"><div class="ic">😴</div><h3 data-i18n="f4t">Sleep timer</h3><p data-i18n="f4d">Stop after minutes, hours or at the end of the episode, with a gentle volume fade-out.</p></div>
+      <div class="card rv"><div class="ic">🔒</div><h3 data-i18n="f5t">Private by design</h3><p data-i18n="f5d">No account, no tracking, no server of ours. Your library stays on your device.</p></div>
+      <div class="card rv" style="--i:1"><div class="ic">🌍</div><h3 data-i18n="f6t">Speaks your language</h3><p data-i18n="f6d">English, French, Spanish, German, Portuguese, Hebrew and Arabic, including right-to-left layout.</p></div>
+      <div class="card rv" style="--i:2"><div class="ic">✨</div><h3 data-i18n="f7t">A player in your top bar</h3><p data-i18n="f7d">On GNOME, an animated pill with a spinning vinyl, a live spectrum, progress and volume.</p></div>
+      <div class="card rv"><div class="ic">🚗</div><h3 data-i18n="f8t">Android Auto</h3><p data-i18n="f8d">The Android app shows your podcasts, radios and downloads in the car, with no Google dependency.</p></div>
+      <div class="card rv" style="--i:1"><div class="ic">🗺️</div><h3 data-i18n="f9t">A live world map</h3><p data-i18n="f9d">Tap a country to hear its radios. The map shows day and night in real time.</p></div>
+      <div class="card rv" style="--i:2"><div class="ic">💬</div><h3 data-i18n="f10t">Transcripts and quotes</h3><p data-i18n="f10d">Read the published transcript while you listen, tap a line to jump there, highlight sentences and keep your quotes with notes. Works with right-to-left and Asian scripts.</p></div>
+      <div class="card rv"><div class="ic">📱</div><h3 data-i18n="f11t">Home-screen widgets</h3><p data-i18n="f11d">On Android, a compact widget with the cover and controls, or a vinyl that spins while it plays.</p></div>
+      <div class="card rv" style="--i:1"><div class="ic">🔔</div><h3 data-i18n="f12t">Never miss an episode</h3><p data-i18n="f12d">A badge on the podcasts you follow, a notification when a new episode is out, and a mark on what you have finished.</p></div>
     </div>
   </div>
 </section>
 
-<section id="screens" class="alt">
+<section id="screens">
   <div class="wrap">
-    <h2 data-i18n="s_title">See it in action</h2>
-    <p class="sub" data-i18n="s_sub">Real screenshots of Podial.</p>
+    <h2 class="rv" data-i18n="s_title">See it in action</h2>
+    <p class="sub rv" data-i18n="s_sub">Real screenshots of Podial. Click one to enlarge it.</p>
     <div class="gallery">
-      <figure><img src="screenshots/radios.png" alt="Radios by country and city" loading="lazy"><figcaption data-i18n="s1">Radios by country and city</figcaption></figure>
-      <figure><img src="screenshots/podcast-detail.png" alt="A podcast page" loading="lazy"><figcaption data-i18n="s2">A podcast page, with downloads</figcaption></figure>
-      <figure><img src="screenshots/sleep-timer.png" alt="The sleep timer" loading="lazy"><figcaption data-i18n="s3">The sleep timer</figcaption></figure>
-      <figure><img src="screenshots/world-map.png" alt="World map with day and night" loading="lazy"><figcaption data-i18n="s5">The world map, with day and night in real time</figcaption></figure>
-      <figure><img src="screenshots/transcript.png" alt="A transcript" loading="lazy"><figcaption data-i18n="s6">A transcript, with quotes you can highlight</figcaption></figure>
-      <figure><img src="screenshots/desktop-windows-mac.png" alt="Cross-platform desktop version" loading="lazy"><figcaption data-i18n="s4">The cross-platform desktop version</figcaption></figure>
+      <figure class="rv"><div class="im"><img src="screenshots/radios.png" alt="Radios by country and city" loading="lazy"></div><figcaption data-i18n="s1">Radios by country and city</figcaption></figure>
+      <figure class="rv" style="--i:1"><div class="im"><img src="screenshots/podcast-detail.png" alt="A podcast page" loading="lazy"></div><figcaption data-i18n="s2">A podcast page, with downloads</figcaption></figure>
+      <figure class="rv"><div class="im"><img src="screenshots/sleep-timer.png" alt="The sleep timer" loading="lazy"></div><figcaption data-i18n="s3">The sleep timer</figcaption></figure>
+      <figure class="rv" style="--i:1"><div class="im"><img src="screenshots/world-map.png" alt="World map with day and night" loading="lazy"></div><figcaption data-i18n="s5">The world map, with day and night in real time</figcaption></figure>
+      <figure class="rv"><div class="im"><img src="screenshots/transcript.png" alt="A transcript" loading="lazy"></div><figcaption data-i18n="s6">A transcript, with quotes you can highlight</figcaption></figure>
+      <figure class="rv" style="--i:1"><div class="im"><img src="screenshots/desktop-windows-mac.png" alt="Cross-platform desktop version" loading="lazy"></div><figcaption data-i18n="s4">The cross-platform desktop version</figcaption></figure>
     </div>
   </div>
 </section>
 
-<section id="download">
+<section id="download" class="alt">
   <div class="wrap">
-    <h2 data-i18n="d_title">Get Podial</h2>
-    <p class="sub" data-i18n="d_sub">One project, four platforms. Linux is the most polished; the others are pre-releases.</p>
+    <h2 class="rv" data-i18n="d_title">Get Podial</h2>
+    <p class="sub rv" data-i18n="d_sub">One project, four platforms. Linux is the most polished; the others are pre-releases.</p>
     <div class="platforms">
-      <div class="card plat"><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.4v.019c.002.089.008.179.02.267-.193-.067-.438-.135-.607-.202a1.635 1.635 0 01-.018-.2v-.02a1.772 1.772 0 01.15-.768c.082-.22.232-.406.43-.533a.985.985 0 01.594-.2zm-2.962.059h.036c.142 0 .27.048.399.135.146.129.264.288.344.465.09.199.14.4.153.667v.004c.007.134.006.2-.002.266v.08c-.03.007-.056.018-.083.024-.152.055-.274.135-.393.2.012-.09.013-.18.003-.267v-.015c-.012-.133-.04-.2-.082-.333a.613.613 0 00-.166-.267.248.248 0 00-.183-.064h-.021c-.071.006-.13.04-.186.132a.552.552 0 00-.12.27.944.944 0 00-.023.33v.015c.012.135.037.2.08.334.046.134.098.2.166.268.01.009.02.018.034.024-.07.057-.117.07-.176.136a.304.304 0 01-.131.068 2.62 2.62 0 01-.275-.402 1.772 1.772 0 01-.155-.667 1.759 1.759 0 01.08-.668 1.43 1.43 0 01.283-.535c.128-.133.26-.2.418-.2zm1.37 1.706c.332 0 .733.065 1.216.399.293.2.523.269 1.052.468h.003c.255.136.405.266.478.399v-.131a.571.571 0 01.016.47c-.123.31-.516.643-1.063.842v.002c-.268.135-.501.333-.775.465-.276.135-.588.292-1.012.267a1.139 1.139 0 01-.448-.067 3.566 3.566 0 01-.322-.198c-.195-.135-.363-.332-.612-.465v-.005h-.005c-.4-.246-.616-.512-.686-.71-.07-.268-.005-.47.193-.6.224-.135.38-.271.483-.336.104-.074.143-.102.176-.131h.002v-.003c.169-.202.436-.47.839-.601.139-.036.294-.065.466-.065zm2.8 2.142c.358 1.417 1.196 3.475 1.735 4.473.286.534.855 1.659 1.102 3.024.156-.005.33.018.513.064.646-1.671-.546-3.467-1.089-3.966-.22-.2-.232-.335-.123-.335.59.534 1.365 1.572 1.646 2.757.13.535.16 1.104.021 1.67.067.028.135.06.205.067 1.032.534 1.413.938 1.23 1.537v-.043c-.06-.003-.12 0-.18 0h-.016c.151-.467-.182-.825-1.065-1.224-.915-.4-1.646-.336-1.77.465-.008.043-.013.066-.018.135-.068.023-.139.053-.209.064-.43.268-.662.669-.793 1.187-.13.533-.17 1.156-.205 1.869v.003c-.02.334-.17.838-.319 1.35-1.5 1.072-3.58 1.538-5.348.334a2.645 2.645 0 00-.402-.533 1.45 1.45 0 00-.275-.333c.182 0 .338-.03.465-.067a.615.615 0 00.314-.334c.108-.267 0-.697-.345-1.163-.345-.467-.931-.995-1.788-1.521-.63-.4-.986-.87-1.15-1.396-.165-.534-.143-1.085-.015-1.645.245-1.07.873-2.11 1.274-2.763.107-.065.037.135-.408.974-.396.751-1.14 2.497-.122 3.854a8.123 8.123 0 01.647-2.876c.564-1.278 1.743-3.504 1.836-5.268.048.036.217.135.289.202.218.133.38.333.59.465.21.201.477.335.876.335.039.003.075.006.11.006.412 0 .73-.134.997-.268.29-.134.52-.334.74-.4h.005c.467-.135.835-.402 1.044-.7zm2.185 8.958c.037.6.343 1.245.882 1.377.588.134 1.434-.333 1.791-.765l.211-.01c.315-.007.577.01.847.268l.003.003c.208.199.305.53.391.876.085.4.154.78.409 1.066.486.527.645.906.636 1.14l.003-.007v.018l-.003-.012c-.015.262-.185.396-.498.595-.63.401-1.746.712-2.457 1.57-.618.737-1.37 1.14-2.036 1.191-.664.053-1.237-.2-1.574-.898l-.005-.003c-.21-.4-.12-1.025.056-1.69.176-.668.428-1.344.463-1.897.037-.714.076-1.335.195-1.814.12-.465.308-.797.641-.984l.045-.022zm-10.814.049h.01c.053 0 .105.005.157.014.376.055.706.333 1.023.752l.91 1.664.003.003c.243.533.754 1.064 1.189 1.637.434.598.77 1.131.729 1.57v.006c-.057.744-.48 1.148-1.125 1.294-.645.135-1.52.002-2.395-.464-.968-.536-2.118-.469-2.857-.602-.369-.066-.61-.2-.723-.4-.11-.2-.113-.602.123-1.23v-.004l.002-.003c.117-.334.03-.752-.027-1.118-.055-.401-.083-.71.043-.94.16-.334.396-.4.69-.533.294-.135.64-.202.915-.47h.002v-.002c.256-.268.445-.601.668-.838.19-.201.38-.336.663-.336zm7.159-9.074c-.435.201-.945.535-1.488.535-.542 0-.97-.267-1.28-.466-.154-.134-.28-.268-.373-.335-.164-.134-.144-.333-.074-.333.109.016.129.134.199.2.096.066.215.2.36.333.292.2.68.467 1.167.467.485 0 1.053-.267 1.398-.466.195-.135.445-.334.648-.467.156-.136.149-.267.279-.267.128.016.034.134-.147.332a8.097 8.097 0 01-.69.468zm-1.082-1.583V5.64c-.006-.02.013-.042.029-.05.074-.043.18-.027.26.004.063 0 .16.067.15.135-.006.049-.085.066-.135.066-.055 0-.092-.043-.141-.068-.052-.018-.146-.008-.163-.065zm-.551 0c-.02.058-.113.049-.166.066-.047.025-.086.068-.14.068-.05 0-.13-.02-.136-.068-.01-.066.088-.133.15-.133.08-.031.184-.047.259-.005.019.009.036.03.03.05v.02h.003z"/></svg></div><h3>Linux</h3><p data-i18n="p_linux">GTK app with the GNOME top-bar extension.</p><span class="tag" data-i18n="t_tested">Tested</span><p class="files"><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial_0.5.13_all.deb">.deb</a><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial-0.5.13-1.x86_64.rpm">.rpm</a><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial-linux-0.5.13.tar.gz">.tar.gz</a></p></div>
-      <div class="card plat"><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M0,0H11.377V11.372H0ZM12.623,0H24V11.372H12.623ZM0,12.623H11.377V24H0Zm12.623,0H24V24H12.623"/></svg></div><h3>Windows</h3><p data-i18n="p_win">Cross-platform desktop app.</p><span class="tag warn" data-i18n="t_early">Pre-release</span><p class="files"><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-0.5.13.exe">.exe</a><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-0.5.13.msi">.msi</a></p></div>
-      <div class="card plat"><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></div><h3>macOS</h3><p data-i18n="p_mac">Cross-platform desktop app.</p><span class="tag warn" data-i18n="t_early2">Pre-release</span><p class="files"><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-1.0.13.dmg">.dmg</a></p></div>
-      <div class="card plat"><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M18.4395 5.5586c-.675 1.1664-1.352 2.3318-2.0274 3.498-.0366-.0155-.0742-.0286-.1113-.043-1.8249-.6957-3.484-.8-4.42-.787-1.8551.0185-3.3544.4643-4.2597.8203-.084-.1494-1.7526-3.021-2.0215-3.4864a1.1451 1.1451 0 0 0-.1406-.1914c-.3312-.364-.9054-.4859-1.379-.203-.475.282-.7136.9361-.3886 1.5019 1.9466 3.3696-.0966-.2158 1.9473 3.3593.0172.031-.4946.2642-1.3926 1.0177C2.8987 12.176.452 14.772 0 18.9902h24c-.119-1.1108-.3686-2.099-.7461-3.0683-.7438-1.9118-1.8435-3.2928-2.7402-4.1836a12.1048 12.1048 0 0 0-2.1309-1.6875c.6594-1.122 1.312-2.2559 1.9649-3.3848.2077-.3615.1886-.7956-.0079-1.1191a1.1001 1.1001 0 0 0-.8515-.5332c-.5225-.0536-.9392.3128-1.0488.5449zm-.0391 8.461c.3944.5926.324 1.3306-.1563 1.6503-.4799.3197-1.188.0985-1.582-.4941-.3944-.5927-.324-1.3307.1563-1.6504.4727-.315 1.1812-.1086 1.582.4941zM7.207 13.5273c.4803.3197.5506 1.0577.1563 1.6504-.394.5926-1.1038.8138-1.584.4941-.48-.3197-.5503-1.0577-.1563-1.6504.4008-.6021 1.1087-.8106 1.584-.4941z"/></svg></div><h3>Android</h3><p data-i18n="p_and">With Android Auto support. F-Droid friendly.</p><span class="tag warn" data-i18n="t_early3">Pre-release</span><p class="files"><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial-android.apk">.apk</a></p></div>
+      <div class="card plat rv" data-os="linux"><span class="rec-badge" data-i18n="rec">For your device</span><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.4v.019c.002.089.008.179.02.267-.193-.067-.438-.135-.607-.202a1.635 1.635 0 01-.018-.2v-.02a1.772 1.772 0 01.15-.768c.082-.22.232-.406.43-.533a.985.985 0 01.594-.2zm-2.962.059h.036c.142 0 .27.048.399.135.146.129.264.288.344.465.09.199.14.4.153.667v.004c.007.134.006.2-.002.266v.08c-.03.007-.056.018-.083.024-.152.055-.274.135-.393.2.012-.09.013-.18.003-.267v-.015c-.012-.133-.04-.2-.082-.333a.613.613 0 00-.166-.267.248.248 0 00-.183-.064h-.021c-.071.006-.13.04-.186.132a.552.552 0 00-.12.27.944.944 0 00-.023.33v.015c.012.135.037.2.08.334.046.134.098.2.166.268.01.009.02.018.034.024-.07.057-.117.07-.176.136a.304.304 0 01-.131.068 2.62 2.62 0 01-.275-.402 1.772 1.772 0 01-.155-.667 1.759 1.759 0 01.08-.668 1.43 1.43 0 01.283-.535c.128-.133.26-.2.418-.2zm1.37 1.706c.332 0 .733.065 1.216.399.293.2.523.269 1.052.468h.003c.255.136.405.266.478.399v-.131a.571.571 0 01.016.47c-.123.31-.516.643-1.063.842v.002c-.268.135-.501.333-.775.465-.276.135-.588.292-1.012.267a1.139 1.139 0 01-.448-.067 3.566 3.566 0 01-.322-.198c-.195-.135-.363-.332-.612-.465v-.005h-.005c-.4-.246-.616-.512-.686-.71-.07-.268-.005-.47.193-.6.224-.135.38-.271.483-.336.104-.074.143-.102.176-.131h.002v-.003c.169-.202.436-.47.839-.601.139-.036.294-.065.466-.065zm2.8 2.142c.358 1.417 1.196 3.475 1.735 4.473.286.534.855 1.659 1.102 3.024.156-.005.33.018.513.064.646-1.671-.546-3.467-1.089-3.966-.22-.2-.232-.335-.123-.335.59.534 1.365 1.572 1.646 2.757.13.535.16 1.104.021 1.67.067.028.135.06.205.067 1.032.534 1.413.938 1.23 1.537v-.043c-.06-.003-.12 0-.18 0h-.016c.151-.467-.182-.825-1.065-1.224-.915-.4-1.646-.336-1.77.465-.008.043-.013.066-.018.135-.068.023-.139.053-.209.064-.43.268-.662.669-.793 1.187-.13.533-.17 1.156-.205 1.869v.003c-.02.334-.17.838-.319 1.35-1.5 1.072-3.58 1.538-5.348.334a2.645 2.645 0 00-.402-.533 1.45 1.45 0 00-.275-.333c.182 0 .338-.03.465-.067a.615.615 0 00.314-.334c.108-.267 0-.697-.345-1.163-.345-.467-.931-.995-1.788-1.521-.63-.4-.986-.87-1.15-1.396-.165-.534-.143-1.085-.015-1.645.245-1.07.873-2.11 1.274-2.763.107-.065.037.135-.408.974-.396.751-1.14 2.497-.122 3.854a8.123 8.123 0 01.647-2.876c.564-1.278 1.743-3.504 1.836-5.268.048.036.217.135.289.202.218.133.38.333.59.465.21.201.477.335.876.335.039.003.075.006.11.006.412 0 .73-.134.997-.268.29-.134.52-.334.74-.4h.005c.467-.135.835-.402 1.044-.7zm2.185 8.958c.037.6.343 1.245.882 1.377.588.134 1.434-.333 1.791-.765l.211-.01c.315-.007.577.01.847.268l.003.003c.208.199.305.53.391.876.085.4.154.78.409 1.066.486.527.645.906.636 1.14l.003-.007v.018l-.003-.012c-.015.262-.185.396-.498.595-.63.401-1.746.712-2.457 1.57-.618.737-1.37 1.14-2.036 1.191-.664.053-1.237-.2-1.574-.898l-.005-.003c-.21-.4-.12-1.025.056-1.69.176-.668.428-1.344.463-1.897.037-.714.076-1.335.195-1.814.12-.465.308-.797.641-.984l.045-.022zm-10.814.049h.01c.053 0 .105.005.157.014.376.055.706.333 1.023.752l.91 1.664.003.003c.243.533.754 1.064 1.189 1.637.434.598.77 1.131.729 1.57v.006c-.057.744-.48 1.148-1.125 1.294-.645.135-1.52.002-2.395-.464-.968-.536-2.118-.469-2.857-.602-.369-.066-.61-.2-.723-.4-.11-.2-.113-.602.123-1.23v-.004l.002-.003c.117-.334.03-.752-.027-1.118-.055-.401-.083-.71.043-.94.16-.334.396-.4.69-.533.294-.135.64-.202.915-.47h.002v-.002c.256-.268.445-.601.668-.838.19-.201.38-.336.663-.336zm7.159-9.074c-.435.201-.945.535-1.488.535-.542 0-.97-.267-1.28-.466-.154-.134-.28-.268-.373-.335-.164-.134-.144-.333-.074-.333.109.016.129.134.199.2.096.066.215.2.36.333.292.2.68.467 1.167.467.485 0 1.053-.267 1.398-.466.195-.135.445-.334.648-.467.156-.136.149-.267.279-.267.128.016.034.134-.147.332a8.097 8.097 0 01-.69.468zm-1.082-1.583V5.64c-.006-.02.013-.042.029-.05.074-.043.18-.027.26.004.063 0 .16.067.15.135-.006.049-.085.066-.135.066-.055 0-.092-.043-.141-.068-.052-.018-.146-.008-.163-.065zm-.551 0c-.02.058-.113.049-.166.066-.047.025-.086.068-.14.068-.05 0-.13-.02-.136-.068-.01-.066.088-.133.15-.133.08-.031.184-.047.259-.005.019.009.036.03.03.05v.02h.003z"/></svg></div><h3>Linux</h3><p data-i18n="p_linux">GTK app with the GNOME top-bar extension.</p><span class="tag" data-i18n="t_tested">Tested</span><p class="files"><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial_0.5.13_all.deb">.deb</a><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial-0.5.13-1.x86_64.rpm">.rpm</a><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial-linux-0.5.13.tar.gz">.tar.gz</a></p></div>
+      <div class="card plat rv" style="--i:1" data-os="windows"><span class="rec-badge" data-i18n="rec">For your device</span><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M0,0H11.377V11.372H0ZM12.623,0H24V11.372H12.623ZM0,12.623H11.377V24H0Zm12.623,0H24V24H12.623"/></svg></div><h3>Windows</h3><p data-i18n="p_win">Cross-platform desktop app.</p><span class="tag warn" data-i18n="t_early">Pre-release</span><p class="files"><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-0.5.13.exe">.exe</a><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-0.5.13.msi">.msi</a></p></div>
+      <div class="card plat rv" style="--i:2" data-os="mac"><span class="rec-badge" data-i18n="rec">For your device</span><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></div><h3>macOS</h3><p data-i18n="p_mac">Cross-platform desktop app.</p><span class="tag warn" data-i18n="t_early2">Pre-release</span><p class="files"><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-1.0.13.dmg">.dmg</a></p></div>
+      <div class="card plat rv" style="--i:3" data-os="android"><span class="rec-badge" data-i18n="rec">For your device</span><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M18.4395 5.5586c-.675 1.1664-1.352 2.3318-2.0274 3.498-.0366-.0155-.0742-.0286-.1113-.043-1.8249-.6957-3.484-.8-4.42-.787-1.8551.0185-3.3544.4643-4.2597.8203-.084-.1494-1.7526-3.021-2.0215-3.4864a1.1451 1.1451 0 0 0-.1406-.1914c-.3312-.364-.9054-.4859-1.379-.203-.475.282-.7136.9361-.3886 1.5019 1.9466 3.3696-.0966-.2158 1.9473 3.3593.0172.031-.4946.2642-1.3926 1.0177C2.8987 12.176.452 14.772 0 18.9902h24c-.119-1.1108-.3686-2.099-.7461-3.0683-.7438-1.9118-1.8435-3.2928-2.7402-4.1836a12.1048 12.1048 0 0 0-2.1309-1.6875c.6594-1.122 1.312-2.2559 1.9649-3.3848.2077-.3615.1886-.7956-.0079-1.1191a1.1001 1.1001 0 0 0-.8515-.5332c-.5225-.0536-.9392.3128-1.0488.5449zm-.0391 8.461c.3944.5926.324 1.3306-.1563 1.6503-.4799.3197-1.188.0985-1.582-.4941-.3944-.5927-.324-1.3307.1563-1.6504.4727-.315 1.1812-.1086 1.582.4941zM7.207 13.5273c.4803.3197.5506 1.0577.1563 1.6504-.394.5926-1.1038.8138-1.584.4941-.48-.3197-.5503-1.0577-.1563-1.6504.4008-.6021 1.1087-.8106 1.584-.4941z"/></svg></div><h3>Android</h3><p data-i18n="p_and">With Android Auto support. F-Droid friendly.</p><span class="tag warn" data-i18n="t_early3">Pre-release</span><p class="files"><a class="btn" href="https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial-android.apk">.apk</a></p></div>
     </div>
     <p class="footnote" data-i18n="trademarks">Linux, Windows, macOS and Android are trademarks of their respective owners. Logos from Simple Icons (CC0).</p>
   </div>
 </section>
 
-<section class="alt">
+<section>
   <div class="wrap">
-    <h2 data-i18n="r_title">What's next</h2>
-    <p class="sub" data-i18n="r_sub">Planned, not built yet.</p>
+    <h2 class="rv" data-i18n="r_title">What's next</h2>
+    <p class="sub rv" data-i18n="r_sub">Planned, not built yet.</p>
     <ul class="road">
-      <li data-i18n="r1">Record live radio, with scheduling</li>
-      <li data-i18n="r2">Local transcription for episodes without one, and search inside episodes</li>
-      <li data-i18n="r3">Listen to a podcast in another language, with translated subtitles</li>
-      <li data-i18n="r4">Sync between devices without an account</li>
-      <li data-i18n="r5">Radio schedules for more stations</li>
+      <li class="rv" data-i18n="r1">Record live radio, with scheduling</li>
+      <li class="rv" style="--i:1" data-i18n="r2">Local transcription for episodes without one, and search inside episodes</li>
+      <li class="rv" style="--i:2" data-i18n="r3">Listen to a podcast in another language, with translated subtitles</li>
+      <li class="rv" style="--i:3" data-i18n="r4">Sync between devices without an account</li>
+      <li class="rv" style="--i:4" data-i18n="r5">Radio schedules for more stations</li>
     </ul>
   </div>
 </section>
 
-<section>
-  <div class="wrap center">
-    <h2 data-i18n="c_title">Enjoying Podial?</h2>
-    <p class="sub" data-i18n="c_sub">It is free and open source. A coffee helps keep it going.</p>
-    <a class="btn coffee" href="https://buymeacoffee.com/mickaelb06">☕ <span data-i18n="cta_coffee2">Buy me a coffee</span></a>
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="coffee-box center rv">
+      <h2 data-i18n="c_title">Enjoying Podial?</h2>
+      <p class="sub" data-i18n="c_sub">It is free and open source. A coffee helps keep it going.</p>
+      <a class="btn coffee" href="https://buymeacoffee.com/mickaelb06">☕ <span data-i18n="cta_coffee2">Buy me a coffee</span></a>
+    </div>
   </div>
 </section>
 </main>
@@ -207,18 +325,25 @@ footer a { text-decoration: none; margin: 0 8px; }
   </div>
 </footer>
 
+<dialog id="lb"><button type="button" aria-label="Close" id="lb-x">×</button><img alt=""></dialog>
+
 <script>
 const T = {
   en: {},
   fr: {
     nav_features: "Fonctionnalités", nav_screens: "Captures", nav_download: "Télécharger", nav_web: "Version web",
+    badge: "Libre, gratuit, sans compte",
     h1a: "Podcasts et radios en direct,", h1b: "dans une seule app gratuite.",
     lead: "Écoute des podcasts et des radios de tous les pays. Télécharge des épisodes pour les écouter hors ligne. Sans compte, sans pistage, entièrement libre.",
     cta_web: "▶ Écouter en ligne", cta_dl: "Télécharger Podial", cta_gh: "Voir sur GitHub", cta_coffee: "Offre-moi un café", cta_coffee2: "Offre-moi un café",
+    wc_label: "Quelque part dans le monde, maintenant",
+    st1: "marques de radios, avec toutes leurs webradios", st2: "genres et sous-genres de podcasts", st3: "langues, dont l'écriture de droite à gauche", st4: "comptes, pisteurs ou publicités",
     f_title: "Tout ce que tu écoutes, au même endroit", f_sub: "Podcasts, radios et écoute hors ligne, avec les petits détails qui rendent un lecteur agréable.",
     f1t: "Podcasts", f1d: "Top 10 par pays et par genre, recherche, abonnements, et un badge quand un nouvel épisode arrive.",
     f2t: "Radios du monde entier", f2d: "Parcours les radios par pays, par ville ou sur une carte du monde. Les doublons sont supprimés, les favoris sont à un clic.",
+    f13t: "Genres et webradios", f13d: "Parcours les radios par genre et sous-genre, ou ouvre une marque pour retrouver toutes ses webradios, dans des dizaines de pays.",
     f3t: "Écoute hors ligne", f3d: "Télécharge des épisodes à la main ou automatiquement. Les pochettes sont gardées aussi. Annulation possible à tout moment.",
+    f14t: "Retrouve le bon épisode", f14d: "Trie du plus récent au plus ancien, et n'affiche que les épisodes téléchargés ou non terminés.",
     f4t: "Minuteur de sommeil", f4d: "Arrêt après des minutes, des heures ou à la fin de l'épisode, avec une baisse douce du volume.",
     f5t: "Respectueux de ta vie privée", f5d: "Pas de compte, pas de pistage, aucun serveur de notre côté. Ta bibliothèque reste sur ton appareil.",
     f6t: "Parle ta langue", f6d: "Anglais, français, espagnol, allemand, portugais, hébreu et arabe, avec l'écriture de droite à gauche.",
@@ -228,9 +353,9 @@ const T = {
     f11t: "Widgets d'écran d'accueil", f11d: "Sur Android, un widget compact avec la pochette et les boutons, ou un vinyle qui tourne pendant la lecture.",
     f12t: "Ne rate aucun épisode", f12d: "Un badge sur les podcasts suivis, une notification à la sortie d'un nouvel épisode et une coche sur ceux que tu as terminés.",
     f8t: "Android Auto", f8d: "L'application Android affiche tes podcasts, radios et téléchargements dans la voiture, sans dépendance Google.",
-    s_title: "Voir Podial en action", s_sub: "De vraies captures d'écran de Podial.",
+    s_title: "Voir Podial en action", s_sub: "De vraies captures d'écran de Podial. Clique sur une image pour l'agrandir.",
     s1: "Radios par pays et par ville", s2: "La page d'un podcast, avec les téléchargements", s3: "Le minuteur de sommeil", s4: "La version de bureau multiplateforme", s5: "La carte du monde, avec le jour et la nuit en temps réel", s6: "Une transcription, avec des citations à surligner",
-    d_title: "Obtenir Podial", d_sub: "Un projet, quatre plateformes. Linux est la plus aboutie ; les autres sont des pré-versions.",
+    d_title: "Obtenir Podial", d_sub: "Un projet, quatre plateformes. Linux est la plus aboutie ; les autres sont des pré-versions.", rec: "Pour ton appareil",
     p_linux: "Application GTK avec l'extension GNOME pour la barre du haut.", p_win: "Application de bureau multiplateforme.", p_mac: "Application de bureau multiplateforme.",
     p_and: "Avec Android Auto. Compatible F-Droid.", t_tested: "Testé", t_early: "Pré-version", t_early2: "Pré-version", t_early3: "Pré-version",
     r_title: "La suite", r_sub: "Prévu, pas encore développé.",
@@ -253,6 +378,92 @@ let saved = null; try { saved = localStorage.getItem("lang"); } catch (e) {}
 let lang = saved || ((navigator.language || "en").slice(0, 2) === "fr" ? "fr" : "en");
 setLang(lang);
 document.getElementById("lang").addEventListener("click", () => { lang = lang === "fr" ? "en" : "fr"; setLang(lang); });
+
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// barre de progression de lecture de la page
+const bar = document.getElementById("progress");
+function onScroll() {
+  const h = document.documentElement;
+  bar.style.transform = "scaleX(" + Math.min(1, h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) + ")";
+}
+addEventListener("scroll", onScroll, { passive: true }); onScroll();
+
+// apparition au défilement, et compteurs
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  const el = e.target; el.classList.add("in"); io.unobserve(el);
+  setTimeout(() => el.classList.remove("rv", "in"), 1100 + 70 * (+(el.style.getPropertyValue("--i")) || 0));   // l'apparition finie, les survols reprennent leurs propres animations
+  e.target.querySelectorAll("[data-count]").forEach(countUp);
+}), { threshold: .15, rootMargin: "0px 0px -6% 0px" });
+document.querySelectorAll(".rv").forEach(n => io.observe(n));
+function countUp(el) {
+  const to = +el.dataset.count;
+  if (calm || !to) { el.textContent = to; return; }
+  const t0 = performance.now(), dur = 1400;
+  const step = now => { const p = Math.min(1, (now - t0) / dur); el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+  el.textContent = 0; requestAnimationFrame(step);
+}
+
+// lien de menu actif selon la section visible
+const links = [...document.querySelectorAll(".nav nav a[href^='#']")];
+const spy = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) links.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
+}), { rootMargin: "-45% 0px -50% 0px" });
+links.forEach(a => { const s = document.querySelector(a.getAttribute("href")); if (s) spy.observe(s); });
+
+// lueur qui suit le curseur sur les cartes
+document.querySelectorAll(".card").forEach(c => c.addEventListener("pointermove", e => {
+  const r = c.getBoundingClientRect(); c.style.setProperty("--mx", (e.clientX - r.left) + "px"); c.style.setProperty("--my", (e.clientY - r.top) + "px");
+}));
+
+// inclinaison de la capture principale
+const tilt = document.getElementById("tilt");
+if (!calm && matchMedia("(hover: hover)").matches) {
+  tilt.parentElement.addEventListener("pointermove", e => {
+    const r = tilt.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+    tilt.style.transform = "rotateY(" + (x * 7) + "deg) rotateX(" + (-y * 6) + "deg) scale(1.01)";
+  });
+  tilt.parentElement.addEventListener("pointerleave", () => { tilt.style.transform = ""; });
+}
+
+// bandeau de pays (noms dans leur langue)
+const places = ["🇫🇷 France", "🇬🇧 UK", "🇺🇸 USA", "🇩🇪 Deutschland", "🇪🇸 España", "🇮🇹 Italia", "🇧🇷 Brasil", "🇯🇵 日本", "🇨🇦 Canada", "🇲🇽 México", "🇦🇺 Australia", "🇮🇳 भारत",
+  "🇹🇷 Türkiye", "🇰🇷 대한민국", "🇵🇱 Polska", "🇸🇪 Sverige", "🇦🇷 Argentina", "🇧🇪 Belgique", "🇨🇭 Schweiz", "🇳🇱 Nederland"];
+const track = document.getElementById("marquee");
+track.replaceChildren(...[...places, ...places].map(p => Object.assign(document.createElement("span"), { textContent: p })));
+
+// « quelque part dans le monde » : l'heure locale de villes qui défilent (soleil ou lune selon l'heure)
+const cities = [["🇫🇷", "Paris", "Europe/Paris"], ["🇯🇵", "Tokyo", "Asia/Tokyo"], ["🇧🇷", "São Paulo", "America/Sao_Paulo"], ["🇺🇸", "New York", "America/New_York"],
+  ["🇦🇺", "Sydney", "Australia/Sydney"], ["🇮🇳", "Mumbai", "Asia/Kolkata"], ["🇪🇬", "Cairo", "Africa/Cairo"], ["🇲🇽", "Mexico", "America/Mexico_City"]];
+let ci = 0;
+const placeEl = document.getElementById("wc-place"), clockEl = document.getElementById("wc-clock");
+function hourIn(tz) {
+  const p = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  return p;
+}
+function tickClock() {
+  const [, , tz] = cities[ci], t = hourIn(tz), h = +t.slice(0, 2);
+  clockEl.textContent = (h >= 6 && h < 19 ? "☀️ " : "🌙 ") + t;
+}
+function showCity() {
+  const [f, n] = cities[ci]; placeEl.textContent = f + " " + n; placeEl.classList.remove("out"); tickClock();
+}
+showCity(); setInterval(tickClock, 15000);
+if (!calm) setInterval(() => { placeEl.classList.add("out"); setTimeout(() => { ci = (ci + 1) % cities.length; showCity(); }, 350); }, 3200);
+
+// plateforme conseillée selon l'appareil
+const ua = navigator.userAgent || "";
+const os = /Android/i.test(ua) ? "android" : /Windows/i.test(ua) ? "windows" : /Macintosh|Mac OS X/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) ? "linux" : "";
+if (os) document.querySelector('.plat[data-os="' + os + '"]')?.classList.add("rec");
+
+// agrandissement des captures
+const lb = document.getElementById("lb"), lbImg = lb.querySelector("img");
+document.querySelectorAll(".gallery figure").forEach(f => f.addEventListener("click", () => {
+  const im = f.querySelector("img"); lbImg.src = im.src; lbImg.alt = im.alt;
+  if (lb.showModal) lb.showModal(); else window.open(im.src, "_blank");
+}));
+lb.addEventListener("click", e => { if (e.target === lb || e.target.id === "lb-x") lb.close(); });
 </script>
 </body>
 </html>
