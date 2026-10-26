@@ -5,65 +5,80 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Podial Player Web</title>
 <meta name="description" content="Podcasts and live radio in your browser. No account, no tracking: everything stays in your browser.">
-<meta name="theme-color" content="#14121c">
+<meta name="theme-color" content="#0b0914">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%238b5cf6'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%2314121c'/%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #14121c; --bg2: #1c1a27; --card: #211f2e; --text: #f3f1fa; --muted: #a9a4c0;
-  --violet: #8b5cf6; --pink: #ec4899; --line: rgba(255,255,255,.09);
-  --grad: linear-gradient(135deg, var(--violet), var(--pink));
+  --bg: #0b0914; --bg2: #120f1f; --card: #191631; --card2: #221e3d; --text: #f4f2fb; --muted: #a9a4c4;
+  --violet: #8b5cf6; --pink: #ec4899; --cyan: #22d3ee; --line: rgba(255,255,255,.1); --glow: rgba(139,92,246,.4);
+  --grad: linear-gradient(120deg, var(--violet), var(--pink)); --ease: cubic-bezier(.2,.7,.2,1);
+  color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
-  :root { --bg: #faf9ff; --bg2: #f1eefc; --card: #fff; --text: #1d1a2b; --muted: #5f5a78; --line: rgba(0,0,0,.09); }
+  :root { --bg: #fbfaff; --bg2: #f3f0fd; --card: #fff; --card2: #f3f0fd; --text: #1b1829; --muted: #5d5877; --line: rgba(20,10,60,.1); --glow: rgba(139,92,246,.25); color-scheme: light; }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.45; padding-bottom: 96px;
+body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.45; padding-bottom: 110px; -webkit-font-smoothing: antialiased;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(520px circle at 8% -5%, rgba(139,92,246,.28), transparent 70%), radial-gradient(480px circle at 95% 0%, rgba(236,72,153,.2), transparent 70%); }
+.i { width: 1.2em; height: 1.2em; flex: none; display: inline-block; vertical-align: -.2em; }
+.cc { display: inline-grid; place-items: center; min-width: 28px; height: 19px; padding: 0 6px; border-radius: 6px; background: var(--grad); color: #fff; font-size: .66rem; font-weight: 800; letter-spacing: .04em; vertical-align: middle; margin-right: 6px; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 button, input, select { font: inherit; color: inherit; }
-header { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
-.bar { max-width: 1080px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; gap: 14px; height: 58px; }
+header { position: sticky; top: 10px; z-index: 10; margin: 10px auto 0; width: calc(100% - 24px); max-width: 1180px; border: 1px solid var(--line); border-radius: 99px;
+  background: color-mix(in srgb, var(--bg) 66%, transparent); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); box-shadow: 0 10px 36px rgba(0,0,0,.18); }
+.bar { padding: 0 10px 0 18px; display: flex; align-items: center; gap: 14px; height: 54px; }
 .logo { font-weight: 900; font-size: 1.15rem; text-decoration: none; display: flex; align-items: center; gap: 9px; color: inherit; }
-.logo i { width: 26px; height: 26px; border-radius: 50%; background: var(--grad); display: inline-block; position: relative; }
+.logo i { width: 26px; height: 26px; border-radius: 50%; background: var(--grad); display: inline-block; position: relative; animation: spin 9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
 .logo i::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: var(--bg); }
 .tabs { display: flex; gap: 4px; margin-left: auto; }
-.tabs button { background: none; border: 0; padding: 8px 14px; border-radius: 99px; cursor: pointer; color: var(--muted); font-weight: 600; }
-.tabs button[aria-selected="true"] { background: var(--grad); color: #fff; }
+.tabs button { background: none; border: 0; padding: 8px 15px; border-radius: 99px; cursor: pointer; color: var(--muted); font-weight: 600; transition: background .2s, color .2s, box-shadow .2s; }
+.tabs button:hover { color: var(--text); background: var(--card2); }
+.tabs button[aria-selected="true"] { background: var(--grad); color: #fff; box-shadow: 0 6px 20px var(--glow); }
 .layout { max-width: 1260px; margin: 0 auto; padding: 0 16px; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 24px; align-items: start; }
 main { min-width: 0; padding: 16px 0; }
-aside { position: sticky; top: 74px; margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; max-height: calc(100vh - 170px); overflow-y: auto; }
+aside { position: sticky; top: 84px; margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 20px; max-height: calc(100vh - 170px); overflow-y: auto; }
 aside h3 { margin: 0 0 6px; font-size: 1.1rem; font-weight: 900; line-height: 1.25; }
 aside h3 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 aside p { margin: 0 0 12px; color: var(--muted); font-size: .88rem; }
 aside .plat { display: block; margin-top: 12px; }
 aside .plat > b { display: flex; align-items: center; gap: 8px; font-size: .9rem; margin-bottom: 6px; }
-aside .plat > b i { font-style: normal; width: 24px; height: 24px; border-radius: 8px; background: var(--grad); display: grid; place-items: center; font-size: .8rem; }
+aside .plat > b i { font-style: normal; width: 26px; height: 26px; border-radius: 8px; background: var(--grad); color: #fff; display: grid; place-items: center; }
+aside .plat > b i .i { width: 14px; height: 14px; }
 aside .dl { display: flex; gap: 6px; flex-wrap: wrap; }
-aside .dl a { border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; font-size: .82rem; text-decoration: none; color: inherit; background: var(--bg2); }
+aside .dl a { border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; font-size: .82rem; text-decoration: none; color: inherit; background: var(--card2); }
 aside .dl a:hover { border-color: var(--violet); }
 aside .all { display: block; margin-top: 16px; font-size: .85rem; color: var(--muted); }
 #sideclose { display: none; float: right; }
 #menubtn { white-space: nowrap; }
-#menubtn { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: .85rem; }
+#menubtn { display: none; background: var(--card2); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: .85rem; align-items: center; gap: 6px; }
 @media (max-width: 900px) {
   .layout { display: block; }
-  #menubtn { display: block; margin-left: auto; }
+  #menubtn { display: inline-flex; margin-left: auto; }
   #sideclose { display: inline-block; }
   .tabs { margin-left: 0; }
   aside { position: fixed; z-index: 40; left: 0; top: 0; bottom: 0; width: min(320px, 88vw); max-height: none; margin: 0; border-radius: 0 18px 18px 0; transform: translateX(-105%); transition: transform .2s; }
   body.menu aside { transform: none; box-shadow: 0 0 0 100vmax rgba(0,0,0,.5); }
 }
 .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.tools input[type=search] { flex: 1; min-width: 200px; padding: 11px 18px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); }
+.tools input[type=search] { flex: 1; min-width: 200px; padding: 12px 20px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); transition: border-color .2s, box-shadow .2s; }
+.tools input[type=search]:focus { outline: 0; border-color: var(--violet); box-shadow: 0 0 0 4px rgba(139,92,246,.2); }
 .tools select { padding: 10px 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); max-width: 220px; }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 8px; }
-.chip { flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 5px 14px; cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--violet); border-color: var(--violet); color: #fff; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 6px 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; }
+.chip:hover { transform: translateY(-2px); border-color: rgba(139,92,246,.6); }
+.chip .i { width: 1.05em; height: 1.05em; }
+.chip[aria-pressed="true"] { background: var(--grad); border-color: transparent; color: #fff; box-shadow: 0 6px 18px var(--glow); }
 h2 { margin: 18px 0 10px; font-size: 1.3rem; font-weight: 800; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-.card { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; border-radius: 14px; }
-.card:hover .cover, .card:focus-visible .cover { outline: 2px solid var(--violet); }
-.cover { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; display: grid; place-items: center;
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+.grid .card { animation: rise .5s var(--ease) both; }
+.card { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; border-radius: 18px; color: inherit; }
+.card .cover { transition: transform .35s var(--ease), box-shadow .35s; box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+.card:hover .cover, .card:focus-visible .cover { transform: translateY(-5px) scale(1.02); box-shadow: 0 18px 40px rgba(0,0,0,.35), 0 0 0 2px var(--violet), 0 0 40px var(--glow); }
+.cover { position: relative; aspect-ratio: 1; border-radius: 18px; overflow: hidden; display: grid; place-items: center;
   font-size: 2.4rem; font-weight: 900; color: #fff; }
 .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cover.logo-box { background: #fff; }
@@ -77,35 +92,45 @@ h2 { margin: 18px 0 10px; font-size: 1.3rem; font-weight: 800; }
 .head .cover { width: 130px; flex: none; }
 .head h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 900; }
 .head p { margin: 0 0 10px; color: var(--muted); }
-.btn { border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
-.btn.primary { background: var(--grad); border: 0; color: #fff; }
+.btn { border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 9px 18px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: transform .2s var(--ease), box-shadow .2s; }
+.btn:hover { transform: translateY(-2px); }
+.btn.primary { background: var(--grad); border: 0; color: #fff; box-shadow: 0 8px 24px var(--glow); }
 .back { margin-bottom: 8px; }
 .ep { display: flex; gap: 12px; align-items: center; padding: 10px 6px; border-bottom: 1px solid var(--line); }
 .ep .t { flex: 1; min-width: 0; }
 .ep .t b { display: block; }
 .ep .t small { color: var(--muted); }
-.ep .go { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--grad); color: #fff; cursor: pointer; font-size: 1rem; }
+.ep .go { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--grad); color: #fff; cursor: pointer; display: grid; place-items: center; transition: transform .2s var(--ease), box-shadow .2s; }
+.ep .go:hover { transform: scale(1.1); box-shadow: 0 6px 18px var(--glow); }
+.ep .go .i { width: 17px; height: 17px; }
 .ep.done .t { opacity: .55; }
-#player { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--bg2); border-top: 1px solid var(--line); padding: 8px 14px 10px; }
+#player { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 20; max-width: 1100px; margin: 0 auto; background: color-mix(in srgb, var(--bg2) 78%, transparent); border: 1px solid var(--line); border-radius: 22px;
+  backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 20px 60px rgba(0,0,0,.4), 0 0 60px var(--glow); padding: 10px 16px 10px; animation: rise .4s var(--ease); }
 #player[hidden] { display: none; }
-.pl { max-width: 1080px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
-.pl .cover { width: 46px; flex: none; border-radius: 10px; font-size: 1.2rem; }
+.pl { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.pl .cover { width: 46px; flex: none; border-radius: 12px; font-size: 1.2rem; }
 .pl .info { flex: 1; min-width: 0; }
 .pl .info b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl .info small { color: var(--muted); }
-.pl button { background: none; border: 0; cursor: pointer; font-size: 1rem; padding: 8px; border-radius: 50%; min-width: 38px; }
-.pl #pp { background: var(--grad); color: #fff; width: 44px; height: 44px; }
-.seek { max-width: 1080px; margin: 6px auto 0; display: flex; gap: 10px; align-items: center; font-size: .75rem; color: var(--muted); }
+.pl button { background: none; border: 0; cursor: pointer; font-size: .85rem; font-weight: 700; padding: 8px; border-radius: 50%; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 2px; transition: background .2s, transform .2s var(--ease); }
+.pl button:hover { background: var(--card2); }
+.pl button .i { width: 18px; height: 18px; }
+.pl #pp { background: var(--grad); color: #fff; width: 46px; height: 46px; box-shadow: 0 8px 22px var(--glow); }
+.pl #pp:hover { transform: scale(1.08); }
+.pl #pp .i { width: 20px; height: 20px; }
+.seek { max-width: 1100px; margin: 6px auto 0; display: flex; gap: 10px; align-items: center; font-size: .75rem; color: var(--muted); }
 .seek input { flex: 1; accent-color: var(--violet); }
-#toast { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--line);
-  padding: 10px 18px; border-radius: 12px; z-index: 30; max-width: 90vw; }
+#toast { position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%); background: var(--card2); border: 1px solid var(--line);
+  padding: 10px 18px; border-radius: 14px; box-shadow: 0 14px 40px rgba(0,0,0,.35); z-index: 30; max-width: 90vw; }
 #toast[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }
 @media (max-width: 560px) { #menubtn .lbl { display: none; } .logo span { display: none; } .tabs button { padding: 8px 11px; } .head .cover { width: 100px; } }
 footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 24px 16px; }
 footer a { color: inherit; }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></symbol><symbol id="i-radio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="3"/><path d="M7 8l10-5"/><circle cx="8.5" cy="14" r="2.5"/><path d="M14 12.5h4M14 16h4"/></symbol><symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a1 1 0 0 1 1-1h7.2a1 1 0 0 1 .7.3l8.8 8.8a1 1 0 0 1 0 1.4l-6.6 6.6a1 1 0 0 1-1.4 0L3.3 11.9a1 1 0 0 1-.3-.7z"/><circle cx="7.5" cy="7.5" r="1.3"/></symbol><symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10.5l5 5 5-5M4 20h16"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2.2"/><circle cx="9" cy="12" r="2.2"/><circle cx="17" cy="18" r="2.2"/></symbol><symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z"/></symbol><symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol><symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.3"/></symbol><symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3l1.9 5.6L18.5 10.5 12.9 12.4 11 18l-1.9-5.6L3.5 10.5 9.1 8.6z"/><path d="M19 15l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7z"/></symbol><symbol id="i-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16l1.6-5.6A2 2 0 0 1 8.5 9h7a2 2 0 0 1 1.9 1.4L19 16"/><rect x="3" y="16" width="18" height="4.5" rx="1.8"/><circle cx="7.5" cy="18.3" r=".7"/><circle cx="16.5" cy="18.3" r=".7"/></symbol><symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6.2v14L9 18l6 2.2 6-2.2V4l-6 2.2z"/><path d="M9 4v14M15 6.2v14"/></symbol><symbol id="i-quote" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2" width="11" height="20" rx="3"/><path d="M10.5 18.5h3"/></symbol><symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21a2 2 0 0 0 4 0"/></symbol><symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.6v14.8a1 1 0 0 0 1.5.9l12-7.4a1 1 0 0 0 0-1.8L8.5 3.7A1 1 0 0 0 7 4.6z"/></symbol><symbol id="i-coffee" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12v5.5A5.5 5.5 0 0 1 10.5 20h-1A5.5 5.5 0 0 1 4 14.5z"/><path d="M16 11h1.8a2.6 2.6 0 0 1 0 5.2H16M8 3v3M12 3v3"/></symbol><symbol id="i-record" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></symbol><symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol><symbol id="i-languages" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6h10M8.5 4v2M5.5 6c.6 3.2 2.8 5.8 6 7.5M12 6c-.7 3.4-3.4 6.4-7.6 8M14 20l4-10 4 10M15.4 16.6h5.2"/></symbol><symbol id="i-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.2-4M4 4v4h4M4 13a8 8 0 0 0 14.2 4M20 20v-4h-4"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10.5h18M8 3v4M16 3v4"/></symbol><symbol id="i-headphones" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="7" rx="2"/><rect x="16.5" y="14" width="4.5" height="7" rx="2"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-newspaper" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a1 1 0 0 1 1 1v14H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"/><path d="M17 8h3v9a2 2 0 0 1-2 2M8 8h5M8 11.5h5M8 15h3"/></symbol><symbol id="i-antenna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="11" r="1.8"/><path d="M12 13v8M8.5 21h7M8 7a5.5 5.5 0 0 0 0 8M16 7a5.5 5.5 0 0 1 0 8M5.2 4.4a9.4 9.4 0 0 0 0 13.2M18.8 4.4a9.4 9.4 0 0 1 0 13.2"/></symbol><symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol><symbol id="i-dice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/></symbol><symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4.5" width="4" height="15" rx="1.3" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1.3" fill="currentColor"/></symbol><symbol id="i-playf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M7 4.6v14.8a1 1 0 0 0 1.5.9l12-7.4a1 1 0 0 0 0-1.8L8.5 3.7A1 1 0 0 0 7 4.6z"/></symbol><symbol id="i-arrowleft" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/></symbol><symbol id="i-starfill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/></symbol><symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h5"/><path d="M4.6 9.2A8 8 0 1 1 4 14"/></symbol><symbol id="i-redo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4v5h-5"/><path d="M19.4 9.2A8 8 0 1 0 20 14"/></symbol><symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8.5 7H17v8.5"/></symbol><symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></symbol><symbol id="i-linux" viewBox="0 0 24 24"><path fill="currentColor" d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.4v.019c.002.089.008.179.02.267-.193-.067-.438-.135-.607-.202a1.635 1.635 0 01-.018-.2v-.02a1.772 1.772 0 01.15-.768c.082-.22.232-.406.43-.533a.985.985 0 01.594-.2zm-2.962.059h.036c.142 0 .27.048.399.135.146.129.264.288.344.465.09.199.14.4.153.667v.004c.007.134.006.2-.002.266v.08c-.03.007-.056.018-.083.024-.152.055-.274.135-.393.2.012-.09.013-.18.003-.267v-.015c-.012-.133-.04-.2-.082-.333a.613.613 0 00-.166-.267.248.248 0 00-.183-.064h-.021c-.071.006-.13.04-.186.132a.552.552 0 00-.12.27.944.944 0 00-.023.33v.015c.012.135.037.2.08.334.046.134.098.2.166.268.01.009.02.018.034.024-.07.057-.117.07-.176.136a.304.304 0 01-.131.068 2.62 2.62 0 01-.275-.402 1.772 1.772 0 01-.155-.667 1.759 1.759 0 01.08-.668 1.43 1.43 0 01.283-.535c.128-.133.26-.2.418-.2zm1.37 1.706c.332 0 .733.065 1.216.399.293.2.523.269 1.052.468h.003c.255.136.405.266.478.399v-.131a.571.571 0 01.016.47c-.123.31-.516.643-1.063.842v.002c-.268.135-.501.333-.775.465-.276.135-.588.292-1.012.267a1.139 1.139 0 01-.448-.067 3.566 3.566 0 01-.322-.198c-.195-.135-.363-.332-.612-.465v-.005h-.005c-.4-.246-.616-.512-.686-.71-.07-.268-.005-.47.193-.6.224-.135.38-.271.483-.336.104-.074.143-.102.176-.131h.002v-.003c.169-.202.436-.47.839-.601.139-.036.294-.065.466-.065zm2.8 2.142c.358 1.417 1.196 3.475 1.735 4.473.286.534.855 1.659 1.102 3.024.156-.005.33.018.513.064.646-1.671-.546-3.467-1.089-3.966-.22-.2-.232-.335-.123-.335.59.534 1.365 1.572 1.646 2.757.13.535.16 1.104.021 1.67.067.028.135.06.205.067 1.032.534 1.413.938 1.23 1.537v-.043c-.06-.003-.12 0-.18 0h-.016c.151-.467-.182-.825-1.065-1.224-.915-.4-1.646-.336-1.77.465-.008.043-.013.066-.018.135-.068.023-.139.053-.209.064-.43.268-.662.669-.793 1.187-.13.533-.17 1.156-.205 1.869v.003c-.02.334-.17.838-.319 1.35-1.5 1.072-3.58 1.538-5.348.334a2.645 2.645 0 00-.402-.533 1.45 1.45 0 00-.275-.333c.182 0 .338-.03.465-.067a.615.615 0 00.314-.334c.108-.267 0-.697-.345-1.163-.345-.467-.931-.995-1.788-1.521-.63-.4-.986-.87-1.15-1.396-.165-.534-.143-1.085-.015-1.645.245-1.07.873-2.11 1.274-2.763.107-.065.037.135-.408.974-.396.751-1.14 2.497-.122 3.854a8.123 8.123 0 01.647-2.876c.564-1.278 1.743-3.504 1.836-5.268.048.036.217.135.289.202.218.133.38.333.59.465.21.201.477.335.876.335.039.003.075.006.11.006.412 0 .73-.134.997-.268.29-.134.52-.334.74-.4h.005c.467-.135.835-.402 1.044-.7zm2.185 8.958c.037.6.343 1.245.882 1.377.588.134 1.434-.333 1.791-.765l.211-.01c.315-.007.577.01.847.268l.003.003c.208.199.305.53.391.876.085.4.154.78.409 1.066.486.527.645.906.636 1.14l.003-.007v.018l-.003-.012c-.015.262-.185.396-.498.595-.63.401-1.746.712-2.457 1.57-.618.737-1.37 1.14-2.036 1.191-.664.053-1.237-.2-1.574-.898l-.005-.003c-.21-.4-.12-1.025.056-1.69.176-.668.428-1.344.463-1.897.037-.714.076-1.335.195-1.814.12-.465.308-.797.641-.984l.045-.022zm-10.814.049h.01c.053 0 .105.005.157.014.376.055.706.333 1.023.752l.91 1.664.003.003c.243.533.754 1.064 1.189 1.637.434.598.77 1.131.729 1.57v.006c-.057.744-.48 1.148-1.125 1.294-.645.135-1.52.002-2.395-.464-.968-.536-2.118-.469-2.857-.602-.369-.066-.61-.2-.723-.4-.11-.2-.113-.602.123-1.23v-.004l.002-.003c.117-.334.03-.752-.027-1.118-.055-.401-.083-.71.043-.94.16-.334.396-.4.69-.533.294-.135.64-.202.915-.47h.002v-.002c.256-.268.445-.601.668-.838.19-.201.38-.336.663-.336zm7.159-9.074c-.435.201-.945.535-1.488.535-.542 0-.97-.267-1.28-.466-.154-.134-.28-.268-.373-.335-.164-.134-.144-.333-.074-.333.109.016.129.134.199.2.096.066.215.2.36.333.292.2.68.467 1.167.467.485 0 1.053-.267 1.398-.466.195-.135.445-.334.648-.467.156-.136.149-.267.279-.267.128.016.034.134-.147.332a8.097 8.097 0 01-.69.468zm-1.082-1.583V5.64c-.006-.02.013-.042.029-.05.074-.043.18-.027.26.004.063 0 .16.067.15.135-.006.049-.085.066-.135.066-.055 0-.092-.043-.141-.068-.052-.018-.146-.008-.163-.065zm-.551 0c-.02.058-.113.049-.166.066-.047.025-.086.068-.14.068-.05 0-.13-.02-.136-.068-.01-.066.088-.133.15-.133.08-.031.184-.047.259-.005.019.009.036.03.03.05v.02h.003z"/></symbol><symbol id="i-windows" viewBox="0 0 24 24"><path fill="currentColor" d="M0,0H11.377V11.372H0ZM12.623,0H24V11.372H12.623ZM0,12.623H11.377V24H0Zm12.623,0H24V24H12.623"/></symbol><symbol id="i-apple" viewBox="0 0 24 24"><path fill="currentColor" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></symbol><symbol id="i-android" viewBox="0 0 24 24"><path fill="currentColor" d="M18.4395 5.5586c-.675 1.1664-1.352 2.3318-2.0274 3.498-.0366-.0155-.0742-.0286-.1113-.043-1.8249-.6957-3.484-.8-4.42-.787-1.8551.0185-3.3544.4643-4.2597.8203-.084-.1494-1.7526-3.021-2.0215-3.4864a1.1451 1.1451 0 0 0-.1406-.1914c-.3312-.364-.9054-.4859-1.379-.203-.475.282-.7136.9361-.3886 1.5019 1.9466 3.3696-.0966-.2158 1.9473 3.3593.0172.031-.4946.2642-1.3926 1.0177C2.8987 12.176.452 14.772 0 18.9902h24c-.119-1.1108-.3686-2.099-.7461-3.0683-.7438-1.9118-1.8435-3.2928-2.7402-4.1836a12.1048 12.1048 0 0 0-2.1309-1.6875c.6594-1.122 1.312-2.2559 1.9649-3.3848.2077-.3615.1886-.7956-.0079-1.1191a1.1001 1.1001 0 0 0-.8515-.5332c-.5225-.0536-.9392.3128-1.0488.5449zm-.0391 8.461c.3944.5926.324 1.3306-.1563 1.6503-.4799.3197-1.188.0985-1.582-.4941-.3944-.5927-.324-1.3307.1563-1.6504.4727-.315 1.1812-.1086 1.582.4941zM7.207 13.5273c.4803.3197.5506 1.0577.1563 1.6504-.394.5926-1.1038.8138-1.584.4941-.48-.3197-.5503-1.0577-.1563-1.6504.4008-.6021 1.1087-.8106 1.584-.4941z"/></symbol></defs></svg>
 <header><div class="bar">
   <a class="logo" href="../"><i></i><span>Podial Player</span></a>
   <div class="tabs" role="tablist" id="tabs"></div>
@@ -120,9 +145,9 @@ footer a { color: inherit; }
   <div class="pl">
     <div class="cover" id="pcover"></div>
     <div class="info"><b id="ptitle"></b><small id="psub"></small></div>
-    <button id="back" aria-label="-15s">⟲15</button>
-    <button id="pp" aria-label="Play/Pause">▶</button>
-    <button id="fwd" aria-label="+30s">30⟳</button>
+    <button id="back" aria-label="-15s"><svg class="i" aria-hidden="true"><use href="#i-undo"/></svg>15</button>
+    <button id="pp" aria-label="Play/Pause"><svg class="i" aria-hidden="true"><use href="#i-playf"/></svg></button>
+    <button id="fwd" aria-label="+30s">30<svg class="i" aria-hidden="true"><use href="#i-redo"/></svg></button>
     <button id="speed" aria-label="Speed">1×</button>
   </div>
   <div class="seek" id="seekrow"><span id="cur">0:00</span><input id="seek" type="range" min="0" max="0" value="0" step="1" aria-label="Seek"><span id="dur">0:00</span></div>
@@ -135,24 +160,24 @@ footer a { color: inherit; }
 const T = {
   en: { podcasts: "Podcasts", radios: "Radios", library: "Library", s_pod: "Search podcasts", s_rad: "Search radio stations",
     all: "All", top: "Top 10", failed: "Couldn't load. Check your connection.", none: "No results.", live: "LIVE",
-    back: "← Back", follow: "Follow", unfollow: "Unfollow", fav: "Add to favourites", unfav: "Remove from favourites",
+    back: "Back", follow: "Follow", unfollow: "Unfollow", fav: "Add to favourites", unfav: "Remove from favourites",
     play_live: "Play live", episodes: "Episodes", followed: "Followed podcasts", favs: "Favourite radios", empty: "Nothing here yet. Follow a podcast or add a radio.",
     insecure: "This station only streams over unsecured http, which browsers block here. Open the stream in another player:",
     open_stream: "Open stream", resumed: "Resuming where you left off",
     foot: 'Free and open source · No account, no tracking: your library stays in this browser · Data: Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · The apps add downloads, transcripts, quotes and Android Auto',
     min: "min", country: "Country", panel_radios: "Radios", panel_webradios: "Webradios", panel_local: "Local news", surprise: "Surprise me", surprise_none: "Couldn't find a radio. Try again.", share: "Share", copied: "Link copied", bad_link: "This link no longer works.", ep_newest: "Newest first", ep_oldest: "Oldest first", ep_all: "All episodes", ep_unfinished: "Unfinished", ep_none_filtered: "No episode matches this filter.", no_eps: "This podcast's episodes can't be listed in the web version. Open it in the Podial app.", get_app: "Get the app",
     carry_t: "Want to take Podial <em>everywhere</em>?", carry_p: "The free apps add downloads for offline listening, transcripts, quotes, Android Auto and more. No account, no tracking.",
-    carry_btn: "📲 Get the app", carry_all: "All downloads and details →", close: "Close" },
+    carry_btn: "Get the app", carry_all: "All downloads and details →", close: "Close" },
   fr: { podcasts: "Podcasts", radios: "Radios", library: "Bibliothèque", s_pod: "Rechercher un podcast", s_rad: "Rechercher une radio",
     all: "Tous", top: "Top 10", failed: "Chargement impossible. Vérifie ta connexion.", none: "Aucun résultat.", live: "DIRECT",
-    back: "← Retour", follow: "Suivre", unfollow: "Ne plus suivre", fav: "Ajouter aux favoris", unfav: "Retirer des favoris",
+    back: "Retour", follow: "Suivre", unfollow: "Ne plus suivre", fav: "Ajouter aux favoris", unfav: "Retirer des favoris",
     play_live: "Écouter en direct", episodes: "Épisodes", followed: "Podcasts suivis", favs: "Radios favorites", empty: "Rien ici pour l'instant. Suis un podcast ou ajoute une radio.",
     insecure: "Cette radio diffuse seulement en http non sécurisé, ce que les navigateurs bloquent ici. Ouvre le flux dans un autre lecteur :",
     open_stream: "Ouvrir le flux", resumed: "Reprise là où tu t'étais arrêté",
     foot: 'Libre et open source · Sans compte, sans pistage : ta bibliothèque reste dans ce navigateur · Données : Apple iTunes, radio-browser.info · <a href="https://github.com/Mickaelb06/podial">GitHub</a> · Les applications ajoutent téléchargements, transcriptions, citations et Android Auto',
     min: "min", country: "Pays", panel_radios: "Radios", panel_webradios: "Webradios", panel_local: "Infos locales", surprise: "Surprends-moi", surprise_none: "Aucune radio trouvée. Réessaie.", share: "Partager", copied: "Lien copié", bad_link: "Ce lien ne fonctionne plus.", ep_newest: "Plus récents", ep_oldest: "Plus anciens", ep_all: "Tous les épisodes", ep_unfinished: "Non terminés", ep_none_filtered: "Aucun épisode ne correspond à ce filtre.", no_eps: "Les épisodes de ce podcast ne peuvent pas être listés dans la version web. Ouvre-le dans l'application Podial.", get_app: "Télécharger l'application",
     carry_t: "Envie d'emporter Podial <em>partout</em> ?", carry_p: "Les applications gratuites ajoutent les téléchargements hors ligne, les transcriptions, les citations, Android Auto et plus encore. Sans compte, sans pistage.",
-    carry_btn: "📲 Emporter Podial", carry_all: "Tous les téléchargements et détails →", close: "Fermer" },
+    carry_btn: "Emporter Podial", carry_all: "Tous les téléchargements et détails →", close: "Fermer" },
 };
 const lang = (navigator.language || "en").toLowerCase().startsWith("fr") ? "fr" : "en";
 const t = k => T[lang][k];
@@ -163,6 +188,10 @@ const GENRES = { 1301: "Arts", 1321: "Business", 1303: "Comedy", 1304: "Educatio
   1533: "Science", 1324: "Society & Culture", 1545: "Sports", 1318: "Technology", 1488: "True Crime", 1309: "TV & Film" };
 
 // ---------- petits outils (jamais d'innerHTML avec des données externes) ----------
+// icône du jeu intégré (sprite en tête de page) : ic("radio") ; les emojis s'affichent mal selon le système
+const NS = "http://www.w3.org/2000/svg";
+function ic(name) { const s = document.createElementNS(NS, "svg"), u = document.createElementNS(NS, "use"); s.setAttribute("class", "i"); s.setAttribute("aria-hidden", "true"); u.setAttribute("href", "#i-" + name); s.append(u); return s; }
+const ccBadge = cc => h("span", { class: "cc" }, cc.toUpperCase());
 function h(tag, props, ...kids) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(props || {})) {
@@ -204,7 +233,6 @@ const logosP = fetch("radio_logos.json").then(r => r.ok ? r.json() : {}).catch((
 const UL = (navigator.language || "en").slice(0, 2);
 const gName = g => g[UL] || g.en;
 const regionName = cc => { try { return new Intl.DisplayNames([UL], { type: "region" }).of(cc) || cc; } catch { return cc; } };
-const flagOf = cc => String.fromCodePoint(...[...cc.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
 
 // ---------- accès réseau ----------
 const country = (navigator.language.split("-")[1] || "US").toUpperCase();
@@ -381,8 +409,8 @@ $("back").onclick = () => audio.currentTime = Math.max(0, audio.currentTime - 15
 $("fwd").onclick = () => audio.currentTime += 30;
 $("speed").onclick = () => { si = (si + 1) % speeds.length; audio.playbackRate = speeds[si]; $("speed").textContent = speeds[si] + "×"; };
 $("seek").oninput = e => audio.currentTime = +e.target.value;
-audio.addEventListener("play", () => $("pp").textContent = "❚❚");
-audio.addEventListener("pause", () => $("pp").textContent = "▶");
+audio.addEventListener("play", () => $("pp").replaceChildren(ic("pause")));
+audio.addEventListener("pause", () => $("pp").replaceChildren(ic("playf")));
 audio.addEventListener("timeupdate", () => {
   if (live) return;
   $("seek").max = audio.duration || 0; $("seek").value = audio.currentTime; $("cur").textContent = fmt(audio.currentTime); $("dur").textContent = fmt(audio.duration);
@@ -435,7 +463,7 @@ function showBrowse(kind) {
         if (!r) return toast(t("surprise_none"));
         open(r); playRadio(r);
       } catch { toast(t("surprise_none")); } finally { b.disabled = false; }
-    } }, "🎲 " + t("surprise")));
+    } }, ic("dice"), t("surprise")));
     radioApi.countries().then(cs => sel.replaceChildren(...cs.filter(c => c.iso_3166_1).map(c =>
       h("option", { value: c.iso_3166_1, selected: c.iso_3166_1 === state.cc }, `${c.name} (${c.stationcount})`)))).catch(() => {});
   }
@@ -451,15 +479,15 @@ function showBrowse(kind) {
       const parent = state.genre ? parentOf(state.genre) : null;
       const row1 = h("div", { class: "chips" },
         chip(t("all"), !state.genre && !state.panel, () => { state.genre = null; state.panel = null; }),
-        chip("📻 " + t("panel_radios"), state.panel === "radios", () => { state.panel = "radios"; state.genre = null; }),
-        chip("🗞 " + t("panel_local"), state.panel === "local", () => { state.panel = "local"; state.genre = null; }),
+        chip([ic("radio"), t("panel_radios")], state.panel === "radios", () => { state.panel = "radios"; state.genre = null; }),
+        chip([ic("newspaper"), t("panel_local")], state.panel === "local", () => { state.panel = "local"; state.genre = null; }),
         ...cat.genres.filter(g => !g.parent).map(g => chip(gName(g), !state.panel && parent === g.id, () => { state.genre = g.id; state.panel = null; })));
       const kids = !state.panel && parent ? cat.genres.filter(g => g.parent === parent) : [];
       chips.replaceChildren(row1, ...(kids.length ? [h("div", { class: "chips" },
         chip(gName(cat.genres.find(g => g.id === parent)), state.genre === parent, () => { state.genre = parent; }),
         ...kids.map(g => chip(gName(g), state.genre === g.id, () => { state.genre = g.id; })))] : []));
     });
-    if (state.source) view.append(h("button", { class: "btn back", onclick: () => { state.source = null; showBrowse(kind); } }, t("back") + " · " + state.source.name));
+    if (state.source) view.append(h("button", { class: "btn back", onclick: () => { state.source = null; showBrowse(kind); } }, ic("arrowleft"), t("back") + " · " + state.source.name));
     else view.append(chips);
   }
   if (kind === "radio") {
@@ -469,14 +497,14 @@ function showBrowse(kind) {
       const top = state.rgenre ? parentRadioGenre(rc, state.rgenre) : null;
       const row1 = h("div", { class: "chips" },
         rchip(t("all"), !state.rgenre && !state.webradios, () => { state.rgenre = null; state.webradios = false; }),
-        rchip("📡 " + t("panel_webradios"), state.webradios, () => { state.webradios = true; state.rgenre = null; }),
+        rchip([ic("antenna"), t("panel_webradios")], state.webradios, () => { state.webradios = true; state.rgenre = null; }),
         ...rc.genres.map(g => rchip(gName(g), !state.webradios && top?.id === g.id, () => { state.rgenre = g.id; state.webradios = false; })));
       const kids = !state.webradios && top ? top.children : [];
       chips.replaceChildren(row1, ...(kids.length ? [h("div", { class: "chips" },
         rchip(gName(top), state.rgenre === top.id, () => { state.rgenre = top.id; }),
         ...kids.map(g => rchip(gName(g), state.rgenre === g.id, () => { state.rgenre = g.id; })))] : []));
     });
-    if (state.rsource) view.append(h("button", { class: "btn back", onclick: () => { state.rsource = null; showBrowse(kind); } }, t("back") + " · " + state.rsource.name));
+    if (state.rsource) view.append(h("button", { class: "btn back", onclick: () => { state.rsource = null; showBrowse(kind); } }, ic("arrowleft"), t("back") + " · " + state.rsource.name));
     else view.append(chips);
   }
   view.append(results);
@@ -494,7 +522,7 @@ function showBrowse(kind) {
         for (const b of rc ? rc.brands : []) groups.set(b.country, [...(groups.get(b.country) || []), b]);
         const first = state.cc.toUpperCase();
         const order = [...groups.keys()].sort((a, b) => (a === first ? 0 : 1) - (b === first ? 0 : 1) || regionName(a).localeCompare(regionName(b), UL));
-        results.replaceChildren(...(order.length ? order.flatMap(cc => [h("h2", {}, flagOf(cc) + " " + regionName(cc)),
+        results.replaceChildren(...(order.length ? order.flatMap(cc => [h("h2", {}, ccBadge(cc), regionName(cc)),
           h("div", { class: "grid" }, groups.get(cc).map(b => h("button", { class: "card", onclick: () => { state.rsource = b; showBrowse(kind); } },
             cover({ name: b.name, art: b.logo || "" }, b.logo ? "logo-box" : ""), h("div", { class: "n" }, b.name))))]) : [h("div", { class: "msg" }, t("none"))]));
         return;
@@ -506,7 +534,7 @@ function showBrowse(kind) {
         for (const src of cat.sources) groups.set(src.country, [...(groups.get(src.country) || []), src]);
         const first = country.toUpperCase();
         const order = [...groups.keys()].sort((a, b) => (a === first ? 0 : 1) - (b === first ? 0 : 1) || regionName(a).localeCompare(regionName(b), UL));
-        results.replaceChildren(...order.flatMap(cc => [h("h2", {}, flagOf(cc) + " " + regionName(cc)),
+        results.replaceChildren(...order.flatMap(cc => [h("h2", {}, ccBadge(cc), regionName(cc)),
           h("div", { class: "grid" }, groups.get(cc).map(src => h("button", { class: "card", onclick: () => { state.source = src; showBrowse(kind); } },
             cover({ name: src.name, art: "" }), h("div", { class: "n" }, src.name))))]));
         return;
@@ -546,20 +574,20 @@ async function loadFromHash(hash = location.hash) {
 }
 
 function showDetail(item) {
-  const star = h("button", { class: "btn" }), update = () => star.textContent = (lib.has(item) ? "★ " : "☆ ") + t(item.kind === "radio" ? (lib.has(item) ? "unfav" : "fav") : (lib.has(item) ? "unfollow" : "follow"));
+  const star = h("button", { class: "btn" }), update = () => star.replaceChildren(ic(lib.has(item) ? "starfill" : "star"), t(item.kind === "radio" ? (lib.has(item) ? "unfav" : "fav") : (lib.has(item) ? "unfollow" : "follow")));
   star.onclick = () => { lib.toggle(item); update(); }; update();
   const shareBtn = item.id ? h("button", { class: "btn", onclick: async () => {
     const url = location.origin + location.pathname + "#" + (item.kind === "radio" ? "r" : "p") + "=" + encodeURIComponent(item.id);
     if (navigator.share) { try { await navigator.share({ title: item.name, url }); return; } catch (e) { if (e.name === "AbortError") return; } }
     try { await navigator.clipboard.writeText(url); toast(t("copied")); } catch { toast(url); }
-  } }, "🔗 " + t("share")) : null;
+  } }, ic("link"), t("share")) : null;
   const actions = h("div", { style: "display:flex;gap:8px;flex-wrap:wrap" });
   const head = h("div", { class: "head" }, cover(item, item.kind === "radio" ? "logo-box" : ""), h("div", {}, h("h1", {}, item.name), h("p", {}, item.artist), actions));
   const list = h("div");
-  view.replaceChildren(h("button", { class: "btn back", onclick: () => history.state?.podial ? history.back() : (detail = null, route()) }, t("back")), head, list);
+  view.replaceChildren(h("button", { class: "btn back", onclick: () => history.state?.podial ? history.back() : (detail = null, route()) }, ic("arrowleft"), t("back")), head, list);
   if (item.kind === "radio") {
-    actions.append(h("button", { class: "btn primary", onclick: () => playRadio(item) }, "▶ " + t("play_live")), star, shareBtn);
-    if (item.homepage) actions.append(h("a", { class: "btn", href: item.homepage, target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none" }, "↗"));
+    actions.append(h("button", { class: "btn primary", onclick: () => playRadio(item) }, ic("playf"), t("play_live")), star, shareBtn);
+    if (item.homepage) actions.append(h("a", { class: "btn", href: item.homepage, target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none" }, ic("ext")));
     return;
   }
   actions.append(star, shareBtn);
@@ -571,7 +599,7 @@ function showDetail(item) {
     const chip = (label, on, fn) => h("button", { class: "chip", "aria-pressed": String(on), onclick: () => { fn(); draw(); } }, label);
     const row = (e, done) => h("div", { class: "ep" + (done[e.url] ? " done" : "") },
       h("div", { class: "t" }, h("b", {}, e.title), h("small", {}, e.date + (e.secs ? " · " + Math.round(e.secs / 60) + " " + t("min") : ""))),
-      h("button", { class: "go", "aria-label": "Play", onclick: () => play({ url: e.url, raw: e.url, title: e.title, sub: item.name, art: e.art || item.art }, pos.get(e.url)) }, "▶"));
+      h("button", { class: "go", "aria-label": "Play", onclick: () => play({ url: e.url, raw: e.url, title: e.title, sub: item.name, art: e.art || item.art }, pos.get(e.url)) }, ic("playf")));
     function draw() {
       const done = store.get("done", {});
       const shown = (st.flt === "unfinished" ? eps.filter(e => !done[e.url]) : eps.slice()).sort((x, y) => y.date.localeCompare(x.date));
@@ -590,10 +618,10 @@ function showDetail(item) {
 // ---------- menu de gauche : télécharger les applications ----------
 const REL = "https://github.com/Mickaelb06/podial/releases/download/v0.5.13/";
 const PLATFORMS = [
-  ["🤖", "Android", [["APK", "podial-android.apk"]]],
-  ["🐧", "Linux", [[".deb", "podial_0.5.13_all.deb"], [".rpm", "podial-0.5.13-1.x86_64.rpm"], [".tar.gz", "podial-linux-0.5.13.tar.gz"]]],
-  ["🪟", "Windows", [[".exe", "Podial-0.5.13.exe"], [".msi", "Podial-0.5.13.msi"]]],
-  ["🍎", "macOS", [[".dmg", "Podial-1.0.13.dmg"]]],
+  ["android", "Android", [["APK", "podial-android.apk"]]],
+  ["linux", "Linux", [[".deb", "podial_0.5.13_all.deb"], [".rpm", "podial-0.5.13-1.x86_64.rpm"], [".tar.gz", "podial-linux-0.5.13.tar.gz"]]],
+  ["windows", "Windows", [[".exe", "Podial-0.5.13.exe"], [".msi", "Podial-0.5.13.msi"]]],
+  ["apple", "macOS", [[".dmg", "Podial-1.0.13.dmg"]]],
 ];
 (function side() {
   const aside = $("side"), btn = $("menubtn");
@@ -601,10 +629,10 @@ const PLATFORMS = [
   aside.replaceChildren(
     h("button", { class: "btn", id: "sideclose", onclick: () => document.body.classList.remove("menu") }, t("close")),
     t_, h("p", {}, t("carry_p")),
-    ...PLATFORMS.map(([ic, name, files]) => h("div", { class: "plat" }, h("b", {}, h("i", {}, ic), name),
+    ...PLATFORMS.map(([logo, name, files]) => h("div", { class: "plat" }, h("b", {}, h("i", {}, ic(logo)), name),
       h("div", { class: "dl" }, files.map(([label, f]) => h("a", { href: REL + f, rel: "noopener" }, label))))),
     h("a", { class: "all", href: "../#download" }, t("carry_all")));
-  btn.setAttribute("aria-label", t("carry_btn")); btn.replaceChildren("📲", h("span", { class: "lbl" }, " " + t("carry_btn").replace("📲 ", "")));
+  btn.setAttribute("aria-label", t("carry_btn")); btn.replaceChildren(ic("phone"), h("span", { class: "lbl" }, t("carry_btn")));
   btn.onclick = () => document.body.classList.toggle("menu");
   document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("menu"); });
   aside.addEventListener("click", e => { if (e.target.closest(".dl a")) document.body.classList.remove("menu"); });
