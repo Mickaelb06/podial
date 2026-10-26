@@ -987,7 +987,8 @@
    "name": "ICI (ex-France Bleu)",
    "country": "FR",
    "q": "ICI |France Bleu",
-   "logo": "https://www.francebleu.fr/images/logo-ici.jpg"
+   "logo": "https://www.francebleu.fr/images/logo-ici.jpg",
+   "regional": true
   },
   {
    "name": "Radio Classique",
@@ -2245,6 +2246,266 @@
    "country": "CL",
    "q": "Cooperativa",
    "logo": "https://myradioonline.cl/public/uploads/radio_img/radio-cooperativa/fb_cover.jpg"
+  }
+ ],
+ "ici": [
+  {
+   "region": "Auvergne-Rhône-Alpes",
+   "path": "auvergne-rhone-alpes",
+   "stations": [
+    [
+     "ici Drôme Ardèche",
+     "fbdromeardeche"
+    ],
+    [
+     "ici Isère",
+     "fbisere"
+    ],
+    [
+     "ici Pays d'Auvergne",
+     "fbpaysdauvergne"
+    ],
+    [
+     "ici Pays de Savoie",
+     "fbpaysdesavoie"
+    ],
+    [
+     "ici Saint-Étienne Loire",
+     "fbstetienne"
+    ]
+   ]
+  },
+  {
+   "region": "Bourgogne-Franche-Comté",
+   "path": "bourgogne-franche-comte",
+   "stations": [
+    [
+     "ici Auxerre",
+     "fbauxerre"
+    ],
+    [
+     "ici Belfort-Montbéliard",
+     "fbbelfort"
+    ],
+    [
+     "ici Besançon",
+     "fbbesancon"
+    ],
+    [
+     "ici Bourgogne",
+     "fbbourgogne"
+    ]
+   ]
+  },
+  {
+   "region": "Bretagne",
+   "path": "bretagne",
+   "stations": [
+    [
+     "ici Armorique",
+     "fbarmorique"
+    ],
+    [
+     "ici Breizh Izel",
+     "fbbreizizel"
+    ]
+   ]
+  },
+  {
+   "region": "Centre-Val de Loire",
+   "path": "centre-val-de-loire",
+   "stations": [
+    [
+     "ici Berry",
+     "fbberry"
+    ],
+    [
+     "ici Orléans",
+     "fborleans"
+    ],
+    [
+     "ici Touraine",
+     "fbtouraine"
+    ]
+   ]
+  },
+  {
+   "region": "Corse",
+   "path": "corse",
+   "stations": [
+    [
+     "ici Frequenza Mora",
+     "fbfrequenzamora"
+    ]
+   ]
+  },
+  {
+   "region": "Grand Est",
+   "path": "grand-est",
+   "stations": [
+    [
+     "ici Alsace",
+     "fbalsace"
+    ],
+    [
+     "ici Champagne-Ardenne",
+     "fbchampagne"
+    ],
+    [
+     "ici Elsass",
+     "fbelsass"
+    ],
+    [
+     "ici Lorraine Nord",
+     "fblorrainenord"
+    ],
+    [
+     "ici Sud Lorraine",
+     "fbsudlorraine"
+    ]
+   ]
+  },
+  {
+   "region": "Hauts-de-France",
+   "path": "hauts-de-france",
+   "stations": [
+    [
+     "ici Nord",
+     "fbnord"
+    ],
+    [
+     "ici Picardie",
+     "fbpicardie"
+    ]
+   ]
+  },
+  {
+   "region": "Île-de-France",
+   "path": "ile-de-france",
+   "stations": [
+    [
+     "ici Paris",
+     "fb1071"
+    ]
+   ]
+  },
+  {
+   "region": "Normandie",
+   "path": "normandie",
+   "stations": [
+    [
+     "ici Basse-Normandie",
+     "fbbassenormandie"
+    ],
+    [
+     "ici Cotentin",
+     "fbcotentin"
+    ],
+    [
+     "ici Haute-Normandie",
+     "fbhautenormandie"
+    ]
+   ]
+  },
+  {
+   "region": "Nouvelle-Aquitaine",
+   "path": "nouvelle-aquitaine",
+   "stations": [
+    [
+     "ici Béarn Bigorre",
+     "fbbearn"
+    ],
+    [
+     "ici Creuse",
+     "fbcreuse"
+    ],
+    [
+     "ici Gascogne",
+     "fbgascogne"
+    ],
+    [
+     "ici Gironde",
+     "fbgironde"
+    ],
+    [
+     "ici La Rochelle",
+     "fblarochelle"
+    ],
+    [
+     "ici Limousin",
+     "fblimousin"
+    ],
+    [
+     "ici Pays Basque",
+     "fbpaysbasque"
+    ],
+    [
+     "ici Périgord",
+     "fbperigord"
+    ],
+    [
+     "ici Poitou",
+     "fbpoitou"
+    ]
+   ]
+  },
+  {
+   "region": "Occitanie",
+   "path": "occitanie",
+   "stations": [
+    [
+     "ici Gard Lozère",
+     "fbgardlozere"
+    ],
+    [
+     "ici Hérault",
+     "fbherault"
+    ],
+    [
+     "ici Roussillon",
+     "fbroussillon"
+    ],
+    [
+     "ici Occitanie",
+     "fbtoulouse"
+    ]
+   ]
+  },
+  {
+   "region": "Pays de la Loire",
+   "path": "pays-de-la-loire",
+   "stations": [
+    [
+     "ici Loire Océan",
+     "fbloireocean"
+    ],
+    [
+     "ici Maine",
+     "fbmaine"
+    ],
+    [
+     "ici Mayenne",
+     "fbmayenne"
+    ]
+   ]
+  },
+  {
+   "region": "Provence-Alpes-Côte d'Azur",
+   "path": "provence-alpes-cote-d-azur",
+   "stations": [
+    [
+     "ici Azur",
+     "fbazur"
+    ],
+    [
+     "ici Provence",
+     "fbprovence"
+    ],
+    [
+     "ici Vaucluse",
+     "fbvaucluse"
+    ]
+   ]
   }
  ]
 }

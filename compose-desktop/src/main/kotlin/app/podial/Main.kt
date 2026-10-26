@@ -234,7 +234,7 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
                 val g = radioCatalog?.genre(rGenre)
                 when {
                     query.isNotBlank() -> Api.radios(country, query)
-                    b != null -> Api.radios(b.country, names = b.queries, limit = 200)
+                                        b != null -> Api.brandRadios(radioCatalog, b)
                     g != null -> Api.genreRadios(g, country)
                     else -> Api.radios(country, null)
                 }
@@ -532,7 +532,7 @@ fun PlayerBar(onTranscript: () -> Unit) {
     }
 }
 
-const val APP_VERSION = "0.5.14"
+const val APP_VERSION = "0.5.15"
 
 @Composable
 fun AboutDialog(onClose: () -> Unit) {

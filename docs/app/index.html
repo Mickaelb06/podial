@@ -355,7 +355,16 @@ const radioApi = {
       const q = raw.trim(), rows = await this.get(`/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=200&countrycode=${b.country}&name=${encodeURIComponent(q)}`).catch(() => []);
       return rows.filter(s => s.name.toLowerCase().includes(q.toLowerCase()));
     }));
-    return this.collect(lists.flat()).slice(0, 200);
+    let out = this.collect(lists.flat()).slice(0, 200);
+    // « ici » (ex-France Bleu) : la liste officielle des radios locales, par région et en https, passe devant
+    const rc = b.regional ? await rcatP : null;
+    if (rc?.ici?.length) {
+      const mine = rc.ici.flatMap(r => r.stations.map(([name, slug]) => ({ kind: "radio", id: "ici-" + slug, name, artist: r.region, art: radioLogos[stationKey(name)] || b.logo || "",
+        stream: "https://icecast.radiofrance.fr/" + slug + "-midfi.mp3", homepage: "https://www.ici.fr/" + r.path })));
+      const keys = new Set(mine.map(m => stationKey(m.name)));
+      out = mine.concat(out.filter(o => !keys.has(stationKey(o.name))));
+    }
+    return out;
   },
   countries() { return this._countries ||= this.get("/json/countries?order=stationcount&reverse=true&hidebroken=true"); },
   // radio d'un lien partagé : les radios fournies d'abord, puis l'annuaire (par identifiant)
@@ -616,12 +625,12 @@ function showDetail(item) {
 
 
 // ---------- menu de gauche : télécharger les applications ----------
-const REL = "https://github.com/Mickaelb06/podial/releases/download/v0.5.14/";
+const REL = "https://github.com/Mickaelb06/podial/releases/download/v0.5.15/";
 const PLATFORMS = [
   ["android", "Android", [["APK", "podial-android.apk"]]],
-  ["linux", "Linux", [[".deb", "podial_0.5.14_all.deb"], [".rpm", "podial-0.5.14-1.x86_64.rpm"], [".tar.gz", "podial-linux-0.5.14.tar.gz"]]],
-  ["windows", "Windows", [[".exe", "Podial-0.5.14.exe"], [".msi", "Podial-0.5.14.msi"]]],
-  ["apple", "macOS", [[".dmg", "Podial-1.0.14.dmg"]]],
+  ["linux", "Linux", [[".deb", "podial_0.5.15_all.deb"], [".rpm", "podial-0.5.15-1.x86_64.rpm"], [".tar.gz", "podial-linux-0.5.15.tar.gz"]]],
+  ["windows", "Windows", [[".exe", "Podial-0.5.15.exe"], [".msi", "Podial-0.5.15.msi"]]],
+  ["apple", "macOS", [[".dmg", "Podial-1.0.15.dmg"]]],
 ];
 (function side() {
   const aside = $("side"), btn = $("menubtn");

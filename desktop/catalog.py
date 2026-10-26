@@ -20,7 +20,7 @@ from email.utils import parsedate_to_datetime
 
 from i18n import _
 
-VERSION = "0.5.14"
+VERSION = "0.5.15"
 REPO = "Mickaelb06/podial"
 UA = f"Podial/{VERSION} (+https://github.com/{REPO})"
 ITUNES_NS = "{http://www.itunes.com/dtds/podcast-1.0.dtd}"
@@ -897,7 +897,7 @@ def radio_genre_parent(gid):
 def radio_brand_item(b):
     """Une marque sous forme de carte : son logo, ou à défaut une tuile colorée avec initiale."""
     return {"kind": "brand", "name": b["name"], "artist": COUNTRY_NAMES.get(b["country"], b["country"]), "art": b.get("logo", ""),
-            "queries": b["q"].split("|"), "country": b["country"]}
+            "queries": b["q"].split("|"), "country": b["country"], "regional": bool(b.get("regional"))}
 
 
 def radio_brand_groups(first=None):
@@ -944,8 +944,29 @@ def radio_by_genre(genre, code=None, limit=100):
     return _merge_radios(lists)[:limit]
 
 
+def ici_items(logo=""):
+    """Radios locales officielles de Radio France (« ici »), classées par région (la région est sous le nom), avec leur flux https."""
+    out = []
+    for r in (RADIO_CATALOG or {}).get("ici", []):
+        for name, slug in r["stations"]:
+            out.append({"kind": "radio", "id": "ici-" + slug, "name": name, "artist": r["region"], "tags": "",
+                        "stream": f"https://icecast.radiofrance.fr/{slug}-midfi.mp3", "art": radio_logo(name) or logo})
+    return out
+
+
 def radio_by_brand(brand, limit=200):
-    """Toutes les webradios d'une marque : les stations du pays dont le nom contient un des morceaux de nom de la marque."""
+    """Toutes les webradios d'une marque : les stations du pays dont le nom contient un des morceaux de nom de la marque.
+    Pour « ici » (ex-France Bleu), la liste officielle par région passe devant."""
+    found = _brand_stations(brand, limit)
+    if brand.get("regional") and ici_items():
+        logo = next((b.get("logo", "") for b in (RADIO_CATALOG or {}).get("brands", []) if b.get("regional")), "")
+        mine = ici_items(logo)
+        keys = {station_key(r["name"]) for r in mine}
+        return mine + [r for r in found if station_key(r["name"]) not in keys]
+    return found
+
+
+def _brand_stations(brand, limit=200):
     queries, lists, failures = brand["queries"], [], 0
     for q in queries:
         try:

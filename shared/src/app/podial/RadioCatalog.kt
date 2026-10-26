@@ -18,9 +18,19 @@ class RadioGenre(val id: String, private val labels: Map<String, String>, val ta
 }
 
 /** Une marque : le [name] affiché et les morceaux de nom [queries] cherchés dans l'annuaire du pays [country] (une station y figure si son nom en contient un). */
-class RadioBrand(val name: String, val country: String, val queries: List<String>, val logo: String = "")
+class RadioBrand(val name: String, val country: String, val queries: List<String>, val logo: String = "", val regional: Boolean = false)
 
-class RadioCatalog(val genres: List<RadioGenre>, val brands: List<RadioBrand>) {
+/** Une région et ses radios locales officielles de Radio France (« ici ») : nom affiché et nom du flux (icecast.radiofrance.fr/<flux>-midfi.mp3). */
+class IciRegion(val region: String, val path: String, val stations: List<Pair<String, String>>)
+
+class RadioCatalog(val genres: List<RadioGenre>, val brands: List<RadioBrand>, val ici: List<IciRegion> = emptyList()) {
+    /** Les radios locales « ici », classées par région (la région s'affiche sous le nom), avec leur flux https officiel. */
+    fun iciItems(logo: String): List<Item> = ici.flatMap { r ->
+        r.stations.map { (name, slug) ->
+            Item("radio", name, r.region, logo, stream = "https://icecast.radiofrance.fr/$slug-midfi.mp3", homepage = "https://www.ici.fr/${r.path}", quality = "MP3")
+        }
+    }
+
     fun genre(id: String?): RadioGenre? = genres.firstOrNull { it.id == id } ?: genres.firstNotNullOfOrNull { p -> p.children.firstOrNull { it.id == id } }
     /** Genre de premier niveau qui contient [id] (ou [id] lui-même). */
     fun parentOf(id: String?): RadioGenre? = genres.firstOrNull { p -> p.id == id || p.children.any { it.id == id } }
@@ -43,9 +53,15 @@ class RadioCatalog(val genres: List<RadioGenre>, val brands: List<RadioBrand>) {
             val o = JSONObject(json)
             val genres = o.getJSONArray("genres").let { a -> (0 until a.length()).map { genre(a.getJSONObject(it)) } }
             val brands = o.getJSONArray("brands").let { a ->
-                (0 until a.length()).map { a.getJSONObject(it).let { b -> RadioBrand(b.getString("name"), b.getString("country"), b.getString("q").split("|"), b.optString("logo")) } }
+                (0 until a.length()).map { a.getJSONObject(it).let { b -> RadioBrand(b.getString("name"), b.getString("country"), b.getString("q").split("|"), b.optString("logo"), b.optBoolean("regional", false)) } }
             }
-            return RadioCatalog(genres, brands)
+            val ici = o.optJSONArray("ici")?.let { a ->
+                (0 until a.length()).map { i ->
+                    val r = a.getJSONObject(i)
+                    IciRegion(r.getString("region"), r.getString("path"), r.getJSONArray("stations").let { t -> (0 until t.length()).map { t.getJSONArray(it).let { p -> p.getString(0) to p.getString(1) } } })
+                }
+            } ?: emptyList()
+            return RadioCatalog(genres, brands, ici)
         }
     }
 }

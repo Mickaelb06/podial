@@ -57,4 +57,18 @@ class RadioCatalogTest {
         for (copy in listOf("../../docs/app/radio_catalog.json", "../../desktop/radio_catalog.json"))
             assertEquals("$copy diffère de shared/data", shared.readText(), File(copy).readText())
     }
+
+    @Test fun iciRegionalStationsAreListedWithOfficialStreams() {
+        val shared = File("../../shared/data/radio_catalog.json")
+        if (!shared.exists()) return   // lancé hors du dépôt
+        val c = RadioCatalog.parse(shared.readText())
+        assertEquals(13, c.ici.size)
+        val items = c.iciItems("logo.png")
+        assertEquals(45, items.size)
+        assertTrue("flux https officiels", items.all { it.stream.startsWith("https://icecast.radiofrance.fr/fb") && it.stream.endsWith("-midfi.mp3") })
+        assertEquals("noms uniques", items.size, items.map { Api.stationKey(it.name) }.toSet().size)
+        val paca = items.filter { it.artist == "Provence-Alpes-Côte d'Azur" }.map { it.name }
+        assertEquals(listOf("ici Azur", "ici Provence", "ici Vaucluse"), paca)
+        assertTrue("la marque ICI porte la liste régionale", c.brands.any { it.regional && it.country == "FR" })
+    }
 }

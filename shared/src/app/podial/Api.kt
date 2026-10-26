@@ -262,6 +262,15 @@ object Api {
             (byKey.values.take(limit) + extras).let { if (withLogos) Logos.fill(it) else it }
         }
 
+    /** Webradios d'une marque ; pour « ici » (ex-France Bleu), la liste officielle par région passe devant, les autres stations de l'annuaire suivent. */
+    suspend fun brandRadios(catalog: RadioCatalog?, b: RadioBrand): List<Item> {
+        val net = runCatching { radios(b.country, names = b.queries, limit = 200) }
+        if (!b.regional || catalog == null || catalog.ici.isEmpty()) return net.getOrThrow()
+        val mine = Logos.fill(catalog.iciItems(b.logo))
+        val keys = mine.map { stationKey(it.name) }.toSet()
+        return mine + net.getOrDefault(emptyList()).filter { stationKey(it.name) !in keys }
+    }
+
     /** Radios d'un genre : ses étiquettes et ses noms de stations, dans le pays choisi ou dans le monde entier pour un thème sans pays. */
     suspend fun genreRadios(g: RadioGenre, country: String): List<Item> {
         val byTag = if (g.tags.isNotEmpty()) radios(country, tags = g.tags, limit = 100, world = g.world) else emptyList()

@@ -274,7 +274,7 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, active: Boolean 
                 val g = radioCatalog?.genre(rGenre)
                 when {
                     query.isNotBlank() -> Api.radios(country, query)
-                    b != null -> Api.radios(b.country, names = b.queries, limit = 200)
+                                        b != null -> Api.brandRadios(radioCatalog, b)
                     g != null -> Api.genreRadios(g, country)
                     else -> Api.radios(country, null)
                 }
