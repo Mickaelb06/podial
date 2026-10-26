@@ -53,7 +53,7 @@ Installers are attached to each [release](https://github.com/Mickaelb06/podial/r
 | Linux (Debian, Ubuntu, Mint) | [`podial_0.5.13_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial_0.5.13_all.deb): GTK app with the GNOME top-bar extension |
 | Linux (other distributions) | [`podial-linux-0.5.13.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial-linux-0.5.13.tar.gz) (run `./install.sh`), or the cross-platform `.deb` / `.rpm` |
 | Windows | [`Podial-0.5.13.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-0.5.13.exe) (or `.msi`) |
-| macOS | [`Podial-1.0.8.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-1.0.8.dmg) |
+| macOS | [`Podial-1.0.13.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.13/Podial-1.0.13.dmg) |
 | Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.13/podial-android.apk) |
 
 Building from source is explained below. Releases are marked "pre-release" until the Windows, macOS and Android builds have had more testing.
