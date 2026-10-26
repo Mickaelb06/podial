@@ -50,9 +50,12 @@ CSS = """
 .cue-row { border-radius: 10px; padding: 6px 8px; }
 .cue-current { background: alpha(@accent_bg_color, 0.14); }
 .cue-quoted { background: alpha(@accent_bg_color, 0.32); }
-.cover { border-radius: 14px; background: alpha(currentColor, 0.08); }
-.cover-big { border-radius: 22px; box-shadow: 0 10px 30px alpha(black, 0.35); }
-.cover-card { box-shadow: 0 4px 14px alpha(black, 0.25); }
+@keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+@keyframes rise { from { opacity: 0; } to { opacity: 1; } }
+.rise { animation: rise 520ms ease-out both; }
+.cover { border-radius: 18px; background: alpha(currentColor, 0.08); }
+.cover-big { border-radius: 26px; box-shadow: 0 16px 44px alpha(black, 0.45), 0 0 60px alpha(#8b5cf6, 0.25); }
+.cover-card { box-shadow: 0 6px 20px alpha(black, 0.30); transition: box-shadow 200ms; }
 .ph-0 { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
 .ph-1 { background: linear-gradient(135deg, #f97316, #ef4444); }
 .ph-2 { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
@@ -66,21 +69,29 @@ CSS = """
 .live-badge { background: #e5484d; color: white; border-radius: 99px; padding: 2px 10px;
               font-weight: 700; font-size: 0.8em; }
 .live-dot { background: #e5484d; color: white; border-radius: 99px; padding: 1px 8px; margin: 8px;
-            font-weight: 700; font-size: 0.7em; }
+            font-weight: 700; font-size: 0.7em; animation: pulse 900ms ease-in-out infinite alternate; }
+.logo-dot { min-width: 22px; min-height: 22px; border-radius: 99px; background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            box-shadow: inset 0 0 0 7px @window_bg_color, 0 0 14px alpha(#ec4899, 0.55); }
+.sidebar-title { font-weight: 800; font-size: 1.05em; }
 .chip { background: alpha(@accent_bg_color, 0.22); color: @accent_color; border-radius: 99px;
         padding: 3px 12px; font-size: 0.85em; font-weight: 600; }
-.player-bar { border-top: 1px solid alpha(currentColor, 0.12);
-              background: linear-gradient(90deg, alpha(@accent_bg_color, 0.28), alpha(@accent_bg_color, 0.06)); }
+.player-bar { border: 1px solid alpha(currentColor, 0.12); border-radius: 26px; margin: 0 14px 14px 14px;
+              background: linear-gradient(90deg, alpha(@accent_bg_color, 0.30), alpha(@card_bg_color, 0.92));
+              box-shadow: 0 14px 44px alpha(black, 0.40), 0 0 50px alpha(@accent_bg_color, 0.20); }
 .card-title { font-weight: 600; }
 .rank-badge { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border-radius: 99px;
               min-width: 22px; padding: 2px 8px; margin: 8px; font-weight: 800; font-size: 0.85em; }
-.chip-btn { border-radius: 99px; padding: 4px 14px; background: alpha(currentColor, 0.08); font-weight: 600; }
+.chip-btn { border-radius: 99px; padding: 5px 16px; background: alpha(currentColor, 0.08); font-weight: 600;
+            border: 1px solid alpha(currentColor, 0.08); transition: background 180ms, box-shadow 180ms; }
 .chip-btn:hover { background: alpha(currentColor, 0.16); }
-.chip-btn:checked { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; }
-.section-title { font-weight: 800; font-size: 1.5em; }
-.home-bg { background: linear-gradient(180deg, alpha(@accent_bg_color, 0.30), transparent 360px); }
-flowboxchild { border-radius: 18px; padding: 8px; transition: background 150ms, transform 150ms; }
-flowboxchild:hover { background: alpha(@accent_bg_color, 0.16); }
+.chip-btn:checked { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border-color: transparent;
+                    box-shadow: 0 6px 18px alpha(#8b5cf6, 0.45); }
+.section-title { font-weight: 800; font-size: 1.7em; }
+.home-bg { background: radial-gradient(circle at 8% 0%, alpha(#8b5cf6, 0.34), transparent 420px),
+                       radial-gradient(circle at 96% 0%, alpha(#ec4899, 0.24), transparent 380px); }
+flowboxchild { border-radius: 24px; padding: 8px; transition: background 180ms, box-shadow 220ms; }
+flowboxchild:hover { background: alpha(@accent_bg_color, 0.14); box-shadow: 0 0 0 1px alpha(@accent_bg_color, 0.55), 0 14px 36px alpha(@accent_bg_color, 0.28); }
+flowboxchild:hover .cover-card { box-shadow: 0 10px 28px alpha(black, 0.45); }
 .navigation-sidebar row { border-radius: 12px; margin: 2px 6px; }
 .navigation-sidebar row:selected { background: linear-gradient(90deg, alpha(@accent_bg_color, 0.55), alpha(@accent_bg_color, 0.15)); }
 .ico-podcast { color: #a78bfa; }
@@ -92,7 +103,9 @@ flowboxchild:hover { background: alpha(@accent_bg_color, 0.16); }
 .new-chip { background: alpha(@accent_bg_color, 0.25); color: @accent_color; border-radius: 99px;
             padding: 0 8px; font-weight: 700; font-size: 0.75em; }
 .ep-played { opacity: 0.55; }
-button.suggested-action { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; }
+button.suggested-action { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border-radius: 99px;
+                          box-shadow: 0 6px 20px alpha(#8b5cf6, 0.45); transition: box-shadow 180ms; }
+button.suggested-action:hover { box-shadow: 0 10px 28px alpha(#ec4899, 0.55); }
 scale highlight { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
 """
 
@@ -233,6 +246,7 @@ class Window(Adw.ApplicationWindow):
         split.set_content(Adw.NavigationPage(title=_("Content"), tag="content", child=self.nav))
         outer.set_content(split)
         outer.add_bottom_bar(self.build_player())
+        outer.set_bottom_bar_style(Adw.ToolbarStyle.FLAT)   # le lecteur flotte au-dessus du contenu
         self.set_content(outer)
 
         key = Gtk.ShortcutController()
@@ -277,7 +291,10 @@ class Window(Adw.ApplicationWindow):
     # ---------- barre latérale ----------
     def build_sidebar(self):
         view = Adw.ToolbarView()
-        header = Adw.HeaderBar(title_widget=Gtk.Label(label=_("Listen"), css_classes=["heading"]))
+        title = Gtk.Box(spacing=9)
+        title.append(Gtk.Box(css_classes=["logo-dot"], valign=Gtk.Align.CENTER))
+        title.append(Gtk.Label(label=_("Listen"), css_classes=["sidebar-title"]))
+        header = Adw.HeaderBar(title_widget=title)
         header.pack_end(self.build_main_menu())
         header.pack_end(self.build_settings_button())
         view.add_top_bar(header)
@@ -633,7 +650,7 @@ class Window(Adw.ApplicationWindow):
         self.stack.set_visible_child_name("content")
 
     def make_card(self, item, token, rank=None):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, width_request=160)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, width_request=160, css_classes=["rise"])
         cover = make_cover(item, 150, card=True, still_wanted=lambda: token in self.grid_items)
         new = self.new_counts.get(item.get("feed")) if item["kind"] == "podcast" else 0
         if item["kind"] == "radio" or rank or new:
@@ -715,7 +732,10 @@ class Window(Adw.ApplicationWindow):
                 self.show_sections([(plain_title, items)])
                 if source_open:
                     back_bar = self.radio_genre_bar if section == "radio" else self.genre_bar
-                    back = Gtk.Button(label="← " + (_("Webradios") if section == "radio" else _("Radios")), css_classes=["flat"], halign=Gtk.Align.START)
+                    back_box = Gtk.Box(spacing=8)
+                    back_box.append(Gtk.Image(icon_name="go-previous-symbolic"))
+                    back_box.append(Gtk.Label(label=_("Webradios") if section == "radio" else _("Radios")))
+                    back = Gtk.Button(child=back_box, css_classes=["flat"], halign=Gtk.Align.START)
                     back.connect("clicked", lambda *_a: back_bar.close_source())
                     self.content_box.prepend(back)
                 return

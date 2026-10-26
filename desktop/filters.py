@@ -90,7 +90,14 @@ class GenreBar(Gtk.Box):
         row = Gtk.Box(spacing=6, margin_bottom=8)
         first = None
         for label, value in entries:
-            btn = Gtk.ToggleButton(label=label, css_classes=["chip-btn"], active=value == active)
+            if isinstance(label, tuple):  # (nom d'icône, texte) : pastille avec une vraie icône
+                icon, text = label
+                content = Gtk.Box(spacing=7)
+                content.append(Gtk.Image(icon_name=icon, pixel_size=16))
+                content.append(Gtk.Label(label=text))
+                btn = Gtk.ToggleButton(child=content, css_classes=["chip-btn"], active=value == active)
+            else:
+                btn = Gtk.ToggleButton(label=label, css_classes=["chip-btn"], active=value == active)
             if first is None:
                 first = btn
             else:
@@ -103,10 +110,10 @@ class GenreBar(Gtk.Box):
         entries = [(_("All"), ("all", None))]
         if self.kind == "radio":
             if RADIO_CATALOG:
-                entries += [("📡 " + _("Webradios"), ("panel", "webradios"))]
+                entries += [(("podial-antenna-symbolic", _("Webradios")), ("panel", "webradios"))]
                 entries += [(genre_label(g), ("genre", g["id"])) for g in radio_genres()]
         elif PODCAST_SOURCES:
-            entries += [("📻 " + _("Radios"), ("panel", "radios")), ("🗞 " + _("Local news"), ("panel", "local"))]
+            entries += [(("podial-radio-symbolic", _("Radios")), ("panel", "radios")), (("podial-newspaper-symbolic", _("Local news")), ("panel", "local"))]
             entries += [(genre_label(g), ("genre", g["id"])) for g in source_genres(0)]
         else:
             entries += [(_(name), ("genre", gid)) for gid, name in APPLE_GENRES]

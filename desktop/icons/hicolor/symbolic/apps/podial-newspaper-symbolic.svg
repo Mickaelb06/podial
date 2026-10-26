@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Journal : page avec titre et colonnes, volet plié à droite (formes pleines, recolorables) -->
+  <path fill="#2e3436" fill-rule="evenodd" d="M3 2h8a1 1 0 0 1 1 1v1.5h1.5a1 1 0 0 1 1 1V12a2 2 0 0 1-2 2H4a2.5 2.5 0 0 1-2.500-2.5V3a1 1 0 0 1 1-1zM4.300 4v2h5.400V4zm0 3.300v1.200h5.400V7.300zm0 2.500V11h3.200V9.800zM12 6.200V12a.5.5 0 0 0 1 0V6.200z"/>
+</svg>

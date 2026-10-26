@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Antenne qui émet : point, mât et deux paires d'ondes (formes pleines, recolorables) -->
+  <circle fill="#2e3436" cx="8" cy="6.800" r="1.500"/>
+  <path fill="#2e3436" d="M7.300 8.200h1.400l1.100 6.300H6.200z"/>
+  <path fill="#2e3436" d="M4.600 3.600a5 5 0 0 0 0 6.400l1.100-1a3.500 3.500 0 0 1 0-4.400zM11.400 3.600a5 5 0 0 1 0 6.400l-1.100-1a3.500 3.500 0 0 0 0-4.400z"/>
+  <path fill="#2e3436" d="M2.700 1.800a7.800 7.800 0 0 0 0 10l1.100-1a6.300 6.300 0 0 1 0-8zM13.300 1.800a7.800 7.800 0 0 1 0 10l-1.100-1a6.300 6.300 0 0 0 0-8z"/>
+</svg>
