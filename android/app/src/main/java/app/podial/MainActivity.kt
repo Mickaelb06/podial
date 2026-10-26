@@ -70,9 +70,12 @@ class MainActivity : ComponentActivity() {
         if (android.os.Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         setContent {
             PodialTheme {
-                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                    Aurora()
-                    PodialApp()
+                // sans cela le texte sans couleur explicite reste noir en thème sombre (le fond est un simple Box)
+                CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                        Aurora()
+                        PodialApp()
+                    }
                 }
             }
         }
@@ -146,9 +149,16 @@ fun PodialApp() {
     var quotes by remember { mutableStateOf(false) }
     var transcript by remember { mutableStateOf(false) }
     BackHandler(enabled = detail != null) { detail = null }
+    // téléphone en paysage pendant une lecture : vinyle, heure, météo (se ferme avec la croix, revient au prochain passage en paysage)
+    val landscape = androidx.compose.ui.platform.LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    var ambianceOff by remember { mutableStateOf(false) }
+    LaunchedEffect(landscape) { if (!landscape) ambianceOff = false }
+    val ambiance = landscape && !ambianceOff && player.mediaId.isNotEmpty()
+    BackHandler(enabled = ambiance) { ambianceOff = true }
 
     Scaffold(
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         bottomBar = {
             Column {
                 AnimatedVisibility(player.mediaId.isNotEmpty(), enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
@@ -179,6 +189,7 @@ fun PodialApp() {
             }
         }
     }
+    if (ambiance) AmbianceScreen(player) { ambianceOff = true }
     if (sheet) PlayerSheet(player, onTranscript = { sheet = false; transcript = true }) { sheet = false }
     if (transcript) TranscriptScreen(player) { transcript = false }
     if (quotes) QuotesScreen(player) { quotes = false }
