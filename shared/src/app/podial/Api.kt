@@ -209,6 +209,9 @@ object Api {
         throw last ?: java.io.IOException("no radio server")
     }
 
+    /** France Bleu s'appelle « ici » depuis 2025 : l'annuaire garde l'ancien nom, on affiche le nouveau. */
+    fun niceName(name: String): String = if (name.startsWith("France Bleu ", ignoreCase = true)) "ici " + name.substring(12).trim() else name
+
     /** Clé de déduplication : « FIP », « FIP (HD) » et « Fip 128k » désignent la même radio. */
     fun stationKey(name: String): String {
         var s = Normalizer.normalize(name, Normalizer.Form.NFKD).replace(Regex("\\p{M}+"), "").lowercase()
@@ -227,7 +230,11 @@ object Api {
             val queries = when {
                 tags.isNotEmpty() -> tags.map { "$base&tag=${enc(it)}&tagExact=true" }
                 names.isNotEmpty() -> names.map { "$base&name=${enc(it.trim())}" }
-                !name.isNullOrBlank() -> listOf("$base&name=${enc(name)}")
+                !name.isNullOrBlank() -> {
+                    // « ici Provence » se cherche aussi sous son ancien nom « France Bleu Provence »
+                    val rest = Regex("^ici\\s+(.+)", RegexOption.IGNORE_CASE).find(name.trim())?.groupValues?.get(1)
+                    listOfNotNull("$base&name=${enc(name)}", rest?.let { "$base&name=${enc("France Bleu $it")}" })
+                }
                 else -> listOf(base)
             }
             val rows = coroutineScope { queries.map { q -> async { runCatching { JSONArray(radioGet(q)).objects() }.getOrNull() } }.awaitAll() }
@@ -239,7 +246,7 @@ object Api {
             val byKey = LinkedHashMap<String, Item>()
             for (s in all) {
                 val stream = s.optString("url_resolved").ifEmpty { s.optString("url") }
-                val n = s.optString("name").trim()
+                val n = niceName(s.optString("name").trim())
                 if (n.isEmpty()) continue
                 val key = stationKey(n)
                 val icon = s.optString("favicon")

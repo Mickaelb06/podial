@@ -379,13 +379,18 @@ def radio_logo(name):
     return _radio_logos.get(station_key(name))
 
 
+def nice_name(name):
+    """France Bleu s'appelle « ici » depuis 2025 : l'annuaire garde l'ancien nom, on affiche le nouveau."""
+    return "ici " + name[12:].strip() if name.casefold().startswith("france bleu ") else name
+
+
 def radio_item(s):
     codec = s.get("codec") or ""
     bitrate = s.get("bitrate") or 0
     quality = f"{codec} {bitrate} kbit/s" if bitrate else codec
     place = s.get("state") or s.get("country") or ""
     return {
-        "kind": "radio", "id": s.get("stationuuid"), "name": s.get("name", "").strip(),
+        "kind": "radio", "id": s.get("stationuuid"), "name": nice_name(s.get("name", "").strip()),
         "artist": " · ".join(x for x in (place, quality) if x),
         "stream": s.get("url_resolved") or s.get("url"), "tags": s.get("tags", ""),
         "art": radio_logo(s.get("name", "")) or fix_logo_url(s.get("favicon", "")),
@@ -435,7 +440,7 @@ def radio_query(strict_extras=False, **params):
     data = radio_get("stations/search?" + urllib.parse.urlencode(base))
     by_key = {}
     for s in data:  # l'annuaire contient beaucoup de doublons : on garde le premier, avec le logo d'un doublon s'il n'en a pas
-        key = station_key(s.get("name", ""))
+        key = station_key(nice_name(s.get("name", "").strip()))
         known = by_key.get(key)
         if known is not None:
             if not known["art"] and s.get("favicon") and not radio_logo(s.get("name", "")):
@@ -449,7 +454,12 @@ def radio_query(strict_extras=False, **params):
 
 
 def search_radios(term):
-    return radio_query(name=term, countrycode=get_country())
+    found = radio_query(name=term, countrycode=get_country())
+    rest = re.match(r"(?i)^ici\s+(.+)", term.strip())
+    if rest:  # « ici Provence » se cherche aussi sous son ancien nom « France Bleu Provence »
+        known = {station_key(r["name"]) for r in found}
+        found += [r for r in radio_query(name="France Bleu " + rest.group(1), countrycode=get_country()) if station_key(r["name"]) not in known]
+    return found
 
 
 def top_radios():
@@ -943,7 +953,9 @@ def radio_by_brand(brand, limit=200):
         except OSError:
             failures += 1
             continue
-        lists.append([r for r in found if q.strip().casefold() in r["name"].casefold()])
+        want = q.strip().casefold()
+        # le nom affiché est « ici X » : on compare aussi avec l'ancien nom « France Bleu X » sous lequel l'annuaire les connaît
+        lists.append([r for r in found if want in r["name"].casefold() or want in ("france bleu " + r["name"][4:]).casefold() and r["name"].casefold().startswith("ici ")])
     if failures == len(queries):
         raise OSError("No radio server available")
     return _merge_radios(lists)[:limit]

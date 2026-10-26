@@ -272,7 +272,9 @@ const stationKey = n => n.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLo
 // Wikimedia refuse les miniatures de taille quelconque (« Use thumbnail steps ») : on demande 330 px, une taille standard
 const fixLogo = u => u && u.includes("upload.wikimedia.org") && u.includes("/thumb/") ? u.replace(/\/((?:lang[a-z-]+-)?)\d+px-/, "/$1330px-") : u;
 
-const stationItem = (s, stream) => ({ kind: "radio", id: s.stationuuid, name: s.name.trim(), artist: [s.state, s.country].filter(Boolean).join(", "),
+// France Bleu s'appelle « ici » depuis 2025 : l'annuaire garde l'ancien nom, on affiche le nouveau
+const niceName = n => /^france bleu /i.test(n) ? "ici " + n.slice(12).trim() : n;
+const stationItem = (s, stream) => ({ kind: "radio", id: s.stationuuid, name: niceName(s.name.trim()), artist: [s.state, s.country].filter(Boolean).join(", "),
   art: radioLogos[stationKey(s.name)] || fixLogo(s.favicon || ""), stream, homepage: s.homepage || "" });
 
 const radioApi = {
@@ -285,7 +287,7 @@ const radioApi = {
   collect(rows) {
     const byKey = new Map();
     for (const s of rows) {
-      const stream = s.url_resolved || s.url, key = s.name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
+      const stream = s.url_resolved || s.url, key = niceName(s.name.trim()).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
       if (!key) continue;
       const known = byKey.get(key);
       if (known) { if (!known.art && s.favicon && !radioLogos[key]) known.art = fixLogo(s.favicon); continue; }
@@ -298,7 +300,10 @@ const radioApi = {
     await logosP;
     let q = `/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=120&countrycode=${cc}`;
     if (name) q += "&name=" + encodeURIComponent(name);
-    const out = this.collect(await this.get(q)).slice(0, 60);
+    let rows = await this.get(q);
+    const rest = name && name.trim().match(/^ici\s+(.+)/i);   // « ici Provence » se cherche aussi sous son ancien nom « France Bleu Provence »
+    if (rest) rows = rows.concat(await this.get(q.replace(/&name=.*$/, "") + "&name=" + encodeURIComponent("France Bleu " + rest[1])).catch(() => []));
+    const out = this.collect(rows).slice(0, 60);
     const nq = name ? stationKey(name) : "";
     for (const { country: c, ...r } of EXTRA_RADIOS) {
       if (out.some(o => o.stream === r.stream || stationKey(o.name) === stationKey(r.name))) continue;
