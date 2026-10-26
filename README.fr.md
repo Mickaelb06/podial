@@ -20,6 +20,10 @@ Podcasts et radios en direct dans une seule application. Gratuit, sans compte, s
 |---|---|
 | <img src="docs/screenshots/world-map.png" width="400"> | <img src="docs/screenshots/transcript.png" width="300"> |
 
+Android en paysage pendant la lecture :
+
+<img src="docs/screenshots/android-ambiance.png" width="520" alt="Podial Android">
+
 Version de bureau multiplateforme (Windows, macOS, Linux) :
 
 <img src="docs/screenshots/desktop-windows-mac.png" width="520" alt="Podial pour Windows, macOS et Linux">
@@ -36,6 +40,7 @@ Version de bureau multiplateforme (Windows, macOS, Linux) :
 - Les pages de radio affichent le logo, la qualité, le titre en cours (quand la station l'envoie) et, pour RTL, le programme du jour avec l'émission en cours mise en avant (Android). Il n'existe pas de source commune pour les programmes des radios : chaque station demande son propre développement.
 - Audio YouTube en option sur le bureau (nécessite `yt-dlp`, que tu installes toi-même ; cela peut aller à l'encontre des conditions d'utilisation de YouTube, à tes risques).
 - Transcriptions et citations : quand un podcast publie sa transcription (Podcasting 2.0, SRT/VTT/JSON), tu la lis pendant l'écoute, tu touches une ligne pour y aller et tu surlignes des phrases. Un bouton « Citation » enregistre aussi le moment écouté. « Mes citations » les liste avec des notes, tu peux écouter à partir de là ou les partager. Fonctionne avec les écritures de droite à gauche et asiatiques. Les émissions sans transcription publiée n'en ont pas encore.
+- Mode paysage sur Android pendant la lecture : un vinyle qui tourne avec le logo de la radio ou la pochette, l'heure et la météo (la météo n'utilise la position approximative que si tu l'autorises).
 - Widgets Android pour l'écran d'accueil : un compact (pochette et boutons) et un vinyle qui tourne pendant la lecture.
 - Minuteur de sommeil : en minutes, en heures ou à la fin de l'épisode, avec une baisse douce du volume.
 - Égaliseur, volume lissé, vitesse de lecture, commandes MPRIS et touches multimédia sur le bureau Linux.

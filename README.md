@@ -20,6 +20,10 @@ Podcasts and live radio in one app. Free, no account, no tracking.
 |---|---|
 | <img src="docs/screenshots/world-map.png" width="400"> | <img src="docs/screenshots/transcript.png" width="300"> |
 
+Android in landscape while playing:
+
+<img src="docs/screenshots/android-ambiance.png" width="520" alt="Podial Android">
+
 Cross-platform desktop version (Windows, macOS, Linux):
 
 <img src="docs/screenshots/desktop-windows-mac.png" width="520" alt="Podial for Windows, macOS and Linux">
@@ -36,6 +40,7 @@ Cross-platform desktop version (Windows, macOS, Linux):
 - Radio pages show the station logo, quality, the title currently playing (when the station sends it) and, for RTL, today's schedule with the current show highlighted (Android). There is no common source for radio schedules, so each station needs its own support.
 - Optional YouTube audio on desktop (requires `yt-dlp`, which you install yourself; this may go against YouTube's terms of service, use at your own risk).
 - Transcripts and quotes: when a podcast publishes its transcript (Podcasting 2.0, SRT/VTT/JSON), read it while listening, tap a line to jump there and highlight sentences. A "Quote" button also saves the moment you are listening to. "My quotes" lists them with notes, and you can play from there or share them. Works with right-to-left and Asian scripts. Shows without a published transcript have none yet.
+- Android landscape mode while playing: a spinning vinyl with the station logo or cover, the time and the weather (weather uses the approximate location only if you allow it).
 - Android home-screen widgets: a compact one (cover and controls) and a vinyl one that spins while playing.
 - Sleep timer: in minutes, hours, or at the end of the episode, with a gentle volume fade.
 - Equalizer, smooth volume, playback speed, MPRIS controls and media keys on desktop.
