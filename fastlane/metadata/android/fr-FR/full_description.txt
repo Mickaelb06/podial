@@ -1,0 +1,20 @@
+Podial Player réunit podcasts et radios en direct dans une appli libre. Sans compte, sans pistage, sans dépendance à Google.
+
+<b>Podcasts</b>
+• Classements par pays et par genre (tous les genres et sous-genres d'Apple), recherche, abonnements
+• Téléchargements hors ligne, minuteur de sommeil, vitesse de lecture, suivi des épisodes écoutés
+• Pastilles et notifications de nouveaux épisodes
+• Transcriptions publiées, avec des citations à enregistrer et à partager en image
+
+<b>Radios en direct</b>
+• Radios par pays et par ville, par genre et sous-genre, et webradios regroupées par marque
+• Les radios locales officielles « ici » (ex-France Bleu) par région
+• Logos des stations, titre en cours et carte du monde avec le jour et la nuit
+• Un bouton « surprends-moi » pour découvrir une station au hasard
+
+<b>Et aussi</b>
+• Compatible Android Auto
+• Mode paysage pendant la lecture : un vinyle qui tourne avec le logo de la radio ou la pochette, l'heure et la météo (la météo n'utilise ta position approximative que si tu l'autorises)
+• Widgets d'écran d'accueil, dont un vinyle qui tourne pendant la lecture
+
+Les données des podcasts viennent de l'API publique d'iTunes et celles des radios de radio-browser.info.

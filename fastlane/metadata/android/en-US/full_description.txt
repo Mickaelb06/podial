@@ -1,0 +1,20 @@
+Podial Player brings podcasts and live radio together in one free app. No account, no tracking, no Google dependency.
+
+<b>Podcasts</b>
+• Top charts by country and by genre (all Apple genres and sub-genres), search, subscriptions
+• Offline downloads, sleep timer, playback speed, played-episode tracking
+• New-episode badges and notifications
+• Published transcripts, with quotes you can save and share as an image card
+
+<b>Live radio</b>
+• Radios by country and city, by genre and sub-genre, and webradios grouped by brand
+• The official local "ici" stations (ex-France Bleu) by region
+• Station logos, the track now playing, and a world map with day and night
+• A "surprise me" button to discover a random station
+
+<b>Also</b>
+• Android Auto support
+• Landscape mode while playing: a spinning vinyl with the station logo or cover, the time and the weather (the weather uses your approximate location only if you allow it)
+• Home-screen widgets, including a vinyl that spins while playing
+
+Podcast data comes from the public iTunes API and radios from radio-browser.info.
