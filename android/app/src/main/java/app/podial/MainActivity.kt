@@ -451,6 +451,8 @@ fun LibraryScreen(onMenu: () -> Unit, onOpen: (Item) -> Unit) {
 @Composable
 fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
     if (item.kind == "radio") { RadioDetail(item, player, onBack); return }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val shareScope = rememberCoroutineScope()
     val pods by Store.podcasts.collectAsState()
     val radios by Store.radios.collectAsState()
     val downloads by Store.downloads.collectAsState()
@@ -501,6 +503,12 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
                         } else GradientButton({ Store.toggle(item) }) {
                             Icon(Icons.Outlined.StarOutline, null); Text(label)
                         }
+                    }
+                    if (item.kind == "podcast") Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Partager : la feuille de partage d'Android avec le lien du podcast
+                        OutlinedButton(onClick = {
+                            shareScope.launch { runCatching { PodcastCard.shareLink(ctx, item) } }
+                        }) { Icon(Icons.Default.Share, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.share)) }
                     }
                 }
             }
