@@ -177,7 +177,7 @@ fun PodialApp() {
                     alpha = 1f - 0.55f * away; scaleX = 1f - 0.06f * away; scaleY = scaleX
                 }) {
                     when (page) {
-                        0 -> BrowseScreen("podcast", active = tab == 0) { detail = it }
+                        0 -> BrowseScreen("podcast", onSurprise = { detail = it }, active = tab == 0) { detail = it }
                         1 -> BrowseScreen("radio", onSurprise = { player.play(PlaybackService.radioItem(it)); detail = it }, active = tab == 1) { detail = it }
                         2 -> LibraryScreen(onMenu = { menu = true }) { detail = it }
                         else -> DownloadsScreen(player)
@@ -317,6 +317,16 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, active: Boolean 
                 }) { if (surprising) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Icon(Icons.Default.Casino, stringResource(R.string.surprise)) }
                 FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, stringResource(R.string.world_map)) }
             }
+            if (kind == "podcast" && catalog != null) FilledTonalIconButton({
+                if (surprising) return@FilledTonalIconButton
+                surprising = true
+                scope.launch {
+                    val p = Surprise.podcast(catalog.genres.map { it.id })
+                    surprising = false
+                    if (p == null) android.widget.Toast.makeText(ctx, R.string.surprise_none, android.widget.Toast.LENGTH_SHORT).show()
+                    else { android.widget.Toast.makeText(ctx, "🎲 ${p.name}", android.widget.Toast.LENGTH_LONG).show(); onSurprise(p) }
+                }
+            }) { if (surprising) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Icon(Icons.Default.Casino, stringResource(R.string.surprise)) }
         }
     }
     val header: @Composable () -> Unit = {

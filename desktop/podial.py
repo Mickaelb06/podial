@@ -528,6 +528,31 @@ class Window(Adw.ApplicationWindow):
         view.set_content(box)
         dlg.present(self)
 
+    def surprise_podcast(self, button):
+        """« Surprends-moi » : un genre au hasard (ou le classement général), puis un podcast de son classement, ouvert."""
+        import random
+        from catalog import PODCAST_SOURCES
+
+        def find():
+            genres = [g["id"] for g in (PODCAST_SOURCES or {}).get("genres", [])] + [None]
+            random.shuffle(genres)
+            for genre in genres[:4]:
+                try:
+                    found = top_podcasts(40, genre)
+                except OSError:
+                    continue
+                if found:
+                    return random.choice(found)
+            return None
+
+        def done(item):
+            button.set_sensitive(True)
+            if item:
+                self.open_item(item)
+
+        button.set_sensitive(False)
+        run_async(find, done, lambda _e: button.set_sensitive(True))
+
     def surprise_radio(self, button):
         """« Surprends-moi » : une radio au hasard dans un pays au hasard, ouverte et lancée."""
         import random
@@ -577,6 +602,7 @@ class Window(Adw.ApplicationWindow):
         self.search.set_text("")
         self.search.set_visible(self.section not in ("library", "downloads"))
         self.filter_stack.set_visible_child_name(self.section if self.section in ("podcast", "radio") else "none")
+        self.podcast_dice.set_visible(self.section == "podcast")
         self.radio_bar.active = self.section == "radio"
         if self.radio_bar.active:
             self.radio_bar.refresh()
@@ -591,6 +617,10 @@ class Window(Adw.ApplicationWindow):
         self.search.connect("activate", self.on_search)
         self.search.connect("search-changed", self.on_search_changed)
         header = Adw.HeaderBar(title_widget=Adw.Clamp(maximum_size=460, child=self.search))
+        # dé des podcasts : un podcast au hasard (les radios ont le leur dans la barre de filtres)
+        self.podcast_dice = Gtk.Button(icon_name="media-playlist-shuffle-symbolic", tooltip_text=_("Surprise me"), css_classes=["flat", "circular"])
+        self.podcast_dice.connect("clicked", self.surprise_podcast)
+        header.pack_end(self.podcast_dice)
         view.add_top_bar(header)
 
         # filtres : genres de podcasts, ou pays / région / ville / tri pour les radios

@@ -232,7 +232,8 @@ let radioLogos = {};
 const logosP = fetch("radio_logos.json").then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => { radioLogos = j; });
 const UL = (navigator.language || "en").slice(0, 2);
 const gName = g => g[UL] || g.en;
-const regionName = cc => { try { return new Intl.DisplayNames([UL], { type: "region" }).of(cc) || cc; } catch { return cc; } };
+const WEST_BANK = { fr: "Cisjordanie", es: "Cisjordania", de: "Westjordanland", pt: "Cisjordânia", he: "הגדה המערבית", ar: "الضفة الغربية" };
+const regionName = cc => { if (cc.toUpperCase() === "PS") return WEST_BANK[UL] || "West Bank"; try { return new Intl.DisplayNames([UL], { type: "region" }).of(cc) || cc; } catch { return cc; } };
 
 // ---------- accès réseau ----------
 const country = (navigator.language.split("-")[1] || "US").toUpperCase();
@@ -245,6 +246,15 @@ const itunes = {
     const r = await getJson(`https://itunes.apple.com/${country.toLowerCase()}/rss/toppodcasts/limit=${genre ? 100 : 40}${genre ? "/genre=" + genre : ""}/json`);
     return (r.feed.entry || []).map(e => ({ kind: "podcast", id: e.id.attributes["im:id"], name: e["im:name"].label,
       artist: e["im:artist"]?.label || "", art: e["im:image"].at(-1).label.replace(/\/\d+x\d+bb/, "/600x600bb") }));
+  },
+  // « Surprends-moi » : un genre au hasard (ou le classement général), puis un podcast de son classement
+  async surprise() {
+    const genres = [...Object.keys(GENRES).map(Number), null].sort(() => Math.random() - 0.5).slice(0, 4);
+    for (const g of genres) {
+      const list = await itunes.top(g).catch(() => []);
+      if (list.length) return list[Math.floor(Math.random() * list.length)];
+    }
+    return null;
   },
   // tous les podcasts d'une radio ou d'un éditeur (identifiant d'éditeur iTunes), jusqu'à 200
   // résultats iTunes d'une radio ou d'un éditeur : par identifiant d'éditeur quand Apple en donne un (jusqu'à 200), sinon par le nom exact (jusqu'à 100)
@@ -463,6 +473,14 @@ function showBrowse(kind) {
   const idx = kind === "podcast" ? 0 : 1, results = h("div"), my = ++seq;
   const input = h("input", { type: "search", placeholder: t(kind === "podcast" ? "s_pod" : "s_rad"), value: state.q[idx], "aria-label": t(kind === "podcast" ? "s_pod" : "s_rad") });
   const tools = h("div", { class: "tools" }, input);
+  if (kind === "podcast") tools.append(h("button", { class: "btn", onclick: async e => {
+    const b = e.currentTarget; b.disabled = true;
+    try {
+      const p = await itunes.surprise();
+      if (!p) return toast(t("surprise_none"));
+      open(p);
+    } catch { toast(t("surprise_none")); } finally { b.disabled = false; }
+  } }, ic("dice"), t("surprise")));
   if (kind === "radio") {
     const sel = h("select", { "aria-label": t("country"), onchange: e => { state.cc = e.target.value; store.set("cc", state.cc); load(); } }, h("option", { value: state.cc }, state.cc));
     tools.append(sel, h("button", { class: "btn", onclick: async e => {

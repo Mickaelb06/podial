@@ -21,4 +21,16 @@ object Surprise {
         }
         return null
     }
+
+    /** Un podcast au hasard : un genre au hasard (ou le classement général), puis un podcast de son classement dans le pays choisi. */
+    suspend fun podcast(
+        genres: List<Int>, random: Random = Random, tries: Int = 4,
+        fetch: suspend (Int?) -> List<Item> = { Api.topPodcasts(it, limit = 40) },
+    ): Item? {
+        for (genre in (genres + listOf(null)).shuffled(random).take(tries)) {
+            val found = runCatching { fetch(genre) }.getOrDefault(emptyList())
+            if (found.isNotEmpty()) return found.random(random)
+        }
+        return null
+    }
 }

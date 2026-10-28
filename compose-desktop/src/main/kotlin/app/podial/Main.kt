@@ -122,7 +122,7 @@ fun PodialApp() {
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 // la page de détail se pose par-dessus la liste, qui reste en place : au retour on retrouve le même genre, la même recherche et le même défilement
                 when (tab) {
-                    0 -> BrowseScreen("podcast") { detail = it }
+                    0 -> BrowseScreen("podcast", onSurprise = { detail = it }) { detail = it }
                     1 -> BrowseScreen("radio", onSurprise = { Player.play(it, null); detail = it }) { detail = it }
                     2 -> LibraryScreen { detail = it }
                     else -> DownloadsScreen()
@@ -260,6 +260,11 @@ fun BrowseScreen(kind: String, onSurprise: (Item) -> Unit = {}, onOpen: (Item) -
                         }) { if (surprising) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Icon(Icons.Default.Casino, T["surprise"]) }
                         FilledTonalIconButton({ map = true }) { Icon(Icons.Default.Public, T["world_map"]) }
                     }
+                    if (kind == "podcast" && catalog != null) FilledTonalIconButton({
+                        if (surprising) return@FilledTonalIconButton
+                        surprising = true
+                        scope.launch { Surprise.podcast(catalog.genres.map { it.id }).also { surprising = false }?.let { onSurprise(it) } }
+                    }) { if (surprising) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Icon(Icons.Default.Casino, T["surprise"]) }
                 }
                 if (kind == "podcast" && query.isBlank() && source != null) Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton({ source = null }) { Icon(Icons.Default.ArrowBack, T["back"]) }

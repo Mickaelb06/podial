@@ -45,7 +45,12 @@ object World {
     fun hit(countries: List<Country>, lon: Float, lat: Float): String? = countries.firstOrNull { it.contains(lon, lat) }?.code
 
     /** Nom du pays dans la langue du système. */
-    fun name(code: String): String = Locale("", code).displayCountry.ifBlank { code }
+    fun name(code: String): String =
+        if (code.uppercase() == "PS") WEST_BANK[Locale.getDefault().language] ?: "West Bank"
+        else Locale("", code).displayCountry.ifBlank { code }
+
+    /** Le code « PS » désigne ici la Cisjordanie (c'est ce que les listes de radios et de podcasts y trouvent). */
+    private val WEST_BANK = mapOf("fr" to "Cisjordanie", "es" to "Cisjordania", "de" to "Westjordanland", "pt" to "Cisjordânia", "he" to "הגדה המערבית", "ar" to "الضفة الغربية")
 
     /** Drapeau en émoji (deux lettres régionales). */
     fun flag(code: String): String = code.uppercase().map { String(Character.toChars(0x1F1E6 + it.code - 'A'.code)) }.joinToString("")

@@ -66,6 +66,9 @@ def _load_countries():
         found = [(e["alpha_2"], tr.gettext(e.get("common_name") or e["name"])) for e in entries]
     except (OSError, ValueError, KeyError):
         found = list(_FALLBACK_COUNTRIES)
+    west_bank = {"fr": "Cisjordanie", "es": "Cisjordania", "de": "Westjordanland", "pt": "Cisjordânia", "he": "הגדה המערבית", "ar": "الضفة الغربية"}
+    lang = (locale.getlocale()[0] or os.environ.get("LANG", "") or "en")[:2].lower()
+    found = [(c, west_bank.get(lang, "West Bank") if c == "PS" else n) for c, n in found]  # PS = la Cisjordanie
     for category in (locale.LC_COLLATE, locale.LC_TIME):  # tri des pays et format des dates selon la langue
         try:
             locale.setlocale(category, "")

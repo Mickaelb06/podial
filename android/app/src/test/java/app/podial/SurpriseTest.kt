@@ -29,4 +29,25 @@ class SurpriseTest {
         Surprise.radio(List(20) { "C$it" }, Random(1), tries = 3) { calls++; emptyList() }
         assertEquals(3, calls)
     }
+
+    private fun podcast(name: String) = Item("podcast", name, "", "", feed = "https://f/$name")
+
+    @Test fun podcastComesFromTheDrawnGenre() = runBlocking {
+        val p = Surprise.podcast(listOf(1301), Random(1), tries = 5) { if (it == 1301) listOf(podcast("Arts")) else emptyList() }
+        assertEquals("Arts", p?.name)
+    }
+
+    @Test fun podcastFallsBackToOverallChartAndGivesUp() = runBlocking {
+        val p = Surprise.podcast(listOf(1, 2), Random(1), tries = 3) { if (it == null) listOf(podcast("Top")) else throw java.io.IOException("x") }
+        assertEquals("Top", p?.name)
+        assertNull(Surprise.podcast(listOf(1), Random(1)) { emptyList() })
+    }
+
+    @Test fun westBankName() {
+        val old = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.FRENCH); assertEquals("Cisjordanie", World.name("PS"))
+            java.util.Locale.setDefault(java.util.Locale.ENGLISH); assertEquals("West Bank", World.name("PS"))
+        } finally { java.util.Locale.setDefault(old) }
+    }
 }
