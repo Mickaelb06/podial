@@ -31,7 +31,7 @@ object T {
         "transcript_hint" to "Click a line to listen from there. Click the quote icon to highlight it.",
         "no_transcript" to "This episode has no published transcript. Many shows do not provide one.",
         "no_quotes" to "No quotes yet. While listening, press Quote, or open the transcript and highlight a sentence.",
-        "play_here" to "Play from here", "note" to "Note", "copy" to "Copy to share", "delete" to "Delete", "save" to "Save", "cancel" to "Cancel",
+        "play_here" to "Play from here", "note" to "Note", "copy" to "Copy to share", "share" to "Share", "link_copied" to "Link copied", "delete" to "Delete", "save" to "Save", "cancel" to "Cancel",
         "quote_saved" to "Quote saved at %s", "surprise" to "Surprise me", "panel_radios" to "Radios", "panel_webradios" to "Webradios", "panel_local" to "Local news", "world_map" to "Radios around the world", "show_radios" to "Show radios",
     )
     private val frMap = mapOf(
@@ -59,7 +59,7 @@ object T {
         "transcript_hint" to "Clique sur une ligne pour écouter à partir de là. Clique sur l'icône de citation pour la surligner.",
         "no_transcript" to "Cet épisode n'a pas de transcription publiée. Beaucoup d'émissions n'en proposent pas.",
         "no_quotes" to "Aucune citation. Pendant l'écoute, appuie sur Citation, ou ouvre la transcription et surligne une phrase.",
-        "play_here" to "Écouter à partir d'ici", "note" to "Note", "copy" to "Copier pour partager", "delete" to "Supprimer", "save" to "Enregistrer", "cancel" to "Annuler",
+        "play_here" to "Écouter à partir d'ici", "note" to "Note", "copy" to "Copier pour partager", "share" to "Partager", "link_copied" to "Lien copié", "delete" to "Supprimer", "save" to "Enregistrer", "cancel" to "Annuler",
         "quote_saved" to "Citation enregistrée à %s", "surprise" to "Surprends-moi", "panel_radios" to "Radios", "panel_webradios" to "Webradios", "panel_local" to "Infos locales", "world_map" to "Radios du monde entier", "show_radios" to "Voir les radios",
     )
     operator fun get(k: String): String = (if (fr) frMap[k] else null) ?: en[k] ?: k

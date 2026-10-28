@@ -566,3 +566,9 @@ msgstr "Descargados"
 
 msgid "Webradios"
 msgstr "Webradios"
+
+msgid "Share"
+msgstr "Compartir"
+
+msgid "Link copied"
+msgstr "Enlace copiado"

@@ -20,6 +20,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gst, Gtk  # noqa: E402
 
 import integration  # noqa: E402
 from catalog import (  # noqa: E402
+    podcast_share_text,
     COUNTRIES, LIB_FILES, Cancelled, art_bytes, auto_download, save_cover, MAX_EPISODES, country_label, VERSION, REPO, check_new_episodes, check_update, delete_download, download_episode, fetch_feed, load_played, mark_seen, new_counts, seen_urls, set_played, fetch_youtube_feed, flag, get_country, get_setting,
     http_get, item_key, radio_browse, radio_brand_groups, radio_by_brand, radio_by_genre, radio_genre, load_downloads, load_list, save_list, search_podcasts, set_country, set_setting, top_podcasts,
     add_quote, cue_index, fmt_clock, load_quotes, load_transcript, quote_id, remove_quote, set_quote_note, share_text,
@@ -965,6 +966,11 @@ class Window(Adw.ApplicationWindow):
             self.sub_btn.connect("clicked", self.on_subscribe)
         buttons.append(self.main_btn)
         buttons.append(self.sub_btn)
+        if not radio and not video:
+            self.share_btn = Gtk.Button(css_classes=["pill"])
+            self.share_btn.set_child(Adw.ButtonContent(icon_name="send-to-symbolic", label=_("Share")))
+            self.share_btn.connect("clicked", self.on_share)
+            buttons.append(self.share_btn)
         info.append(buttons)
         hero.append(info)
         body.append(hero)
@@ -1204,6 +1210,22 @@ class Window(Adw.ApplicationWindow):
                 (_("Subscribed") if fav else _("Subscribe"))
         icon = "starred-symbolic" if fav else "non-starred-symbolic"
         self.sub_btn.set_child(Adw.ButtonContent(icon_name=icon, label=label))
+
+    def on_share(self, btn):
+        """Copie dans le presse-papiers le lien du podcast (nom, auteur, adresse du lecteur web)."""
+        item = self.detail_item
+        btn.set_sensitive(False)
+
+        def done(text):
+            self.get_clipboard().set(text)
+            btn.set_child(Adw.ButtonContent(icon_name="object-select-symbolic", label=_("Link copied")))
+            btn.set_sensitive(True)
+
+            def back():
+                btn.set_child(Adw.ButtonContent(icon_name="send-to-symbolic", label=_("Share")))
+                return False
+            GLib.timeout_add(2500, back)
+        run_async(lambda: podcast_share_text(item), done, lambda _e: btn.set_sensitive(True))
 
     def on_subscribe(self, _btn):
         item = self.detail_item
@@ -1485,7 +1507,7 @@ class Window(Adw.ApplicationWindow):
         add_quote({"id": quote_id(ep["url"], start_ms, text), "text": text, "start": start_ms, "url": ep["url"], "title": ep["title"],
                    "podcast": item.get("name", ""), "feed": item.get("feed", ""), "art": item.get("art", ""), "note": ""})
         if not text:
-            self.quote_btn.set_icon_name("emblem-ok-symbolic")
+            self.quote_btn.set_icon_name("object-select-symbolic")
             self.quote_btn.set_tooltip_text(_("Quote saved at {time}").format(time=fmt_clock(start_ms)))
             GLib.timeout_add(1800, lambda: (self.quote_btn.set_icon_name("bookmark-new-symbolic"), self.quote_btn.set_tooltip_text(_("Quote")), False)[-1])
 

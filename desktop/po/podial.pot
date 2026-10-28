@@ -578,3 +578,9 @@ msgstr ""
 #: podial.py
 msgid "Webradios"
 msgstr ""
+
+msgid "Share"
+msgstr ""
+
+msgid "Link copied"
+msgstr ""

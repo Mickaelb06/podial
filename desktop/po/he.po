@@ -572,3 +572,9 @@ msgstr "הורדו"
 
 msgid "Webradios"
 msgstr "תחנות אינטרנט"
+
+msgid "Share"
+msgstr "שיתוף"
+
+msgid "Link copied"
+msgstr "הקישור הועתק"

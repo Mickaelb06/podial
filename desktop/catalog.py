@@ -169,6 +169,31 @@ def item_key(item):
 
 
 # ---------- réseau ----------
+SHARE_SITE = "https://mickaelb06.github.io/podial/"
+
+
+def share_link(item):
+    """Lien d'un podcast à donner à quelqu'un : le lecteur web ouvre un podcast par son identifiant iTunes (#p=).
+    Podcast déjà suivi : l'identifiant n'est plus connu, on le retrouve par une recherche dont le flux correspond.
+    Appel bloquant (réseau) : à lancer dans un thread."""
+    feed = item.get("feed", "")
+    if feed.startswith(PENDING_FEED):
+        return f"{SHARE_SITE}app/#p={feed[len(PENDING_FEED):]}"
+    try:
+        q = urllib.parse.quote(item.get("name", ""))
+        data = json.loads(http_get(f"https://itunes.apple.com/search?media=podcast&entity=podcast&limit=15&term={q}", 6))
+        for r in data.get("results", []):
+            if r.get("feedUrl") == feed:
+                return f"{SHARE_SITE}app/#p={r['collectionId']}"
+    except Exception:
+        pass
+    return SHARE_SITE
+
+
+def podcast_share_text(item):
+    return f"{item['name']} — {item.get('artist', '')}\n" + share_link(item)
+
+
 def http_get(url, timeout=20):
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=timeout) as r:

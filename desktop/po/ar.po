@@ -582,3 +582,9 @@ msgstr "تم تنزيلها"
 
 msgid "Webradios"
 msgstr "إذاعات الإنترنت"
+
+msgid "Share"
+msgstr "مشاركة"
+
+msgid "Link copied"
+msgstr "تم نسخ الرابط"

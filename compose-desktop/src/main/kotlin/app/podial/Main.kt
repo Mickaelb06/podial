@@ -399,6 +399,23 @@ fun DetailScreen(item: Item, onBack: () -> Unit) {
                             Spacer(Modifier.width(6.dp))
                             Text(if (item.kind == "radio") T[if (saved) "remove_favorite" else "add_favorite"] else T[if (saved) "subscribed" else "subscribe"])
                         }
+                        if (item.kind == "podcast") {
+                            // Partager : copie dans le presse-papiers le lien du podcast (nom, auteur, adresse du lecteur web)
+                            val clip = androidx.compose.ui.platform.LocalClipboardManager.current
+                            val copyScope = rememberCoroutineScope()
+                            var copied by remember(item.key) { mutableStateOf(false) }
+                            OutlinedButton(onClick = {
+                                copyScope.launch {
+                                    val text = ShareLink.text(item, withContext(Dispatchers.IO) { ShareLink.resolve(item) })
+                                    clip.setText(androidx.compose.ui.text.AnnotatedString(text))
+                                    copied = true; delay(2500); copied = false
+                                }
+                            }) {
+                                Icon(if (copied) Icons.Default.Check else Icons.Default.Share, null)
+                                Spacer(Modifier.width(6.dp))
+                                Text(T[if (copied) "link_copied" else "share"])
+                            }
+                        }
                     }
                 }
             }
