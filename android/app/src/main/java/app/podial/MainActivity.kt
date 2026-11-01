@@ -540,11 +540,11 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
                     Text(item.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
                     Text(item.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (item.kind == "podcast") Row(Modifier.padding(bottom = 8.dp)) {
                         // Lecture : lance le dernier épisode pas encore écouté ; si le podcast joue déjà, pause / reprise
                         val eps = feed?.second.orEmpty()
                         val mine = player.feed == item.feed && player.mediaId.startsWith("ep|")
-                        if (item.kind == "podcast" && eps.isNotEmpty()) GradientButton({
+                        if (eps.isNotEmpty()) GradientButton({
                             val c = player.controller
                             if (mine && c != null) { if (c.isPlaying) c.pause() else c.play() }
                             else (eps.firstOrNull { it.url !in played } ?: eps.first()).let { player.play(PlaybackService.episodeItem(item, it)) }
@@ -552,6 +552,8 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
                             val on = mine && player.isPlaying
                             Icon(if (on) Icons.Default.Pause else Icons.Default.PlayArrow, null); Text(stringResource(if (on) R.string.pause else R.string.play))
                         }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (item.kind == "radio") GradientButton({ player.play(PlaybackService.radioItem(item)) }) {
                             Icon(Icons.Default.PlayArrow, null); Text(stringResource(R.string.live))
                         }
