@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -64,6 +65,22 @@ import kotlinx.coroutines.guava.await
 private val Violet = Color(0xFF8B5CF6)
 private val Pink = Color(0xFFEC4899)
 
+private var splashShown = false
+
+/** Image d'accueil plein écran : visible environ 1,6 s, un toucher la ferme, puis fondu vers l'appli. */
+@Composable
+private fun Splash(onDone: () -> Unit) {
+    var leaving by remember { mutableStateOf(false) }
+    val alpha by androidx.compose.animation.core.animateFloatAsState(if (leaving) 0f else 1f, androidx.compose.animation.core.tween(450), label = "splash") { if (it == 0f) onDone() }
+    LaunchedEffect(Unit) { delay(1600); leaving = true }
+    val land = LocalConfiguration.current.screenWidthDp > LocalConfiguration.current.screenHeightDp
+    Box(Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }.background(Color(0xFF05012A))
+        .clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) { leaving = true }) {
+        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.splash), null, Modifier.fillMaxSize(),
+            contentScale = if (land) androidx.compose.ui.layout.ContentScale.Fit else androidx.compose.ui.layout.ContentScale.Crop)
+    }
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +89,9 @@ class MainActivity : ComponentActivity() {
         CheckWorker.schedule(this)
         Alarm.schedule(this)
         if (android.os.Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+        // écran d'accueil : une fois par lancement de l'appli (pas à chaque rotation ni retour au premier plan)
+        var showSplash by mutableStateOf(!splashShown && savedInstanceState == null)
+        splashShown = true
         setContent {
             PodialTheme {
                 // sans cela le texte sans couleur explicite reste noir en thème sombre (le fond est un simple Box)
@@ -79,6 +99,9 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                         Aurora()
                         PodialApp()
+                        if (showSplash) {
+                            Splash { showSplash = false }
+                        }
                     }
                 }
             }

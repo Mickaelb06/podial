@@ -1,3 +1,5 @@
 <resources>
-    <style name="Theme.Podial" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Podial" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/splash_bg</item>
+    </style>
 </resources>
