@@ -16,11 +16,12 @@ mkdir -p "$OUT"
 ROOT="$STAGE/podial_${VERSION}_all"
 LIB="$ROOT/usr/lib/podial"
 mkdir -p "$LIB" "$ROOT/usr/bin" "$ROOT/usr/share/applications" "$ROOT/usr/share/doc/podial" \
-         "$ROOT/usr/share/gnome-shell/extensions/$UUID" "$ROOT/usr/share/icons/hicolor/symbolic/apps" "$ROOT/DEBIAN"
+         "$ROOT/usr/share/gnome-shell/extensions/$UUID" "$ROOT/usr/share/icons/hicolor/symbolic/apps" "$ROOT/usr/share/icons/hicolor/512x512/apps" "$ROOT/DEBIAN"
 cp podial.py catalog.py filters.py i18n.py integration.py worldmap.py world.json podcast_sources.json radio_logos.json radio_catalog.json "$LIB/"
 cp -r icons locale "$LIB/"
 cp -r "extension/$UUID/." "$ROOT/usr/share/gnome-shell/extensions/$UUID/"
 cp icons/hicolor/symbolic/apps/*.svg "$ROOT/usr/share/icons/hicolor/symbolic/apps/"
+cp icons/hicolor/512x512/apps/podial.png "$ROOT/usr/share/icons/hicolor/512x512/apps/"
 printf '#!/bin/sh\nexec python3 /usr/lib/podial/podial.py "$@"\n' > "$ROOT/usr/bin/podial"
 chmod 755 "$ROOT/usr/bin/podial"
 cat > "$ROOT/usr/share/applications/io.github.podial.Podial.desktop" <<DESK
@@ -30,7 +31,7 @@ Name=Podial Player
 Comment=Podcasts and live radio
 Comment[fr]=Podcasts et radios en direct
 Exec=podial
-Icon=audio-headphones
+Icon=podial
 Terminal=false
 Categories=AudioVideo;Audio;Player;
 DESK

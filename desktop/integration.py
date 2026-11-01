@@ -154,7 +154,13 @@ def set_autostart(enabled, script_path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(f"[Desktop Entry]\nType=Application\nName={APP_NAME}\nExec=python3 {script_path} --background\n"
-                "Icon=audio-headphones\nTerminal=false\nX-GNOME-Autostart-enabled=true\n")
+                f"Icon={_icon_path(script_path)}\nTerminal=false\nX-GNOME-Autostart-enabled=true\n")
+
+
+def _icon_path(script_path):
+    """Icône Podial livrée avec l'appli (chemin absolu : le lanceur n'est pas installé dans le thème d'icônes)."""
+    p = os.path.join(os.path.dirname(os.path.abspath(script_path)), "icons", "hicolor", "512x512", "apps", "podial.png")
+    return p if os.path.exists(p) else "audio-headphones"
 
 
 def install_desktop_entry(script_path):
@@ -170,7 +176,7 @@ def install_desktop_entry(script_path):
             except OSError:
                 continue
     content = (f"[Desktop Entry]\nType=Application\nName={APP_NAME}\n" + comments +
-               f"Exec=python3 {script_path}\nIcon=audio-headphones\nTerminal=false\n"
+               f"Exec=python3 {script_path}\nIcon={_icon_path(script_path)}\nTerminal=false\n"
                "Categories=AudioVideo;Audio;Player;\n")
     try:
         with open(path, encoding="utf-8") as f:

@@ -428,7 +428,7 @@ class Window(Adw.ApplicationWindow):
 
     def show_about(self):
         about = Adw.AboutDialog(
-            application_name=APP_NAME, application_icon="audio-headphones", version=VERSION, developer_name="Podial contributors",
+            application_name=APP_NAME, application_icon="podial", version=VERSION, developer_name="Podial contributors",
             website=f"https://github.com/{REPO}", issue_url=f"https://github.com/{REPO}/issues",
             license_type=Gtk.License.MIT_X11, copyright="© 2026 Podial contributors",
             comments=_("Podcasts and live radio in one free app. No account, no tracking."))
