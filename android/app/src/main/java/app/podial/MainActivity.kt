@@ -153,6 +153,10 @@ fun PodialApp() {
     var quotes by remember { mutableStateOf(false) }
     var transcript by remember { mutableStateOf(false) }
     BackHandler(enabled = detail != null) { detail = null }
+    // page d'où l'on vient avant « Lecture » : le bouton retour du lecteur y revient
+    var lastTab by remember { mutableIntStateOf(0) }
+    LaunchedEffect(tab) { if (tab != 2) lastTab = tab }
+    BackHandler(enabled = tab == 2 && detail == null) { scope.launch { pager.animateScrollToPage(lastTab) } }
     // téléphone en paysage pendant une lecture : vinyle, heure, météo (se ferme avec la croix, revient au prochain passage en paysage)
     val landscape = androidx.compose.ui.platform.LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     var ambianceOff by remember { mutableStateOf(false) }
@@ -205,7 +209,7 @@ fun PodialApp() {
                             }
                         }
                         1 -> LibraryScreen(onMenu = { scope.launch { pager.animateScrollToPage(4) } }) { detail = it }
-                        2 -> PlayerPage(player, onTranscript = { transcript = true }, onAlarm = { scope.launch { pager.animateScrollToPage(3) } })
+                        2 -> PlayerPage(player, onTranscript = { transcript = true }, onAlarm = { scope.launch { pager.animateScrollToPage(3) } }, onBack = { scope.launch { pager.animateScrollToPage(lastTab) } })
                         3 -> AlarmPage()
                         else -> MoreScreen(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0",
                             onQuotes = { quotes = true }, onAlarm = { scope.launch { pager.animateScrollToPage(3) } },
@@ -726,9 +730,13 @@ fun PlayerBody(p: PlayerState, onTranscript: () -> Unit) {
 
 /** Page « Lecture » : ce qui joue, et juste dessous le prochain réveil. */
 @Composable
-fun PlayerPage(p: PlayerState, onTranscript: () -> Unit, onAlarm: () -> Unit) {
+fun PlayerPage(p: PlayerState, onTranscript: () -> Unit, onAlarm: () -> Unit, onBack: () -> Unit) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+        // retour : revient à la page d'où l'on vient (le fantôme Podial)
+        Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onBack) { Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_ghost), stringResource(R.string.back), Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary) }
+        }
         if (p.mediaId.isEmpty()) Box(Modifier.fillMaxWidth().height(320.dp)) { Message(stringResource(R.string.nothing_playing_hint)) }
         else PlayerBody(p, onTranscript)
         val cfg = Alarm.load(ctx)
