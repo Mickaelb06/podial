@@ -156,7 +156,20 @@ fun PodialApp() {
     // page d'où l'on vient avant « Lecture » : le bouton retour du lecteur y revient
     var lastTab by remember { mutableIntStateOf(0) }
     LaunchedEffect(tab) { if (tab != 2) lastTab = tab }
-    BackHandler(enabled = tab == 2 && detail == null) { scope.launch { pager.animateScrollToPage(lastTab) } }
+    // retour depuis « Lecture » : la page de ce qui joue (le podcast ou la radio), et non la dernière page visitée
+    val backToSource: () -> Unit = {
+        val id = player.mediaId
+        val src: Item? = when {
+            id.startsWith("radio|") -> id.removePrefix("radio|").let { st ->
+                Store.radios.value.firstOrNull { it.stream == st } ?: Item("radio", player.station.ifEmpty { player.title }, player.artist, player.art ?: "", stream = st)
+            }
+            player.feed.isNotEmpty() -> Store.podcasts.value.firstOrNull { it.feed == player.feed } ?: Item("podcast", player.artist, "", player.art ?: "", feed = player.feed)
+            else -> null
+        }
+        if (src != null) { discover = if (src.kind == "radio") 1 else 0; detail = src; scope.launch { pager.scrollToPage(0) } }
+        else scope.launch { pager.animateScrollToPage(lastTab) }
+    }
+    BackHandler(enabled = tab == 2 && detail == null) { backToSource() }
     // téléphone en paysage pendant une lecture : vinyle, heure, météo (se ferme avec la croix, revient au prochain passage en paysage)
     val landscape = androidx.compose.ui.platform.LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     var ambianceOff by remember { mutableStateOf(false) }
@@ -209,7 +222,7 @@ fun PodialApp() {
                             }
                         }
                         1 -> LibraryScreen(onMenu = { scope.launch { pager.animateScrollToPage(4) } }) { detail = it }
-                        2 -> PlayerPage(player, onTranscript = { transcript = true }, onAlarm = { scope.launch { pager.animateScrollToPage(3) } }, onBack = { scope.launch { pager.animateScrollToPage(lastTab) } })
+                        2 -> PlayerPage(player, onTranscript = { transcript = true }, onAlarm = { scope.launch { pager.animateScrollToPage(3) } }, onBack = backToSource)
                         3 -> AlarmPage()
                         else -> MoreScreen(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0",
                             onQuotes = { quotes = true }, onAlarm = { scope.launch { pager.animateScrollToPage(3) } },
@@ -665,6 +678,7 @@ private fun clock(ms: Long): String {
     return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlayerBody(p: PlayerState, onTranscript: () -> Unit) {
     val remaining by SleepTimer.remaining.collectAsState()
@@ -695,12 +709,19 @@ fun PlayerBody(p: PlayerState, onTranscript: () -> Unit) {
             if (!p.live) {
                 val ctx = androidx.compose.ui.platform.LocalContext.current
                 val saved = stringResource(R.string.quote_saved)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                val pods by Store.podcasts.collectAsState()
+                val mine = pods.firstOrNull { it.feed == p.feed }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
                     FilledTonalButton({
                         saveQuote(p, "", p.position)
                         android.widget.Toast.makeText(ctx, saved.format(clock(p.position)), android.widget.Toast.LENGTH_SHORT).show()
                     }) { Icon(Icons.Default.FormatQuote, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.quote_here)) }
                     FilledTonalButton(onTranscript) { Icon(Icons.Default.Subject, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.transcript)) }
+                    // S'abonner au podcast de l'épisode en cours (le podcast est reconstitué à partir de ce qui joue)
+                    if (p.feed.isNotEmpty()) FilledTonalButton({ Store.toggle(mine ?: Item("podcast", p.artist, "", p.art ?: "", feed = p.feed)) }) {
+                        Icon(if (mine != null) Icons.Default.Star else Icons.Outlined.StarOutline, null, tint = if (mine != null) Brand.Pink else LocalContentColor.current)
+                        Spacer(Modifier.width(6.dp)); Text(stringResource(if (mine != null) R.string.subscribed else R.string.subscribe))
+                    }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
@@ -735,7 +756,11 @@ fun PlayerPage(p: PlayerState, onTranscript: () -> Unit, onAlarm: () -> Unit, on
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
         // retour : revient à la page d'où l'on vient (le fantôme Podial)
         Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onBack) { Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_ghost), stringResource(R.string.back), Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary) }
+            // « < » puis le fantôme : on comprend tout de suite que c'est un retour
+            Row(Modifier.clip(CircleShape).clickable(onClick = onBack).padding(horizontal = 6.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.ChevronLeft, stringResource(R.string.back), Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_ghost), null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
+            }
         }
         if (p.mediaId.isEmpty()) Box(Modifier.fillMaxWidth().height(320.dp)) { Message(stringResource(R.string.nothing_playing_hint)) }
         else PlayerBody(p, onTranscript)
@@ -919,7 +944,7 @@ fun RadioDetail(item: Item, player: PlayerState, onBack: () -> Unit) {
     // choisir une radio la lance tout de suite
     LaunchedEffect(item.stream, player.controller) {
         val c = player.controller ?: return@LaunchedEffect
-        if (!here) player.play(PlaybackService.radioItem(item)) else if (!c.isPlaying) c.play()
+        if (!here) player.play(PlaybackService.radioItem(item))   // déjà chargée (par exemple en revenant du lecteur) : on n'y touche pas
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth()) {
