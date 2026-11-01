@@ -168,7 +168,7 @@ fun PodialApp() {
                 AnimatedVisibility(player.mediaId.isNotEmpty() && tab != 2, enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
                     MiniPlayer(player) { scope.launch { pager.animateScrollToPage(2) } }
                 }
-                FloatingNav(tab, { i -> detail = null; scope.launch { pager.animateScrollToPage(i) } }, Store.newCounts.collectAsState().value.values.sum(), player.isPlaying)
+                FloatingNav(tab, { i -> detail = null; scope.launch { pager.animateScrollToPage(i) } }, Store.newCounts.collectAsState().value.values.sum(), player.isPlaying, player.mediaId.isNotEmpty())
             }
         },
     ) { pad ->

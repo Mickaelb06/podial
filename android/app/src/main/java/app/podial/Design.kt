@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -205,7 +206,7 @@ fun SkeletonGrid(header: @Composable () -> Unit = {}) {
 
 /** Barre de navigation flottante : l'onglet choisi s'allonge et prend le dégradé. */
 @Composable
-fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean = false) {
+fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean = false, hasMedia: Boolean = false) {
     // 0 Découvrir · 1 Bibliothèque · 2 Lecture (bouton central) · 3 Réveil · 4 Plus
     val items = listOf(Icons.Default.Explore to R.string.tab_discover, Icons.Default.Star to R.string.tab_library, Icons.Default.PlayArrow to R.string.tab_now,
         Icons.Default.Alarm to R.string.tab_alarm, Icons.Default.MoreHoriz to R.string.tab_more)
@@ -216,10 +217,11 @@ fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean 
             items.forEachIndexed { i, (icon, label) ->
                 val sel = tab == i
                 if (i == 2) {
-                    // grand bouton rond : ramène toujours au lecteur
-                    val glow by animateFloatAsState(if (sel) 1f else 0.78f, tween(280), label = "navmid")
-                    Box(Modifier.size(54.dp).alpha(glow).clip(CircleShape).background(Brand.grad).clickable { onTab(i) }, contentAlignment = Alignment.Center) {
-                        Icon(if (playing) Icons.Default.GraphicEq else icon, androidx.compose.ui.res.stringResource(label), tint = Color.White, modifier = Modifier.size(28.dp))
+                    // bouton central : le logo ; dès qu'une radio ou un podcast est chargé, un petit vinyle (le logo en étiquette) qui tourne tant que ça joue
+                    val glow by animateFloatAsState(if (sel) 1f else 0.85f, tween(280), label = "navmid")
+                    Box(Modifier.size(56.dp).alpha(glow).clickable { onTab(i) }, contentAlignment = Alignment.Center) {
+                        if (hasMedia) NavVinyl(playing) else androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo),
+                            androidx.compose.ui.res.stringResource(label), Modifier.fillMaxSize().clip(RoundedCornerShape(17.dp)))
                     }
                     return@forEachIndexed
                 }
@@ -239,6 +241,32 @@ fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean 
                 }
             }
         }
+    }
+}
+
+/** Mini vinyle du bouton central : tourne à 33 tours/min tant que ça joue, s'arrête là où il est en pause. */
+@Composable
+private fun NavVinyl(playing: Boolean) {
+    var angle by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(playing) {
+        if (!playing) return@LaunchedEffect
+        var last = withFrameNanos { it }
+        while (true) {
+            val t = withFrameNanos { it }
+            angle = (angle + (t - last) / 1_000_000_000f * 33.3f * 6f * 2f) % 360f   // deux fois plus vite qu'un vrai 33 tours : à cette taille on le verrait à peine
+            last = t
+        }
+    }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize().rotate(angle)) {
+            val r = size.minDimension / 2
+            drawCircle(Color(0xFF111015), r, center)
+            var g = r * 0.5f
+            while (g < r * 0.96f) { drawCircle(Color.White.copy(alpha = 0.08f), g, center, style = androidx.compose.ui.graphics.drawscope.Stroke(1f)); g += r * 0.1f }
+            drawCircle(Brush.sweepGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.18f), Color.Transparent, Color.Transparent, Color.White.copy(alpha = 0.18f), Color.Transparent), center), r, center)
+            drawCircle(Brand.Violet.copy(alpha = 0.9f), r, center, style = androidx.compose.ui.graphics.drawscope.Stroke(2.5f))
+        }
+        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo), null, Modifier.fillMaxSize(0.52f).rotate(angle).clip(CircleShape))
     }
 }
 

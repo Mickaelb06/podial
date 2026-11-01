@@ -39,6 +39,8 @@ header.nav { position: sticky; top: 12px; z-index: 30; margin: 12px auto 0; max-
 .nav .in { display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 12px 0 20px; }
 .logo { font-weight: 800; font-size: 1.12rem; text-decoration: none; display: flex; align-items: center; gap: 10px; letter-spacing: -.01em; white-space: nowrap; flex: none; }
 .logo i { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--grad); display: inline-block; position: relative; animation: spin 8s linear infinite; }
+.hero-logo { display: block; width: 112px; margin: 0 auto 22px; }
+.hero-logo img { width: 112px; height: 112px; border-radius: 26px; display: block; box-shadow: 0 14px 40px var(--glow); }
 .logo img { flex: none; width: 30px; height: 30px; border-radius: 8px; display: block; }
 .logo i::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: var(--bg); }
 .nav nav { margin-left: auto; display: flex; gap: 2px; align-items: center; font-size: .92rem; }
@@ -284,6 +286,7 @@ footer a:hover { color: var(--text); }
   <div class="aurora" aria-hidden="true"><b></b><b></b><b></b></div>
   <div class="grid-bg" aria-hidden="true"></div>
   <div class="wrap">
+    <picture class="hero-logo"><source srcset="logo-light.png" media="(prefers-color-scheme: light)"><img src="logo-dark.png" alt="Podial" width="112" height="112"></picture>
     <div class="badge"><span class="dot"></span><span data-i18n="badge">Free, open source, no account</span></div>
     <h1><span class="l" data-i18n="h1a">Podcasts and live radio,</span><span class="l"><em data-i18n="h1b">in one free app.</em></span></h1>
     <p class="lead" data-i18n="lead">Listen to podcasts and radio stations from every country. Download episodes for offline listening. No account, no tracking, fully open source.</p>
