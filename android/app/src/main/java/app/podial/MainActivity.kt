@@ -565,12 +565,6 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
                             Icon(Icons.Outlined.StarOutline, null); Text(label)
                         }
                     }
-                    if (item.kind == "podcast") Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Partager : la feuille de partage d'Android avec le lien du podcast
-                        OutlinedButton(onClick = {
-                            shareScope.launch { runCatching { PodcastCard.shareLink(ctx, item) } }
-                        }) { Icon(Icons.Default.Share, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.share)) }
-                    }
                 }
             }
             feed?.first?.takeIf { it.isNotEmpty() }?.let {
@@ -588,6 +582,11 @@ fun DetailScreen(item: Item, player: PlayerState, onBack: () -> Unit) {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item { FilterChip(sort == EpSort.NEWEST, { sort = EpSort.NEWEST }, { Text(stringResource(R.string.ep_newest)) }) }
                         item { FilterChip(sort == EpSort.OLDEST, { sort = EpSort.OLDEST }, { Text(stringResource(R.string.ep_oldest)) }) }
+                        // Partager : la feuille de partage d'Android avec le lien du podcast
+                        item {
+                            AssistChip({ shareScope.launch { runCatching { PodcastCard.shareLink(ctx, item) } } }, { Text(stringResource(R.string.share)) },
+                                leadingIcon = { Icon(Icons.Default.Share, null, Modifier.size(18.dp)) })
+                        }
                     }
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
                         item { FilterChip(epFilter == EpFilter.ALL, { epFilter = EpFilter.ALL }, { Text(stringResource(R.string.ep_all)) }) }
