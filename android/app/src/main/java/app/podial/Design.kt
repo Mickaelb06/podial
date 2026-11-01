@@ -19,6 +19,7 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -205,8 +206,10 @@ fun SkeletonGrid(header: @Composable () -> Unit = {}) {
 }
 
 /** Barre de navigation flottante : l'onglet choisi s'allonge et prend le dégradé. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean = false, hasMedia: Boolean = false) {
+fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean = false, hasMedia: Boolean = false,
+                onPlayPause: () -> Unit = {}, onStop: () -> Unit = {}) {
     // 0 Découvrir · 1 Bibliothèque · 2 Lecture (bouton central) · 3 Réveil · 4 Plus
     val items = listOf(Icons.Default.Explore to R.string.tab_discover, Icons.Default.Star to R.string.tab_library, Icons.Default.PlayArrow to R.string.tab_now,
         Icons.Default.Alarm to R.string.tab_alarm, Icons.Default.MoreHoriz to R.string.tab_more)
@@ -219,7 +222,11 @@ fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean 
                 if (i == 2) {
                     // bouton central : le logo ; dès qu'une radio ou un podcast est chargé, un petit vinyle (le logo en étiquette) qui tourne tant que ça joue
                     val glow by animateFloatAsState(if (sel) 1f else 0.85f, tween(280), label = "navmid")
-                    Box(Modifier.size(56.dp).alpha(glow).clickable { onTab(i) }, contentAlignment = Alignment.Center) {
+                    // un appui : pause / reprise · deux appuis : arrêt · appui long : page Lecture (sans rien en cours, un appui l'ouvre)
+                    Box(Modifier.size(56.dp).alpha(glow).clip(CircleShape).combinedClickable(
+                        onClick = { if (hasMedia) onPlayPause() else onTab(i) },
+                        onDoubleClick = { if (hasMedia) onStop() },
+                        onLongClick = { onTab(i) }), contentAlignment = Alignment.Center) {
                         if (hasMedia) NavVinyl(playing) else androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo),
                             androidx.compose.ui.res.stringResource(label), Modifier.fillMaxSize().clip(RoundedCornerShape(17.dp)))
                     }

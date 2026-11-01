@@ -165,10 +165,9 @@ fun PodialApp() {
         contentColor = MaterialTheme.colorScheme.onBackground,
         bottomBar = {
             Column {
-                AnimatedVisibility(player.mediaId.isNotEmpty() && tab != 2, enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
-                    MiniPlayer(player) { scope.launch { pager.animateScrollToPage(2) } }
-                }
-                FloatingNav(tab, { i -> detail = null; scope.launch { pager.animateScrollToPage(i) } }, Store.newCounts.collectAsState().value.values.sum(), player.isPlaying, player.mediaId.isNotEmpty())
+                FloatingNav(tab, { i -> detail = null; scope.launch { pager.animateScrollToPage(i) } }, Store.newCounts.collectAsState().value.values.sum(), player.isPlaying, player.mediaId.isNotEmpty(),
+                    onPlayPause = { player.controller?.let { if (it.isPlaying) it.pause() else it.play() } },
+                    onStop = { player.controller?.let { it.stop(); it.clearMediaItems() }; player.refresh() })
             }
         },
     ) { pad ->
@@ -645,27 +644,6 @@ fun DownloadsScreen(player: PlayerState) {
 }
 
 // ---------- lecteur ----------
-@Composable
-fun MiniPlayer(p: PlayerState, onOpen: () -> Unit) {
-    Surface(Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth().shadow(18.dp, RoundedCornerShape(26.dp), ambientColor = Brand.Violet, spotColor = Brand.Pink),
-        shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-        Box {
-            Row(Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (p.live) RadioLogo(null, p.art, p.title, 46) else Cover(p.art, p.title, 46)
-                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                    Text(p.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
-                    Text(p.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                EqBars(p.isPlaying, Modifier.padding(end = 12.dp))
-                PlayCircle(p.isPlaying, 44, { p.controller?.let { if (it.isPlaying) it.pause() else it.play() } },
-                    description = stringResource(if (p.isPlaying) R.string.pause else R.string.play))
-            }
-            if (!p.live && p.duration > 0) Box(Modifier.align(Alignment.BottomStart).padding(horizontal = 22.dp)
-                .fillMaxWidth((p.position.toFloat() / p.duration).coerceIn(0f, 1f)).height(3.dp).clip(CircleShape).background(Brand.grad))
-        }
-    }
-}
-
 private fun clock(ms: Long): String {
     val s = ms / 1000
     return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
