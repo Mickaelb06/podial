@@ -111,5 +111,11 @@
     <string name="alarm_repeat">Se répète les jours choisis.</string>
     <string name="alarm_stop">Arrêter</string>
     <string name="alarm_snooze">Répéter dans %1$d min</string>
-    <string name="alarm_hint">Le volume de la radio monte doucement. Si la radio ne démarre pas, la sonnerie prend le relais.</string>
+    <string name="alarm_hint">Le volume monte doucement. Si la radio ou le podcast ne démarre pas, la sonnerie prend le relais. Un podcast joue son dernier épisode.</string>
+    <string name="alarm_pick_radio">Radios</string>
+    <string name="alarm_pick_podcast">Podcasts</string>
+    <string name="alarm_search_radio">Chercher une radio…</string>
+    <string name="alarm_search_podcast">Chercher un podcast…</string>
+    <string name="alarm_favorites">Tes favoris. Tape pour chercher dans tout l\'annuaire.</string>
+    <string name="alarm_none">Rien trouvé.</string>
 </resources>

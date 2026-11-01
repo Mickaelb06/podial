@@ -114,5 +114,11 @@
     <string name="alarm_repeat">Repeats on the selected days.</string>
     <string name="alarm_stop">Stop</string>
     <string name="alarm_snooze">Snooze %1$d min</string>
-    <string name="alarm_hint">Radio volume rises slowly. If the radio cannot start, the ringtone takes over.</string>
+    <string name="alarm_hint">The volume rises slowly. If the radio or podcast cannot start, the ringtone takes over. A podcast plays its latest episode.</string>
+    <string name="alarm_pick_radio">Radios</string>
+    <string name="alarm_pick_podcast">Podcasts</string>
+    <string name="alarm_search_radio">Search a radio…</string>
+    <string name="alarm_search_podcast">Search a podcast…</string>
+    <string name="alarm_favorites">Your favorites. Type to search everything.</string>
+    <string name="alarm_none">Nothing found.</string>
 </resources>

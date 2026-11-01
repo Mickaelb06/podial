@@ -30,7 +30,7 @@ class AlarmTest {
     @Test fun sameWeekdayNextWeek() = assertEquals("2026-11-09 08:00", fmt(Alarm.nextTrigger(AlarmConfig(true, 8, 0, 1 shl 0), at(2026, Calendar.NOVEMBER, 2, 9, 0))))
 
     @Test fun configJsonRoundTrip() {
-        val c = AlarmConfig(true, 6, 45, 0b0101010, Item("radio", "FIP", "Radio France", "", stream = "http://x/fip"))
+        val c = AlarmConfig(true, 6, 45, 0b0101010, Item("podcast", "Floodcast", "Floodcast", "", feed = "http://x/rss"))
         assertEquals(c, AlarmConfig.fromJson(org.json.JSONObject(c.toJson().toString())))
     }
 }

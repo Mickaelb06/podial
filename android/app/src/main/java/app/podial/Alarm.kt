@@ -21,21 +21,22 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.Calendar
 
 /** Réglage du réveil. [days] : un bit par jour, lundi = bit 0 … dimanche = bit 6 ; 0 = une seule fois. */
-data class AlarmConfig(val enabled: Boolean = false, val hour: Int = 7, val minute: Int = 0, val days: Int = 0, val radio: Item? = null) {
+data class AlarmConfig(val enabled: Boolean = false, val hour: Int = 7, val minute: Int = 0, val days: Int = 0, val source: Item? = null) {
     fun toJson() = JSONObject().put("enabled", enabled).put("hour", hour).put("minute", minute).put("days", days)
-        .apply { radio?.let { put("radio", it.toJson()) } }
+        .apply { source?.let { put("source", it.toJson()) } }
 
     companion object {
         fun fromJson(j: JSONObject) = AlarmConfig(j.optBoolean("enabled"), j.optInt("hour", 7), j.optInt("minute", 0), j.optInt("days", 0),
-            j.optJSONObject("radio")?.let { Item.fromJson(it) })
+            (j.optJSONObject("source") ?: j.optJSONObject("radio"))?.let { Item.fromJson(it) })
     }
 }
 
-/** Réveil : une alarme exacte (AlarmManager.setAlarmClock, sans permission spéciale), qui lance la radio choisie en fondu. */
+/** Réveil : une alarme exacte (AlarmManager.setAlarmClock, sans permission spéciale), qui lance la radio ou le dernier épisode du podcast choisi, en fondu. */
 object Alarm {
     const val ACTION_FIRE = "app.podial.ALARM_FIRE"
     const val ACTION_STOP = "app.podial.ALARM_STOP"
@@ -79,13 +80,13 @@ object Alarm {
         val next = listOfNotNull(nextTrigger(load(ctx), now), snooze).minOrNull()
         if (next == null) { am.cancel(fire); return }
         val show = PendingIntent.getActivity(ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
-        am.setAlarmClock(AlarmManager.AlarmClockInfo(next, show), fire)
+        runCatching { am.setAlarmClock(AlarmManager.AlarmClockInfo(next, show), fire) }   // refusé si la permission d'alarme exacte a été retirée
     }
 
     fun describe(ctx: Context, cfg: AlarmConfig): String {
         if (!cfg.enabled) return ctx.getString(R.string.alarm_off)
         val t = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, cfg.hour); set(Calendar.MINUTE, cfg.minute) }.time)
-        return t + " · " + (cfg.radio?.name ?: ctx.getString(R.string.alarm_ringtone))
+        return t + " · " + (cfg.source?.name ?: ctx.getString(R.string.alarm_ringtone))
     }
 
     // ---- sonnerie ----
@@ -120,8 +121,20 @@ object Alarm {
         ringing = true
         notify(app, cfg)
         raiseMediaVolume(app)
-        val radio = cfg.radio
-        if (radio == null) { ring(app); handler.postDelayed(giveUp, 30 * 60_000L); return }
+        val src = cfg.source
+        handler.postDelayed(giveUp, 45 * 60_000L)
+        when (src?.kind) {
+            "radio" -> play(app, PlaybackService.radioItem(src))
+            "podcast" -> Store.scope.launch {
+                // dernier épisode paru ; sans réseau ou flux illisible, la sonnerie prend le relais
+                val ep = runCatching { Api.fetchFeed(src.feed).second.firstOrNull() }.getOrNull()
+                handler.post { if (ringing) { if (ep == null) ring(app) else play(app, PlaybackService.episodeItem(src, ep)) } }
+            }
+            else -> ring(app)
+        }
+    }
+
+    private fun play(app: Context, item: androidx.media3.common.MediaItem) {
         val f = MediaController.Builder(app, SessionToken(app, ComponentName(app, PlaybackService::class.java))).buildAsync()
         future = f
         f.addListener({
@@ -132,13 +145,12 @@ object Alarm {
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) { if (ringing && ringtone == null) ring(app) }
             })
             c.volume = 0f
-            c.setMediaItem(PlaybackService.radioItem(radio)); c.prepare(); c.play()
+            c.setMediaItem(item); c.prepare(); c.play()
             elapsed = 0
             handler.postDelayed(ramp, 1000)
-            // la radio ne démarre pas (réseau coupé, flux mort) : la sonnerie du téléphone prend le relais
+            // le son ne démarre pas (réseau coupé, flux mort) : la sonnerie du téléphone prend le relais
             handler.postDelayed({ if (ringing && controller?.isPlaying != true && ringtone == null) ring(app) }, 25_000L)
         }, ContextCompat.getMainExecutor(app))
-        handler.postDelayed(giveUp, 45 * 60_000L)
     }
 
     fun stop(ctx: Context) {
@@ -189,7 +201,7 @@ object Alarm {
         val n = NotificationCompat.Builder(ctx, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(ctx.getString(R.string.alarm_title))
-            .setContentText(cfg.radio?.name ?: ctx.getString(R.string.alarm_ringtone))
+            .setContentText(cfg.source?.name ?: ctx.getString(R.string.alarm_ringtone))
             .setCategory(NotificationCompat.CATEGORY_ALARM).setPriority(NotificationCompat.PRIORITY_MAX)
             .setOngoing(true).setAutoCancel(false)
             .setContentIntent(screen).setFullScreenIntent(screen, true)

@@ -44,7 +44,7 @@ class AlarmActivity : ComponentActivity() {
                 val cfg = remember { Alarm.load(this) }
                 Column(Modifier.fillMaxSize().background(Color(0xFF0B0A12)).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     Text(DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(now)), color = Color.White, fontSize = 84.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(cfg.radio?.name ?: stringResource(R.string.alarm_ringtone), color = Color.White.copy(alpha = 0.75f), fontSize = 20.sp)
+                    Text(cfg.source?.name ?: stringResource(R.string.alarm_ringtone), color = Color.White.copy(alpha = 0.75f), fontSize = 20.sp)
                     Spacer(Modifier.height(48.dp))
                     Button({ Alarm.stop(this@AlarmActivity); finish() }, Modifier.fillMaxWidth().height(64.dp)) { Text(stringResource(R.string.alarm_stop), fontSize = 20.sp) }
                     Spacer(Modifier.height(16.dp))
@@ -62,8 +62,9 @@ class AlarmActivity : ComponentActivity() {
 fun AlarmDialog(onClose: () -> Unit) {
     val ctx = LocalContext.current
     var cfg by remember { mutableStateOf(Alarm.load(ctx)) }
-    val radios by Store.radios.collectAsState()
+    var picking by remember { mutableStateOf(false) }
     val time = DateFormat.getTimeInstance(DateFormat.SHORT).format(Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, cfg.hour); set(Calendar.MINUTE, cfg.minute) }.time)
+    if (picking) AlarmPicker({ cfg = cfg.copy(source = it); picking = false }) { picking = false }
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(stringResource(R.string.alarm_title)) },
@@ -87,10 +88,8 @@ fun AlarmDialog(onClose: () -> Unit) {
                 Text(stringResource(if (cfg.days == 0) R.string.alarm_once else R.string.alarm_repeat), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(stringResource(R.string.alarm_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(stringResource(R.string.alarm_radio), fontWeight = FontWeight.SemiBold)
-                if (radios.isEmpty()) Text(stringResource(R.string.alarm_no_radio), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                LazyColumn(Modifier.heightIn(max = 190.dp)) {
-                    item { RadioRow(stringResource(R.string.alarm_ringtone), cfg.radio == null) { cfg = cfg.copy(radio = null) } }
-                    items(radios) { r -> RadioRow(r.name, cfg.radio?.key == r.key) { cfg = cfg.copy(radio = r) } }
+                OutlinedButton({ picking = true }, Modifier.fillMaxWidth()) {
+                    Text(cfg.source?.let { (if (it.kind == "podcast") "🎙 " else "📻 ") + it.name } ?: stringResource(R.string.alarm_ringtone), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
             }
         },
@@ -99,10 +98,49 @@ fun AlarmDialog(onClose: () -> Unit) {
     )
 }
 
+/** Choix de ce qui réveille : sonnerie, radio ou podcast (favoris, ou recherche dans tout l'annuaire). */
 @Composable
-private fun RadioRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
-        RadioButton(selected, onClick)
-        Text(label, maxLines = 1)
+private fun AlarmPicker(onPick: (Item?) -> Unit, onClose: () -> Unit) {
+    var podcast by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    val radios by Store.radios.collectAsState()
+    val podcasts by Store.podcasts.collectAsState()
+    var found by remember { mutableStateOf<List<Item>?>(null) }
+    LaunchedEffect(podcast, query) {
+        if (query.isBlank()) { found = null; return@LaunchedEffect }
+        delay(500)
+        found = runCatching { if (podcast) Api.searchPodcasts(query) else Api.radios("", query, limit = 30, world = true) }.getOrDefault(emptyList())
+    }
+    val list = if (query.isBlank()) (if (podcast) podcasts else radios) else found
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(stringResource(R.string.alarm_radio)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(!podcast, { podcast = false }, { Text(stringResource(R.string.alarm_pick_radio)) })
+                    FilterChip(podcast, { podcast = true }, { Text(stringResource(R.string.alarm_pick_podcast)) })
+                }
+                OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
+                    placeholder = { Text(stringResource(if (podcast) R.string.alarm_search_podcast else R.string.alarm_search_radio)) })
+                if (query.isBlank()) Text(stringResource(R.string.alarm_favorites), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                LazyColumn(Modifier.heightIn(max = 280.dp)) {
+                    item { PickRow(stringResource(R.string.alarm_ringtone), "") { onPick(null) } }
+                    if (list == null) item { Text("…", Modifier.padding(12.dp)) }
+                    else if (list.isEmpty()) item { Text(stringResource(R.string.alarm_none), Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    else items(list) { PickRow(it.name, it.artist) { onPick(it) } }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClose) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+@Composable
+private fun PickRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp, horizontal = 4.dp)) {
+        Text(title, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
+        if (subtitle.isNotBlank()) Text(subtitle, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
