@@ -415,9 +415,28 @@ const pos = { get: u => store.get("pos", {})[u] || 0, set(u, s) { const m = stor
 const audio = document.getElementById("audio"), $ = id => document.getElementById(id);
 let now = null, live = false;
 const speeds = [1, 1.25, 1.5, 1.75, 2, 0.75]; let si = 0;
+// Firefox ne lit pas les flux HLS (.m3u8) tout seul, contrairement à Chrome et Safari : on charge alors hls.js, seulement à ce moment-là
+let hls = null, hlsLib = null;
+const loadHls = () => hlsLib ||= new Promise((ok, ko) => {
+  const sc = document.createElement("script");
+  sc.src = "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"; sc.onload = () => ok(window.Hls); sc.onerror = ko;
+  document.head.append(sc);
+});
+function attach(url) {
+  if (hls) { hls.destroy(); hls = null; }
+  if (!/\.m3u8(\?|$)/i.test(url) || audio.canPlayType("application/vnd.apple.mpegurl")) { audio.src = url; return; }
+  const cur = now;
+  loadHls().then(H => {
+    if (now !== cur) return;
+    if (!H.isSupported()) { audio.src = url; return; }
+    hls = new H(); hls.loadSource(url); hls.attachMedia(audio);
+    hls.on(H.Events.MANIFEST_PARSED, () => audio.play().catch(() => {}));
+    hls.on(H.Events.ERROR, (_, d) => { if (d.fatal && now === cur) failLive(cur); });
+  }).catch(() => { if (now === cur) audio.src = url; });
+}
 function play(media, startAt = 0) {
   now = media; live = media.live;
-  audio.src = media.url; audio.playbackRate = speeds[si];
+  attach(media.url); audio.playbackRate = speeds[si];
   if (startAt > 5) { audio.addEventListener("loadedmetadata", () => { audio.currentTime = startAt; }, { once: true }); toast(t("resumed")); }
   audio.play().catch(() => {});
   $("player").hidden = false; $("ptitle").textContent = media.title; $("psub").textContent = media.sub;
