@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+    <img src="docs/logo-light.png" width="120" height="120" alt="Podial logo">
+  </picture>
+</p>
+
 # Podial Player
 
 **English** · [Français](README.fr.md)
