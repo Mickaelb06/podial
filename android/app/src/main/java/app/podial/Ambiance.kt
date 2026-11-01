@@ -127,7 +127,7 @@ fun AmbianceScreen(p: PlayerState, onClose: () -> Unit) {
         Row(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
                 val d = minOf(maxWidth, maxHeight) * 0.96f
-                Vinyl(p, angle, arm, d)
+                Vinyl(p.art, (p.station.ifEmpty { p.title }), p.live, angle, arm, d)
             }
             Spacer(Modifier.width(28.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
@@ -158,7 +158,7 @@ object Ambiance { var asked = false }
 private suspend fun withFrameNanosCompat(): Long = androidx.compose.runtime.withFrameNanos { it }
 
 @Composable
-private fun Vinyl(p: PlayerState, angle: Float, arm: Float, size: androidx.compose.ui.unit.Dp) {
+internal fun Vinyl(art: String?, name: String, live: Boolean, angle: Float, arm: Float, size: androidx.compose.ui.unit.Dp) {
     Box(Modifier.size(size)) {
         // le disque : noir, sillons, reflet qui reste fixe pendant que le disque tourne
         Canvas(Modifier.fillMaxSize().rotate(angle)) {
@@ -173,10 +173,9 @@ private fun Vinyl(p: PlayerState, angle: Float, arm: Float, size: androidx.compo
         // l'étiquette centrale : logo de la radio ou pochette
         val label = size * 0.40f
         Box(Modifier.size(label).align(Alignment.Center).rotate(angle).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
-            val art = p.art
             if (art.isNullOrEmpty()) Box(Modifier.fillMaxSize().background(Brand.grad), contentAlignment = Alignment.Center) {
-                Text((p.station.ifEmpty { p.title }).firstOrNull()?.uppercase() ?: "♪", color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold)
-            } else AsyncImage(art, null, Modifier.fillMaxSize().then(if (p.live) Modifier.padding(label * 0.14f) else Modifier), contentScale = if (p.live) ContentScale.Fit else ContentScale.Crop)
+                Text(name.firstOrNull()?.uppercase() ?: "♪", color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold)
+            } else AsyncImage(art, null, Modifier.fillMaxSize().then(if (live) Modifier.padding(label * 0.14f) else Modifier), contentScale = if (live) ContentScale.Fit else ContentScale.Crop)
             Box(Modifier.size(10.dp).clip(CircleShape).background(Color(0xFF0B0A12)))
         }
         // le bras de lecture se pose sur le disque quand ça joue

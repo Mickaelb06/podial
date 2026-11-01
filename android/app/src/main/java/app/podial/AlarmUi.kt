@@ -5,6 +5,10 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -49,14 +53,46 @@ class AlarmActivity : ComponentActivity() {
                 // l'alarme a été arrêtée depuis la notification : on ferme l'écran
                 LaunchedEffect(Unit) { while (true) { if (!Alarm.ringing) finish(); delay(500) } }
                 val cfg = remember { Alarm.load(this) }
-                Column(Modifier.fillMaxSize().background(Color(0xFF0B0A12)).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Text(DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(now)), color = Color.White, fontSize = 84.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(cfg.source?.name ?: stringResource(R.string.alarm_ringtone), color = Color.White.copy(alpha = 0.75f), fontSize = 20.sp)
-                    Spacer(Modifier.height(48.dp))
-                    Button({ Alarm.stop(this@AlarmActivity); finish() }, Modifier.fillMaxWidth().height(64.dp)) { Text(stringResource(R.string.alarm_stop), fontSize = 20.sp) }
-                    Spacer(Modifier.height(16.dp))
-                    OutlinedButton({ Alarm.snooze(this@AlarmActivity); finish() }, Modifier.fillMaxWidth().height(56.dp)) {
-                        Text(stringResource(R.string.alarm_snooze, Alarm.SNOOZE_MIN), color = Color.White)
+                val src = cfg.source
+                // le disque tourne en continu, la lumière derrière lui respire
+                var angle by remember { mutableFloatStateOf(0f) }
+                LaunchedEffect(Unit) {
+                    var last = withFrameNanos { it }
+                    while (true) { val t = withFrameNanos { it }; angle = (angle + (t - last) / 1_000_000_000f * 33.3f * 6f) % 360f; last = t }
+                }
+                val breathe by androidx.compose.animation.core.rememberInfiniteTransition(label = "breathe").animateFloat(0.55f, 1f,
+                    androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(2400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                        androidx.compose.animation.core.RepeatMode.Reverse), label = "glow")
+                Box(Modifier.fillMaxSize().background(Color(0xFF0B0A12))) {
+                    androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                        val c1 = androidx.compose.ui.geometry.Offset(size.width * 0.5f, size.height * 0.36f)
+                        drawCircle(Brush.radialGradient(listOf(Brand.Violet.copy(alpha = 0.50f * breathe), Color.Transparent), c1, size.width * 0.95f), size.width * 0.95f, c1)
+                        val c2 = androidx.compose.ui.geometry.Offset(size.width * 0.95f, size.height * 0.05f)
+                        drawCircle(Brush.radialGradient(listOf(Brand.Pink.copy(alpha = 0.30f), Color.Transparent), c2, size.width * 0.8f), size.width * 0.8f, c2)
+                    }
+                    Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars).padding(horizontal = 28.dp, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Spacer(Modifier.height(24.dp))
+                        Text(java.text.SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(Date(now)).replaceFirstChar { it.uppercase() },
+                            color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp, letterSpacing = 0.5.sp)
+                        Text(DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(now)), color = Color.White, fontSize = 92.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-2).sp)
+                        Spacer(Modifier.weight(1f))
+                        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Vinyl(src?.art, src?.name ?: "♪", src?.kind == "radio", angle, 1f, minOf(maxWidth, 300.dp))
+                        }
+                        Spacer(Modifier.height(20.dp))
+                        if (src?.kind == "radio") LiveBadge()
+                        Text(src?.name ?: stringResource(R.string.alarm_ringtone), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold,
+                            maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
+                        if (!src?.artist.isNullOrBlank()) Text(src!!.artist, color = Color.White.copy(alpha = 0.65f), fontSize = 15.sp, maxLines = 1)
+                        Spacer(Modifier.weight(1f))
+                        Box(Modifier.fillMaxWidth().height(68.dp).clip(CircleShape).background(Brand.grad).clickable { Alarm.stop(this@AlarmActivity); finish() }, contentAlignment = Alignment.Center) {
+                            Text(stringResource(R.string.alarm_stop), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Box(Modifier.fillMaxWidth().height(54.dp).clip(CircleShape).border(1.5.dp, Color.White.copy(alpha = 0.35f), CircleShape)
+                            .clickable { Alarm.snooze(this@AlarmActivity); finish() }, contentAlignment = Alignment.Center) {
+                            Text(stringResource(R.string.alarm_snooze, Alarm.SNOOZE_MIN), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             }
