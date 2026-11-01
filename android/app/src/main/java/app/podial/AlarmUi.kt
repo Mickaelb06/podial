@@ -89,18 +89,18 @@ fun AlarmDialog(onClose: () -> Unit) {
                 Text(stringResource(R.string.alarm_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(stringResource(R.string.alarm_radio), fontWeight = FontWeight.SemiBold)
                 OutlinedButton({ picking = true }, Modifier.fillMaxWidth()) {
-                    Text(cfg.source?.let { (if (it.kind == "podcast") "🎙 " else "📻 ") + it.name } ?: stringResource(R.string.alarm_ringtone), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    Text(cfg.source?.let { (if (it.kind == "podcast") "🎙 " else "📻 ") + it.name } ?: stringResource(R.string.alarm_choose), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
             }
         },
-        confirmButton = { TextButton({ Alarm.save(ctx, cfg); onClose() }) { Text(stringResource(R.string.save)) } },
+        confirmButton = { TextButton({ Alarm.save(ctx, cfg); onClose() }, enabled = !cfg.enabled || cfg.source != null) { Text(stringResource(R.string.save)) } },
         dismissButton = { TextButton(onClose) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
 /** Choix de ce qui réveille : sonnerie, radio ou podcast (favoris, ou recherche dans tout l'annuaire). */
 @Composable
-private fun AlarmPicker(onPick: (Item?) -> Unit, onClose: () -> Unit) {
+private fun AlarmPicker(onPick: (Item) -> Unit, onClose: () -> Unit) {
     var podcast by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     val radios by Store.radios.collectAsState()
@@ -125,7 +125,6 @@ private fun AlarmPicker(onPick: (Item?) -> Unit, onClose: () -> Unit) {
                     placeholder = { Text(stringResource(if (podcast) R.string.alarm_search_podcast else R.string.alarm_search_radio)) })
                 if (query.isBlank()) Text(stringResource(R.string.alarm_favorites), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 LazyColumn(Modifier.heightIn(max = 280.dp)) {
-                    item { PickRow(stringResource(R.string.alarm_ringtone), "") { onPick(null) } }
                     if (list == null) item { Text("…", Modifier.padding(12.dp)) }
                     else if (list.isEmpty()) item { Text(stringResource(R.string.alarm_none), Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     else items(list) { PickRow(it.name, it.artist) { onPick(it) } }

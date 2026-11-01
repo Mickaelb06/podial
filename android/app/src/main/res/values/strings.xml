@@ -109,6 +109,7 @@
     <string name="alarm_off">Off</string>
     <string name="alarm_radio">Wake me up with</string>
     <string name="alarm_ringtone">Phone ringtone</string>
+    <string name="alarm_choose">Choose a radio or a podcast</string>
     <string name="alarm_no_radio">Add a radio to your favorites to wake up to it. Without one, the ringtone plays.</string>
     <string name="alarm_once">One time only. Pick days to repeat.</string>
     <string name="alarm_repeat">Repeats on the selected days.</string>

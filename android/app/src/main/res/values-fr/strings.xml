@@ -106,6 +106,7 @@
     <string name="alarm_off">Désactivé</string>
     <string name="alarm_radio">Me réveiller avec</string>
     <string name="alarm_ringtone">Sonnerie du téléphone</string>
+    <string name="alarm_choose">Choisir une radio ou un podcast</string>
     <string name="alarm_no_radio">Ajoute une radio en favori pour te réveiller avec. Sans radio, la sonnerie retentit.</string>
     <string name="alarm_once">Une seule fois. Choisis des jours pour répéter.</string>
     <string name="alarm_repeat">Se répète les jours choisis.</string>

@@ -84,9 +84,9 @@ object Alarm {
     }
 
     fun describe(ctx: Context, cfg: AlarmConfig): String {
-        if (!cfg.enabled) return ctx.getString(R.string.alarm_off)
+        if (!cfg.enabled || cfg.source == null) return ctx.getString(R.string.alarm_off)
         val t = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, cfg.hour); set(Calendar.MINUTE, cfg.minute) }.time)
-        return t + " · " + (cfg.source?.name ?: ctx.getString(R.string.alarm_ringtone))
+        return t + " · " + cfg.source!!.name
     }
 
     // ---- sonnerie ----
