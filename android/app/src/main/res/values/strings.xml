@@ -122,4 +122,13 @@
     <string name="alarm_search_podcast">Search a podcast…</string>
     <string name="alarm_favorites">Your favorites. Type to search everything.</string>
     <string name="alarm_none">Nothing found.</string>
+    <string name="tab_discover">Discover</string>
+    <string name="tab_now">Now playing</string>
+    <string name="tab_alarm">Alarm</string>
+    <string name="tab_more">More</string>
+    <string name="nothing_playing_hint">Nothing is playing. Pick a podcast or a radio in Discover.</string>
+    <string name="downloads_count">%1$d episode(s)</string>
+    <string name="alarm_in_hm">Rings in %1$d h %2$02d</string>
+    <string name="alarm_in_m">Rings in %1$d min</string>
+    <string name="alarm_change">Change</string>
 </resources>

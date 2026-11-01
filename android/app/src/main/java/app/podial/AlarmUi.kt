@@ -6,6 +6,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,45 +61,58 @@ class AlarmActivity : ComponentActivity() {
     }
 }
 
-/** Réglage du réveil : activé, heure, jours, radio. */
+/** Page « Réveil » : l'heure en grand, les jours, ce qui réveille. Chaque changement est enregistré tout de suite. */
 @Composable
-fun AlarmDialog(onClose: () -> Unit) {
+fun AlarmPage() {
     val ctx = LocalContext.current
     var cfg by remember { mutableStateOf(Alarm.load(ctx)) }
     var picking by remember { mutableStateOf(false) }
+    var enableAfterPick by remember { mutableStateOf(false) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); delay(15_000) } }
+    fun update(n: AlarmConfig) { cfg = n; Alarm.save(ctx, n) }
     val time = DateFormat.getTimeInstance(DateFormat.SHORT).format(Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, cfg.hour); set(Calendar.MINUTE, cfg.minute) }.time)
-    if (picking) AlarmPicker({ cfg = cfg.copy(source = it); picking = false }) { picking = false }
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(stringResource(R.string.alarm_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.alarm_enabled), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                    Switch(cfg.enabled, { cfg = cfg.copy(enabled = it) })
-                }
-                OutlinedButton({
-                    TimePickerDialog(ctx, { _, h, m -> cfg = cfg.copy(hour = h, minute = m) }, cfg.hour, cfg.minute, android.text.format.DateFormat.is24HourFormat(ctx)).show()
-                }, Modifier.fillMaxWidth()) { Text(time, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold) }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    DayOfWeek.values().forEachIndexed { i, d ->
-                        val on = cfg.days and (1 shl i) != 0
-                        FilterChip(on, { cfg = cfg.copy(days = cfg.days xor (1 shl i)) },
-                            { Text(d.getDisplayName(TextStyle.NARROW, Locale.getDefault()), Modifier.fillMaxWidth(), maxLines = 1) },
-                            Modifier.weight(1f), colors = FilterChipDefaults.filterChipColors())
-                    }
-                }
-                Text(stringResource(if (cfg.days == 0) R.string.alarm_once else R.string.alarm_repeat), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(stringResource(R.string.alarm_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(stringResource(R.string.alarm_radio), fontWeight = FontWeight.SemiBold)
-                OutlinedButton({ picking = true }, Modifier.fillMaxWidth()) {
-                    Text(cfg.source?.let { (if (it.kind == "podcast") "🎙 " else "📻 ") + it.name } ?: stringResource(R.string.alarm_choose), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                }
+    val next = Alarm.nextTrigger(cfg, now)
+    if (picking) AlarmPicker({ update(cfg.copy(source = it, enabled = cfg.enabled || enableAfterPick)); enableAfterPick = false; picking = false }) { picking = false; enableAfterPick = false }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(stringResource(R.string.alarm_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Start))
+        Text(time, fontSize = 72.sp, fontWeight = FontWeight.ExtraBold, color = if (cfg.enabled) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.clip(RoundedCornerShape(16.dp)).clickable {
+                TimePickerDialog(ctx, { _, h, m -> update(cfg.copy(hour = h, minute = m)) }, cfg.hour, cfg.minute, android.text.format.DateFormat.is24HourFormat(ctx)).show()
+            }.padding(horizontal = 16.dp))
+        Text(next?.let { val min = ((it - now) / 60_000L).toInt() + 1
+            if (min >= 60) stringResource(R.string.alarm_in_hm, min / 60, min % 60) else stringResource(R.string.alarm_in_m, min) } ?: stringResource(R.string.alarm_off),
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            DayOfWeek.values().forEachIndexed { i, d ->
+                val on = cfg.days and (1 shl i) != 0
+                FilterChip(on, { update(cfg.copy(days = cfg.days xor (1 shl i))) },
+                    { Text(d.getDisplayName(TextStyle.NARROW, Locale.getDefault()), Modifier.fillMaxWidth(), maxLines = 1) }, Modifier.weight(1f))
             }
-        },
-        confirmButton = { TextButton({ Alarm.save(ctx, cfg); onClose() }, enabled = !cfg.enabled || cfg.source != null) { Text(stringResource(R.string.save)) } },
-        dismissButton = { TextButton(onClose) { Text(stringResource(R.string.cancel)) } },
-    )
+        }
+        Text(stringResource(if (cfg.days == 0) R.string.alarm_once else R.string.alarm_repeat), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Surface(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable { picking = true }, shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                val src = cfg.source
+                if (src != null) { if (src.kind == "radio") RadioLogo(null, src.art, src.name, 48) else Cover(src.art, src.name, 48) }
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.alarm_radio), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(src?.name ?: stringResource(R.string.alarm_choose), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+                Text(stringResource(R.string.alarm_change), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.alarm_enabled), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                Switch(cfg.enabled, { on ->
+                    // sans radio ni podcast, on demande d'abord quoi jouer
+                    if (on && cfg.source == null) { enableAfterPick = true; picking = true } else update(cfg.copy(enabled = on))
+                })
+            }
+        }
+        Text(stringResource(R.string.alarm_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 /** Choix de ce qui réveille : sonnerie, radio ou podcast (favoris, ou recherche dans tout l'annuaire). */

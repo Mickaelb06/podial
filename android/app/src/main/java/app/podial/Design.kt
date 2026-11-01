@@ -205,21 +205,30 @@ fun SkeletonGrid(header: @Composable () -> Unit = {}) {
 
 /** Barre de navigation flottante : l'onglet choisi s'allonge et prend le dégradé. */
 @Composable
-fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int) {
-    val items = listOf(Icons.Default.Podcasts to R.string.tab_podcasts, Icons.Default.Radio to R.string.tab_radios,
-        Icons.Default.Star to R.string.tab_library, Icons.Default.Download to R.string.tab_downloads)
+fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean = false) {
+    // 0 Découvrir · 1 Bibliothèque · 2 Lecture (bouton central) · 3 Réveil · 4 Plus
+    val items = listOf(Icons.Default.Explore to R.string.tab_discover, Icons.Default.Star to R.string.tab_library, Icons.Default.PlayArrow to R.string.tab_now,
+        Icons.Default.Alarm to R.string.tab_alarm, Icons.Default.MoreHoriz to R.string.tab_more)
     Surface(Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(horizontal = 16.dp, vertical = 10.dp).fillMaxWidth()
         .shadow(20.dp, CircleShape, ambientColor = Brand.Violet, spotColor = Brand.Violet),
         shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-        Row(Modifier.padding(5.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.padding(5.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
             items.forEachIndexed { i, (icon, label) ->
                 val sel = tab == i
+                if (i == 2) {
+                    // grand bouton rond : ramène toujours au lecteur
+                    val glow by animateFloatAsState(if (sel) 1f else 0.78f, tween(280), label = "navmid")
+                    Box(Modifier.size(54.dp).alpha(glow).clip(CircleShape).background(Brand.grad).clickable { onTab(i) }, contentAlignment = Alignment.Center) {
+                        Icon(if (playing) Icons.Default.GraphicEq else icon, androidx.compose.ui.res.stringResource(label), tint = Color.White, modifier = Modifier.size(28.dp))
+                    }
+                    return@forEachIndexed
+                }
                 val on by animateFloatAsState(if (sel) 1f else 0f, tween(280), label = "nav$i")
                 Box(Modifier.weight(if (sel) 2.1f else 1f).height(46.dp).clip(CircleShape).clickable { onTab(i) }, contentAlignment = Alignment.Center) {
                     Box(Modifier.matchParentSize().alpha(on).background(Brand.grad))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val ink = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                        BadgedBox(badge = { if (i == 2 && newTotal > 0) Badge(containerColor = Brand.Live) { Text("$newTotal") } }) {
+                        BadgedBox(badge = { if (i == 1 && newTotal > 0) Badge(containerColor = Brand.Live) { Text("$newTotal") } }) {
                             Icon(icon, null, tint = ink, modifier = Modifier.size(22.dp))
                         }
                         AnimatedVisibility(sel, enter = fadeIn(tween(200)) + expandHorizontally(), exit = fadeOut(tween(120)) + shrinkHorizontally()) {

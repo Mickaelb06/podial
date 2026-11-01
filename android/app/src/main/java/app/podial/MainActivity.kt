@@ -18,6 +18,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -140,14 +142,13 @@ fun PodialApp() {
         player.refresh()
         while (true) { delay(500); player.refresh() }
     }
-    val pager = rememberPagerState { 4 }   // les quatre onglets se font glisser de gauche à droite
+    val pager = rememberPagerState { 5 }   // Découvrir, Bibliothèque, Lecture, Réveil, Plus : on les fait glisser de gauche à droite
     val tab = pager.currentPage
     val scope = rememberCoroutineScope()
     var detail by remember { mutableStateOf<Item?>(null) }
-    var sheet by remember { mutableStateOf(false) }
-    var menu by remember { mutableStateOf(false) }
+    var discover by rememberSaveable { mutableIntStateOf(0) }   // 0 podcasts, 1 radios
+    var downloads by remember { mutableStateOf(false) }
     var about by remember { mutableStateOf(false) }
-    var alarm by remember { mutableStateOf(false) }
     var quotes by remember { mutableStateOf(false) }
     var transcript by remember { mutableStateOf(false) }
     BackHandler(enabled = detail != null) { detail = null }
@@ -163,26 +164,43 @@ fun PodialApp() {
         contentColor = MaterialTheme.colorScheme.onBackground,
         bottomBar = {
             Column {
-                AnimatedVisibility(player.mediaId.isNotEmpty(), enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
-                    MiniPlayer(player) { sheet = true }
+                AnimatedVisibility(player.mediaId.isNotEmpty() && tab != 2, enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
+                    MiniPlayer(player) { scope.launch { pager.animateScrollToPage(2) } }
                 }
-                FloatingNav(tab, { i -> detail = null; scope.launch { pager.animateScrollToPage(i) } }, Store.newCounts.collectAsState().value.values.sum())
+                FloatingNav(tab, { i -> detail = null; scope.launch { pager.animateScrollToPage(i) } }, Store.newCounts.collectAsState().value.values.sum(), player.isPlaying)
             }
         },
     ) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
             // la page de détail se pose par-dessus la liste, qui reste en place : au retour on retrouve le même genre, la même recherche et le même défilement
-            HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 3, userScrollEnabled = detail == null) { page ->
+            HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 4, userScrollEnabled = detail == null) { page ->
                 // la page qui s'éloigne rétrécit et s'estompe pendant le glissement
                 Box(Modifier.fillMaxSize().graphicsLayer {
                     val away = ((pager.currentPage - page) + pager.currentPageOffsetFraction).let { if (it < 0) -it else it }.coerceAtMost(1f)
                     alpha = 1f - 0.55f * away; scaleX = 1f - 0.06f * away; scaleY = scaleX
                 }) {
                     when (page) {
-                        0 -> BrowseScreen("podcast", onSurprise = { detail = it }, active = tab == 0) { detail = it }
-                        1 -> BrowseScreen("radio", onSurprise = { player.play(PlaybackService.radioItem(it)); detail = it }, active = tab == 1) { detail = it }
-                        2 -> LibraryScreen(onMenu = { menu = true }) { detail = it }
-                        else -> DownloadsScreen(player)
+                        0 -> Column(Modifier.fillMaxSize()) {
+                            Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(discover == 0, { discover = 0 }, { Text(stringResource(R.string.tab_podcasts)) })
+                                FilterChip(discover == 1, { discover = 1 }, { Text(stringResource(R.string.tab_radios)) })
+                            }
+                            // les deux listes restent en vie : changer de bascule garde la recherche et le genre choisis
+                            Box(Modifier.weight(1f)) {
+                                Box(if (discover == 0) Modifier.fillMaxSize() else Modifier.layout { _, _ -> layout(0, 0) {} }) {
+                                    BrowseScreen("podcast", onSurprise = { detail = it }, active = tab == 0 && discover == 0) { detail = it }
+                                }
+                                Box(if (discover == 1) Modifier.fillMaxSize() else Modifier.layout { _, _ -> layout(0, 0) {} }) {
+                                    BrowseScreen("radio", onSurprise = { player.play(PlaybackService.radioItem(it)); detail = it }, active = tab == 0 && discover == 1) { detail = it }
+                                }
+                            }
+                        }
+                        1 -> LibraryScreen(onMenu = { scope.launch { pager.animateScrollToPage(4) } }) { detail = it }
+                        2 -> PlayerPage(player, onTranscript = { transcript = true }, onAlarm = { scope.launch { pager.animateScrollToPage(3) } })
+                        3 -> AlarmPage()
+                        else -> MoreScreen(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0",
+                            onQuotes = { quotes = true }, onAlarm = { scope.launch { pager.animateScrollToPage(3) } },
+                            onDownloads = { downloads = true }, onAbout = { about = true })
                     }
                 }
             }
@@ -192,12 +210,20 @@ fun PodialApp() {
         }
     }
     if (ambiance) AmbianceScreen(player) { ambianceOff = true }
-    if (sheet) PlayerSheet(player, onTranscript = { sheet = false; transcript = true }) { sheet = false }
     if (transcript) TranscriptScreen(player) { transcript = false }
     if (quotes) QuotesScreen(player) { quotes = false }
-    if (menu) MenuSheet(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0",
-        onQuotes = { menu = false; quotes = true }, onAlarm = { menu = false; alarm = true }, onAbout = { menu = false; about = true }) { menu = false }
-    if (alarm) AlarmDialog { alarm = false }
+    if (downloads) {
+        BackHandler { downloads = false }
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
+                    IconButton({ downloads = false }) { Icon(Icons.Default.ArrowBack, stringResource(R.string.close)) }
+                    Text(stringResource(R.string.tab_downloads), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                }
+                Box(Modifier.weight(1f)) { DownloadsScreen(player) }
+            }
+        }
+    }
     if (about) AboutDialog(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0") { about = false }
 }
 
@@ -635,15 +661,14 @@ private fun clock(ms: Long): String {
     return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerSheet(p: PlayerState, onTranscript: () -> Unit, onClose: () -> Unit) {
+fun PlayerBody(p: PlayerState, onTranscript: () -> Unit) {
     val remaining by SleepTimer.remaining.collectAsState()
     val eop by SleepTimer.endOfEpisode.collectAsState()
     var timerMenu by remember { mutableStateOf(false) }
     var seeking by remember { mutableStateOf<Float?>(null) }
-    ModalBottomSheet(onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), shape = RoundedCornerShape(topStart = 34.dp, topEnd = 34.dp), containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-        if (p.live) { RadioSheet(p); return@ModalBottomSheet }
+    run {
+        if (p.live) { RadioSheet(p); return }
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Cover(p.art, p.title, 220)
             Text(p.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, maxLines = 2,
@@ -699,10 +724,32 @@ fun PlayerSheet(p: PlayerState, onTranscript: () -> Unit, onClose: () -> Unit) {
     }
 }
 
-// ---------- menu ----------
-@OptIn(ExperimentalMaterial3Api::class)
+/** Page « Lecture » : ce qui joue, et juste dessous le prochain réveil. */
 @Composable
-fun MenuSheet(version: String, onQuotes: () -> Unit, onAlarm: () -> Unit, onAbout: () -> Unit, onClose: () -> Unit) {
+fun PlayerPage(p: PlayerState, onTranscript: () -> Unit, onAlarm: () -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (p.mediaId.isEmpty()) Box(Modifier.fillMaxWidth().height(320.dp)) { Message(stringResource(R.string.nothing_playing_hint)) }
+        else PlayerBody(p, onTranscript)
+        val cfg = Alarm.load(ctx)
+        Surface(Modifier.padding(horizontal = 24.dp, vertical = 8.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable(onClick = onAlarm),
+            shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(Icons.Default.Alarm, null, tint = MaterialTheme.colorScheme.primary)
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.alarm_title), fontWeight = FontWeight.SemiBold)
+                    Text(Alarm.describe(ctx, cfg), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+// ---------- menu ----------
+@Composable
+fun MoreScreen(version: String, onQuotes: () -> Unit, onAlarm: () -> Unit, onDownloads: () -> Unit, onAbout: () -> Unit) {
     val uri = androidx.compose.ui.platform.LocalUriHandler.current
     val ctxM = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
@@ -716,13 +763,15 @@ fun MenuSheet(version: String, onQuotes: () -> Unit, onAlarm: () -> Unit, onAbou
     val newVersionMsg = stringResource(R.string.update_available)
     fun refreshCache() { scope.launch(kotlinx.coroutines.Dispatchers.IO) { cache = Store.cacheSize() } }
     LaunchedEffect(Unit) { refreshCache() }
-    ModalBottomSheet(onDismissRequest = onClose) {
-        Column(Modifier.padding(bottom = 24.dp)) {
-            Text(stringResource(R.string.menu), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold,
+    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(Modifier.padding(top = 16.dp, bottom = 24.dp)) {
+            Text(stringResource(R.string.tab_more), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier.padding(start = 24.dp, bottom = 8.dp))
             MenuRow(Icons.Default.FormatQuote, stringResource(R.string.my_quotes),
                 stringResource(R.string.quotes_count, Store.quotes.collectAsState().value.size), onClick = onQuotes)
             MenuRow(Icons.Default.Alarm, stringResource(R.string.alarm_title), Alarm.describe(ctxM, Alarm.load(ctxM)), onClick = onAlarm)
+            MenuRow(Icons.Default.Download, stringResource(R.string.tab_downloads),
+                stringResource(R.string.downloads_count, Store.downloads.collectAsState().value.size), onClick = onDownloads)
             MenuRow(Icons.Default.SystemUpdate, stringResource(R.string.check_updates),
                 if (checking) stringResource(R.string.checking) else update ?: stringResource(R.string.version_fmt, version),
                 trailing = link?.let { l -> { TextButton({ uri.openUri(l) }) { Text(stringResource(R.string.download)) } } },
