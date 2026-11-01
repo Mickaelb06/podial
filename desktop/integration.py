@@ -158,9 +158,25 @@ def set_autostart(enabled, script_path):
 
 
 def _icon_path(script_path):
-    """Icône Podial livrée avec l'appli (chemin absolu : le lanceur n'est pas installé dans le thème d'icônes)."""
-    p = os.path.join(os.path.dirname(os.path.abspath(script_path)), "icons", "hicolor", "512x512", "apps", "podial.png")
-    return p if os.path.exists(p) else "audio-headphones"
+    """Nom d'icône du lanceur : le logo Podial est copié dans le thème d'icônes de l'utilisateur sous l'identifiant de l'appli
+    (GNOME retrouve ainsi l'icône par son nom, sans dépendre d'un chemin). Sans fichier fourni, on retombe sur le casque du thème."""
+    base = os.path.join(os.path.dirname(os.path.abspath(script_path)), "icons", "hicolor")
+    copied = False
+    for size in ("128x128", "512x512"):
+        src = os.path.join(base, size, "apps", "podial.png")
+        if not os.path.exists(src):
+            continue
+        dst_dir = os.path.join(GLib.get_user_data_dir(), "icons", "hicolor", size, "apps")
+        dst = os.path.join(dst_dir, DESKTOP_ID + ".png")
+        try:
+            os.makedirs(dst_dir, exist_ok=True)
+            with open(src, "rb") as f, open(dst + ".tmp", "wb") as g:
+                g.write(f.read())
+            os.replace(dst + ".tmp", dst)
+            copied = True
+        except OSError:
+            pass
+    return DESKTOP_ID if copied else "audio-headphones"
 
 
 def install_desktop_entry(script_path):
