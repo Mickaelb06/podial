@@ -330,7 +330,11 @@ const radioApi = {
       const stream = s.url_resolved || s.url, key = niceName(s.name.trim()).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\[(].*?[\])]/g, " ").replace(/\b(hd|sd|aac|mp3|\d+ ?k(bps)?|hq|lq)\b/g, " ").replace(/[^a-z0-9]+/g, "");
       if (!key) continue;
       const known = byKey.get(key);
-      if (known) { if (!known.art && s.favicon && !radioLogos[key]) known.art = fixLogo(s.favicon); continue; }
+      if (known) {
+        if (!known.art && s.favicon && !radioLogos[key]) known.art = fixLogo(s.favicon);
+        if (stream && !known.stream.startsWith("https://") && stream.startsWith("https://")) known.stream = stream;   // un doublon en https passe devant (les navigateurs bloquent le http)
+        continue;
+      }
       if (!stream) continue;
       byKey.set(key, stationItem(s, stream));
     }
@@ -442,9 +446,20 @@ audio.addEventListener("error", () => {
   if (!now) return;
   // beaucoup de radios n'annoncent qu'une adresse http : on tente la version https avant d'abandonner
   if (live && now.url.startsWith("http://") && !now.triedHttps) { now.triedHttps = true; audio.src = https(now.url); audio.play().catch(() => {}); return; }
-  if (live) toast(t("insecure"), h("a", { href: now.raw, target: "_blank", rel: "noopener noreferrer" }, t("open_stream")));
+  if (live && !now.triedAlt) {
+    // dernier recours : une autre adresse https de la même radio dans l'annuaire
+    now.triedAlt = true; const cur = now, key = stationKey(cur.name);
+    radioApi.get(`/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=30&name=${encodeURIComponent(cur.name)}`).then(rows => {
+      if (now !== cur) return;
+      const alt = rows.find(r => stationKey(r.name) === key && (r.url_resolved || "").startsWith("https://") && r.url_resolved !== audio.src);
+      if (alt) { audio.src = alt.url_resolved; audio.play().catch(() => {}); } else failLive(cur);
+    }).catch(() => failLive(cur));
+    return;
+  }
+  if (live) failLive(now);
   else toast(t("failed"));
 });
+const failLive = cur => toast(t("insecure"), h("a", { href: cur.raw, target: "_blank", rel: "noopener noreferrer" }, t("open_stream")));
 
 // ---------- écrans ----------
 const view = $("view");
