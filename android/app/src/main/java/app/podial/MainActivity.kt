@@ -896,6 +896,11 @@ fun RadioDetail(item: Item, player: PlayerState, onBack: () -> Unit) {
     val saved = radios.any { it.key == item.key }
     val uri = androidx.compose.ui.platform.LocalUriHandler.current
     val here = player.mediaId == "radio|" + item.stream
+    // choisir une radio la lance tout de suite
+    LaunchedEffect(item.stream, player.controller) {
+        val c = player.controller ?: return@LaunchedEffect
+        if (!here) player.play(PlaybackService.radioItem(item)) else if (!c.isPlaying) c.play()
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth()) {
             Box(Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
