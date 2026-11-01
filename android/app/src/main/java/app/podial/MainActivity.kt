@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
         Store.init(this)
         runCatching { Logos.loadTable(assets.open("radio_logos.json").bufferedReader().use { it.readText() }) }
         CheckWorker.schedule(this)
+        Alarm.schedule(this)
         if (android.os.Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         setContent {
             PodialTheme {
@@ -146,6 +147,7 @@ fun PodialApp() {
     var sheet by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var about by remember { mutableStateOf(false) }
+    var alarm by remember { mutableStateOf(false) }
     var quotes by remember { mutableStateOf(false) }
     var transcript by remember { mutableStateOf(false) }
     BackHandler(enabled = detail != null) { detail = null }
@@ -194,7 +196,8 @@ fun PodialApp() {
     if (transcript) TranscriptScreen(player) { transcript = false }
     if (quotes) QuotesScreen(player) { quotes = false }
     if (menu) MenuSheet(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0",
-        onQuotes = { menu = false; quotes = true }, onAbout = { menu = false; about = true }) { menu = false }
+        onQuotes = { menu = false; quotes = true }, onAlarm = { menu = false; alarm = true }, onAbout = { menu = false; about = true }) { menu = false }
+    if (alarm) AlarmDialog { alarm = false }
     if (about) AboutDialog(ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0") { about = false }
 }
 
@@ -699,8 +702,9 @@ fun PlayerSheet(p: PlayerState, onTranscript: () -> Unit, onClose: () -> Unit) {
 // ---------- menu ----------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MenuSheet(version: String, onQuotes: () -> Unit, onAbout: () -> Unit, onClose: () -> Unit) {
+fun MenuSheet(version: String, onQuotes: () -> Unit, onAlarm: () -> Unit, onAbout: () -> Unit, onClose: () -> Unit) {
     val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    val ctxM = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
     var update by remember { mutableStateOf<String?>(null) }
     var link by remember { mutableStateOf<String?>(null) }
@@ -718,6 +722,7 @@ fun MenuSheet(version: String, onQuotes: () -> Unit, onAbout: () -> Unit, onClos
                 modifier = Modifier.padding(start = 24.dp, bottom = 8.dp))
             MenuRow(Icons.Default.FormatQuote, stringResource(R.string.my_quotes),
                 stringResource(R.string.quotes_count, Store.quotes.collectAsState().value.size), onClick = onQuotes)
+            MenuRow(Icons.Default.Alarm, stringResource(R.string.alarm_title), Alarm.describe(ctxM, Alarm.load(ctxM)), onClick = onAlarm)
             MenuRow(Icons.Default.SystemUpdate, stringResource(R.string.check_updates),
                 if (checking) stringResource(R.string.checking) else update ?: stringResource(R.string.version_fmt, version),
                 trailing = link?.let { l -> { TextButton({ uri.openUri(l) }) { Text(stringResource(R.string.download)) } } },
@@ -775,7 +780,10 @@ fun AboutDialog(version: String, onClose: () -> Unit) {
     val newVersionMsg = stringResource(R.string.update_available)
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Podial") },
+        title = { Row(verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo), null, Modifier.size(44.dp))
+            Text("Podial", Modifier.padding(start = 12.dp))
+        } },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.version_fmt, version), fontWeight = FontWeight.SemiBold)

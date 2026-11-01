@@ -101,4 +101,15 @@
     <string name="ep_downloaded">Téléchargés</string>
     <string name="ep_unfinished">Non terminés</string>
     <string name="ep_none_filtered">Aucun épisode ne correspond à ce filtre.</string>
+    <string name="alarm_title">Réveil</string>
+    <string name="alarm_enabled">Réveil activé</string>
+    <string name="alarm_off">Désactivé</string>
+    <string name="alarm_radio">Me réveiller avec</string>
+    <string name="alarm_ringtone">Sonnerie du téléphone</string>
+    <string name="alarm_no_radio">Ajoute une radio en favori pour te réveiller avec. Sans radio, la sonnerie retentit.</string>
+    <string name="alarm_once">Une seule fois. Choisis des jours pour répéter.</string>
+    <string name="alarm_repeat">Se répète les jours choisis.</string>
+    <string name="alarm_stop">Arrêter</string>
+    <string name="alarm_snooze">Répéter dans %1$d min</string>
+    <string name="alarm_hint">Le volume de la radio monte doucement. Si la radio ne démarre pas, la sonnerie prend le relais.</string>
 </resources>
