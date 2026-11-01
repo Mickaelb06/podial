@@ -14,6 +14,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -68,18 +71,18 @@ fun AlarmPage() {
     var cfg by remember { mutableStateOf(Alarm.load(ctx)) }
     var picking by remember { mutableStateOf(false) }
     var enableAfterPick by remember { mutableStateOf(false) }
+    var timeOpen by remember { mutableStateOf(false) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); delay(15_000) } }
     fun update(n: AlarmConfig) { cfg = n; Alarm.save(ctx, n) }
     val time = DateFormat.getTimeInstance(DateFormat.SHORT).format(Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, cfg.hour); set(Calendar.MINUTE, cfg.minute) }.time)
     val next = Alarm.nextTrigger(cfg, now)
+    if (timeOpen) TimeDialog(cfg.hour, cfg.minute, { h, m -> update(cfg.copy(hour = h, minute = m)); timeOpen = false }) { timeOpen = false }
     if (picking) AlarmPicker({ update(cfg.copy(source = it, enabled = cfg.enabled || enableAfterPick)); enableAfterPick = false; picking = false }) { picking = false; enableAfterPick = false }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.alarm_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Start))
         Text(time, fontSize = 72.sp, fontWeight = FontWeight.ExtraBold, color = if (cfg.enabled) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.clip(RoundedCornerShape(16.dp)).clickable {
-                TimePickerDialog(ctx, { _, h, m -> update(cfg.copy(hour = h, minute = m)) }, cfg.hour, cfg.minute, android.text.format.DateFormat.is24HourFormat(ctx)).show()
-            }.padding(horizontal = 16.dp))
+            modifier = Modifier.clip(RoundedCornerShape(16.dp)).clickable { timeOpen = true }.padding(horizontal = 16.dp))
         Text(next?.let { val min = ((it - now) / 60_000L).toInt() + 1
             if (min >= 60) stringResource(R.string.alarm_in_hm, min / 60, min % 60) else stringResource(R.string.alarm_in_m, min) } ?: stringResource(R.string.alarm_off),
             color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -113,6 +116,36 @@ fun AlarmPage() {
         }
         Text(stringResource(R.string.alarm_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+/** Choix de l'heure : cadran aux couleurs de l'appli, avec saisie au clavier en option. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimeDialog(hour: Int, minute: Int, onDone: (Int, Int) -> Unit, onClose: () -> Unit) {
+    val ctx = LocalContext.current
+    val state = rememberTimePickerState(hour, minute, android.text.format.DateFormat.is24HourFormat(ctx))
+    var keyboard by remember { mutableStateOf(false) }
+    val colors = TimePickerDefaults.colors(
+        clockDialSelectedContentColor = Color.White, clockDialColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        selectorColor = Brand.Violet, timeSelectorSelectedContainerColor = Brand.Violet, timeSelectorSelectedContentColor = Color.White,
+        periodSelectorSelectedContainerColor = Brand.Pink.copy(alpha = 0.25f), periodSelectorSelectedContentColor = MaterialTheme.colorScheme.onSurface)
+    AlertDialog(
+        onDismissRequest = onClose,
+        shape = RoundedCornerShape(32.dp),
+        title = { Text(stringResource(R.string.alarm_title), fontWeight = FontWeight.ExtraBold) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (keyboard) TimeInput(state, colors = colors) else TimePicker(state, colors = colors)
+            }
+        },
+        confirmButton = { TextButton({ onDone(state.hour, state.minute) }) { Text(stringResource(R.string.save), fontWeight = FontWeight.Bold) } },
+        dismissButton = {
+            Row {
+                IconButton({ keyboard = !keyboard }) { Icon(if (keyboard) Icons.Default.Schedule else Icons.Default.Keyboard, null) }
+                TextButton(onClose) { Text(stringResource(R.string.cancel)) }
+            }
+        },
+    )
 }
 
 /** Choix de ce qui réveille : sonnerie, radio ou podcast (favoris, ou recherche dans tout l'annuaire). */

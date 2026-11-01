@@ -227,8 +227,8 @@ fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean 
                         onClick = { if (hasMedia) onPlayPause() else onTab(i) },
                         onDoubleClick = { if (hasMedia) onStop() },
                         onLongClick = { onTab(i) }), contentAlignment = Alignment.Center) {
-                        if (hasMedia) NavVinyl(playing) else androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo),
-                            androidx.compose.ui.res.stringResource(label), Modifier.fillMaxSize().clip(RoundedCornerShape(17.dp)))
+                        if (hasMedia) NavVinyl(playing) else androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo_mark),
+                            androidx.compose.ui.res.stringResource(label), Modifier.fillMaxSize())   // logo détouré, sans carré de fond
                     }
                     return@forEachIndexed
                 }
@@ -273,7 +273,9 @@ private fun NavVinyl(playing: Boolean) {
             drawCircle(Brush.sweepGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.18f), Color.Transparent, Color.Transparent, Color.White.copy(alpha = 0.18f), Color.Transparent), center), r, center)
             drawCircle(Brand.Violet.copy(alpha = 0.9f), r, center, style = androidx.compose.ui.graphics.drawscope.Stroke(2.5f))
         }
-        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo), null, Modifier.fillMaxSize(0.52f).rotate(angle).clip(CircleShape))
+        Box(Modifier.fillMaxSize(0.52f).rotate(angle).clip(CircleShape).background(Color(0xFF15023F)), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo_mark), null, Modifier.fillMaxSize(0.86f))
+        }
     }
 }
 
