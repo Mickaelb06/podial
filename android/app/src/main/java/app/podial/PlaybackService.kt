@@ -6,6 +6,9 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import org.json.JSONObject
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -44,9 +47,16 @@ class PlaybackService : MediaLibraryService() {
             override fun onEvents(player: Player, events: Player.Events) {
                 if (events.containsAny(Player.EVENT_IS_PLAYING_CHANGED, Player.EVENT_MEDIA_ITEM_TRANSITION,
                         Player.EVENT_MEDIA_METADATA_CHANGED, Player.EVENT_PLAYBACK_STATE_CHANGED)) Widgets.refresh(this@PlaybackService)
+                if (events.containsAny(Player.EVENT_IS_PLAYING_CHANGED, Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_PLAYBACK_STATE_CHANGED,
+                        Player.EVENT_TIMELINE_CHANGED, Player.EVENT_POSITION_DISCONTINUITY)) {
+                    saveResume()
+                    resumeHandler.removeCallbacks(resumeTick)
+                    if (player.isPlaying) resumeHandler.postDelayed(resumeTick, 10_000)
+                }
             }
         })
         SleepTimer.attach(player)
+        restoreResume(player)
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         session = MediaLibrarySession.Builder(this, player, Callback()).setSessionActivity(open).build()
         instance = this
@@ -57,11 +67,49 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
 
+    // ---- reprise : la dernière lecture est gardée, pour la retrouver (en pause) à la réouverture de l'appli ----
+    private val resumeHandler = Handler(Looper.getMainLooper())
+    private val resumeTick = object : Runnable {
+        override fun run() { saveResume(); if (session?.player?.isPlaying == true) resumeHandler.postDelayed(this, 10_000) }
+    }
+    private fun resumePrefs() = getSharedPreferences("podial_resume", MODE_PRIVATE)
+
+    private fun saveResume() {
+        val p = session?.player ?: return
+        val item = p.currentMediaItem
+        if (item == null || p.playbackState == Player.STATE_ENDED) { resumePrefs().edit().clear().apply(); return }
+        val md = item.mediaMetadata
+        val j = JSONObject().put("id", item.mediaId).put("uri", item.localConfiguration?.uri?.toString() ?: "")
+            .put("title", md.title?.toString() ?: "").put("artist", md.artist?.toString() ?: "").put("album", md.albumTitle?.toString() ?: "")
+            .put("art", md.artworkUri?.toString() ?: "").put("type", md.mediaType ?: -1)
+            .put("pos", if (p.isCurrentMediaItemLive) 0L else p.currentPosition.coerceAtLeast(0))
+        md.extras?.let { e -> for (k in listOf("feed", "transcript", "transcriptType", "date")) j.put(k, e.getString(k) ?: "") }
+        resumePrefs().edit().putString("item", j.toString()).apply()
+    }
+
+    private fun restoreResume(p: Player) {
+        if (p.mediaItemCount > 0) return
+        val j = runCatching { JSONObject(resumePrefs().getString("item", null) ?: return) }.getOrNull() ?: return
+        val uri = j.optString("uri")
+        if (uri.isEmpty()) return
+        if (uri.startsWith("file:") && !File(Uri.parse(uri).path ?: "").exists()) return   // épisode téléchargé supprimé depuis
+        val md = MediaMetadata.Builder().setTitle(j.optString("title")).setArtist(j.optString("artist")).setIsBrowsable(false).setIsPlayable(true)
+            .setArtworkUri(j.optString("art").takeIf { it.isNotEmpty() }?.let(Uri::parse))
+        j.optString("album").takeIf { it.isNotEmpty() }?.let { md.setAlbumTitle(it) }
+        j.optInt("type", -1).takeIf { it >= 0 }?.let { md.setMediaType(it) }
+        if (j.has("feed")) md.setExtras(Bundle().apply { for (k in listOf("feed", "transcript", "transcriptType", "date")) putString(k, j.optString(k)) })
+        p.setMediaItem(MediaItem.Builder().setMediaId(j.optString("id")).setUri(uri).setMediaMetadata(md.build()).build(), j.optLong("pos"))
+        p.prepare()   // en pause : on retrouve la lecture, un appui la relance
+    }
+
     override fun onTaskRemoved(rootIntent: Intent?) {
+        saveResume()
         if (session?.player?.playWhenReady != true) stopSelf()
     }
 
     override fun onDestroy() {
+        saveResume()
+        resumeHandler.removeCallbacks(resumeTick)
         instance = null
         session?.run { player.release(); release() }
         session = null

@@ -222,11 +222,10 @@ fun FloatingNav(tab: Int, onTab: (Int) -> Unit, newTotal: Int, playing: Boolean 
                 if (i == 2) {
                     // bouton central : le logo ; dès qu'une radio ou un podcast est chargé, un petit vinyle (le logo en étiquette) qui tourne tant que ça joue
                     val glow by animateFloatAsState(if (sel) 1f else 0.85f, tween(280), label = "navmid")
-                    // un appui : pause / reprise · deux appuis : arrêt · appui long : page Lecture (sans rien en cours, un appui l'ouvre)
+                    // un appui : ouvre la page Lecture ; un autre appui (déjà dessus) : pause / reprise ; deux appuis rapides : arrêt
                     Box(Modifier.size(56.dp).alpha(glow).clip(CircleShape).combinedClickable(
-                        onClick = { if (hasMedia) onPlayPause() else onTab(i) },
-                        onDoubleClick = { if (hasMedia) onStop() },
-                        onLongClick = { onTab(i) }), contentAlignment = Alignment.Center) {
+                        onClick = { if (hasMedia && tab == 2) onPlayPause() else onTab(i) },
+                        onDoubleClick = { if (hasMedia) onStop() }), contentAlignment = Alignment.Center) {
                         if (hasMedia) NavVinyl(playing) else androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.logo_mark),
                             androidx.compose.ui.res.stringResource(label), Modifier.fillMaxSize())   // logo détouré, sans carré de fond
                     }
