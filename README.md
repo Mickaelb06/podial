@@ -43,6 +43,7 @@ Cross-platform desktop version (Windows, macOS, Linux):
 - Android landscape mode while playing: a spinning vinyl with the station logo or cover, the time and the weather (weather uses the approximate location only if you allow it).
 - Android home-screen widgets: a compact one (cover and controls) and a vinyl one that spins while playing.
 - Sleep timer: in minutes, hours, or at the end of the episode, with a gentle volume fade.
+- Alarm clock (Android only): wake up to a radio or to the latest episode of a podcast, with a slowly rising volume, snooze, and the ringtone as a fallback if the stream cannot start.
 - Equalizer, smooth volume, playback speed, MPRIS controls and media keys on desktop.
 - Right-click the GNOME top-bar player to open or quit Podial. "Launch at login" on desktop. An About dialog and an update check (GitHub releases; off by default on Linux; Android warns you once per new version).
 - Interface in English, French, Spanish, German, Portuguese, Hebrew and Arabic (right-to-left supported) on desktop; English and French on Android.
@@ -55,11 +56,11 @@ Installers are attached to each [release](https://github.com/Mickaelb06/podial/r
 
 | Platform | Files |
 |---|---|
-| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.15_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.15/podial_0.5.15_all.deb): GTK app with the GNOME top-bar extension |
-| Linux (other distributions) | [`podial-linux-0.5.15.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.15/podial-linux-0.5.15.tar.gz) (run `./install.sh`), or the cross-platform `.deb` / `.rpm` |
-| Windows | [`Podial-0.5.15.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.15/Podial-0.5.15.exe) (or `.msi`) |
-| macOS | [`Podial-1.0.15.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.15/Podial-1.0.15.dmg) |
-| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.15/podial-android.apk) |
+| Linux (Debian, Ubuntu, Mint) | [`podial_0.5.16_all.deb`](https://github.com/Mickaelb06/podial/releases/download/v0.5.16/podial_0.5.16_all.deb): GTK app with the GNOME top-bar extension |
+| Linux (other distributions) | [`podial-linux-0.5.16.tar.gz`](https://github.com/Mickaelb06/podial/releases/download/v0.5.16/podial-linux-0.5.16.tar.gz) (run `./install.sh`), or the cross-platform `.deb` / `.rpm` |
+| Windows | [`Podial-0.5.16.exe`](https://github.com/Mickaelb06/podial/releases/download/v0.5.16/Podial-0.5.16.exe) (or `.msi`) |
+| macOS | [`Podial-1.0.16.dmg`](https://github.com/Mickaelb06/podial/releases/download/v0.5.16/Podial-1.0.16.dmg) |
+| Android | [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.16/podial-android.apk) |
 
 Building from source is explained below. Releases are marked "pre-release" until the Windows, macOS and Android builds have had more testing.
 
@@ -90,7 +91,7 @@ Known limits: no media keys / system "now playing" integration yet, and a few ra
 
 ## Android
 
-Download [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.15/podial-android.apk) from the [latest release](https://github.com/Mickaelb06/podial/releases) (allow installs from your browser or file manager when Android asks). Requires Android 8.0 or newer.
+Download [`podial-android.apk`](https://github.com/Mickaelb06/podial/releases/download/v0.5.16/podial-android.apk) from the [latest release](https://github.com/Mickaelb06/podial/releases) (allow installs from your browser or file manager when Android asks). Requires Android 8.0 or newer.
 
 ```sh
 cd android
