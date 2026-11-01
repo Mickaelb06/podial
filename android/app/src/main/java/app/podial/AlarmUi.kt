@@ -113,7 +113,12 @@ fun AlarmPage() {
     fun update(n: AlarmConfig) { cfg = n; Alarm.save(ctx, n) }
     val time = DateFormat.getTimeInstance(DateFormat.SHORT).format(Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, cfg.hour); set(Calendar.MINUTE, cfg.minute) }.time)
     val next = Alarm.nextTrigger(cfg, now)
-    if (timeOpen) TimeDialog(cfg.hour, cfg.minute, { h, m -> update(cfg.copy(hour = h, minute = m)); timeOpen = false }) { timeOpen = false }
+    // valider une heure active le réveil ; sans radio ni podcast choisi, on demande d'abord quoi jouer
+    if (timeOpen) TimeDialog(cfg.hour, cfg.minute, { h, m ->
+        val n = cfg.copy(hour = h, minute = m)
+        if (n.source == null) { update(n); enableAfterPick = true; picking = true } else update(n.copy(enabled = true))
+        timeOpen = false
+    }) { timeOpen = false }
     if (picking) AlarmPicker({ update(cfg.copy(source = it, enabled = cfg.enabled || enableAfterPick)); enableAfterPick = false; picking = false }) { picking = false; enableAfterPick = false }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.alarm_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Start))
