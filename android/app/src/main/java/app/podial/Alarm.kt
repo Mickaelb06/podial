@@ -98,13 +98,17 @@ object Alarm {
     var ringing = false
         private set
     private var elapsed = 0
+    private const val RAMP_START = 0.25f   // on doit déjà entendre quelque chose au départ
+    private const val RAMP_SECONDS = 40
+
+    /** Volume du lecteur lui-même (celui du service), pas celui du contrôleur distant. */
+    private fun setVolume(v: Float) { (PlaybackService.instance?.player() ?: controller)?.volume = v }
 
     private val ramp = object : Runnable {
         override fun run() {
-            val c = controller ?: return
             elapsed++
-            c.volume = (elapsed / 60f).coerceAtMost(1f)
-            if (elapsed < 60) handler.postDelayed(this, 1000)
+            setVolume(RAMP_START + (1f - RAMP_START) * (elapsed / RAMP_SECONDS.toFloat()).coerceAtMost(1f))
+            if (elapsed < RAMP_SECONDS) handler.postDelayed(this, 1000)
         }
     }
     private val giveUp = Runnable { ctxRef?.let { stop(it) } }
@@ -144,7 +148,7 @@ object Alarm {
             c.addListener(object : Player.Listener {
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) { if (ringing && ringtone == null) ring(app) }
             })
-            c.volume = 0f
+            setVolume(RAMP_START)
             c.setMediaItem(item); c.prepare(); c.play()
             elapsed = 0
             handler.postDelayed(ramp, 1000)
@@ -158,7 +162,7 @@ object Alarm {
         ringing = false
         handler.removeCallbacks(ramp); handler.removeCallbacks(giveUp)
         stopSound(app)
-        controller?.let { it.pause(); it.volume = 1f }
+        controller?.pause(); setVolume(1f)
         future?.let { MediaController.releaseFuture(it) }
         future = null; controller = null
         (app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(NOTIF_ID)

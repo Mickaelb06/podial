@@ -18,6 +18,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.layout
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.rememberScrollState
@@ -181,9 +182,18 @@ fun PodialApp() {
                 }) {
                     when (page) {
                         0 -> Column(Modifier.fillMaxSize()) {
-                            Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilterChip(discover == 0, { discover = 0 }, { Text(stringResource(R.string.tab_podcasts)) })
-                                FilterChip(discover == 1, { discover = 1 }, { Text(stringResource(R.string.tab_radios)) })
+                            // grande bascule bien visible : podcasts d'un côté, radios de l'autre
+                            Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().height(52.dp).clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                listOf(Icons.Default.Podcasts to R.string.tab_podcasts, Icons.Default.Radio to R.string.tab_radios).forEachIndexed { i, (icon, label) ->
+                                    val on = discover == i
+                                    Row(Modifier.weight(1f).fillMaxHeight().clip(CircleShape).then(if (on) Modifier.background(Brand.grad) else Modifier).clickable { discover = i },
+                                        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(icon, null, tint = if (on) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+                                        Text(stringResource(label), Modifier.padding(start = 8.dp), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp,
+                                            color = if (on) Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
                             }
                             // les deux listes restent en vie : changer de bascule garde la recherche et le genre choisis
                             Box(Modifier.weight(1f)) {
